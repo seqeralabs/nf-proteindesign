@@ -1,0 +1,3 @@
+sample_id,design_yaml,protocol,num_designs,budget
+protein_binder_example,assets/design_examples/protein_design.yaml,protein-anything,100,10
+peptide_binder_example,assets/design_examples/peptide_design.yaml,peptide-anything,100,10

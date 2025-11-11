@@ -1,0 +1,28 @@
+# Example Boltzgen design specification for peptide binder design
+# This example designs a peptide to bind specific residues on a target protein
+
+entities:
+  # Specify a designed peptide chain
+  # Random number between 12 and 20 of designed residues (inclusive)
+  - protein: 
+      id: G
+      sequence: 12..20
+
+  # Specification of the target extracted from a .cif file
+  # Replace with your own target structure file
+  - file:
+      path: target_protein.cif
+      # Which chain and residues in the .cif file to use as target
+      include:
+        - chain:
+            id: A
+      
+      # Which regions of the target the design should bind to
+      # Specify residue numbers on the target chain
+      binding_types:
+        - chain:
+            id: A
+            binding: 343,344,251  # Replace with your target binding residues
+      
+      # Which regions of the target should have their structure specified
+      structure_groups: "all"

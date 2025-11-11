@@ -1,0 +1,18 @@
+# Example Boltzgen design specification for protein binder design
+# This example designs a protein to bind a target protein
+
+entities:
+  # Specify a designed protein chain
+  # Random number between 80 and 140 of designed residues (inclusive)
+  - protein: 
+      id: C
+      sequence: 80..140
+  
+  # Specification of the target extracted from a .cif file
+  # Replace with your own target structure file
+  - file:
+      path: target_protein.cif
+      # Which chain and residues in the .cif file to use as target
+      include: 
+        - chain:
+            id: A

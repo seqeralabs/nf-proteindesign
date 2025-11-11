@@ -1,0 +1,34 @@
+# Nextflow files
+.nextflow*
+work/
+results/
+.nextflow.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+test_output/
+test_results/
+
+# Boltzgen cache
+.cache/
+cache/
