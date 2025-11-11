@@ -1,0 +1,3 @@
+sample_id,target_structure,target_chain_ids,min_length,max_length,length_step,n_variants_per_length,design_type,protocol,num_designs,budget
+target1_designs,path/to/target1.cif,A,60,120,20,3,protein,protein-anything,100,10
+target2_designs,path/to/target2.pdb,"A,B",50,100,25,2,peptide,peptide-anything,100,10

@@ -1,0 +1,4 @@
+sample_id,target_structure,use_p2rank,top_n_pockets,min_pocket_score,design_type,min_length,max_length,protocol,num_designs,budget
+target1,/path/to/protein1.pdb,true,3,0.5,protein,50,150,protein-anything,100,10
+target2,/path/to/protein2.cif,true,5,0.3,nanobody,110,130,nanobody-anything,100,10
+target3,/path/to/protein3.pdb,true,2,0.7,peptide,15,40,peptide-anything,100,10

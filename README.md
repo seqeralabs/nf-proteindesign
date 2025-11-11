@@ -8,7 +8,12 @@
 
 **nf-proteindesign** is a Nextflow pipeline for running [Boltzgen](https://github.com/HannesStark/boltzgen) protein design workflows in parallel across multiple design specifications. Boltzgen is an all-atom generative diffusion model that can design proteins, peptides, and nanobodies to bind various biomolecular targets (proteins, nucleic acids, small molecules).
 
-The pipeline allows you to define multiple protein design experiments in a samplesheet, each with its own design specification YAML file and parameters, enabling high-throughput parallel protein design.
+The pipeline supports three operational modes:
+1. **Design-based mode**: Use pre-made design YAML files
+2. **Target-based mode**: Automatically generate design variants from target structures
+3. **P2Rank mode**: Use ML to identify binding sites and design binders (⭐ NEW!)
+
+The pipeline enables high-throughput parallel protein design campaigns with automatic binding site prediction using [P2Rank](https://github.com/rdk/p2rank), a state-of-the-art machine learning tool.
 
 ## Pipeline summary
 
@@ -77,6 +82,61 @@ Each sample runs **independently and in parallel**, limited only by available GP
        --input samplesheet.csv \
        --outdir results
    ```
+
+## Operational Modes
+
+### 1. Design-Based Mode (Default)
+
+Provide pre-made design YAML files in your samplesheet:
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet_designs.csv \
+    --outdir results
+```
+
+See [Samplesheet Format](#samplesheet-format) below for details.
+
+### 2. Target-Based Mode
+
+Automatically generate design variants from target structures:
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet_targets.csv \
+    --outdir results
+```
+
+See [Target-Based Mode Documentation](docs/TARGET_MODE.md) for details.
+
+### 3. P2Rank Mode (⭐ NEW!)
+
+Use machine learning to automatically identify binding sites and design binders:
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet_targets.csv \
+    --use_p2rank \
+    --top_n_pockets 3 \
+    --outdir results
+```
+
+**Key Features:**
+- ✅ Automatic binding site identification using P2Rank ML model
+- ✅ Fast (<1s per protein) and accurate predictions
+- ✅ No manual binding site specification required
+- ✅ Targets multiple predicted pockets simultaneously
+- ✅ State-of-the-art binding site prediction (600+ citations)
+
+**Perfect for:**
+- Drug discovery: identify druggable pockets
+- Protein engineering: design binders without prior knowledge
+- High-throughput screening: process many targets automatically
+
+See [**P2Rank Mode Documentation**](docs/P2RANK_MODE.md) for complete usage guide.
 
 ## GPU Requirements
 
