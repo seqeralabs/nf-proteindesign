@@ -16,6 +16,48 @@ The pipeline allows you to define multiple protein design experiments in a sampl
 2. **Run Boltzgen**: Executes Boltzgen for each sample in parallel with specified parameters
 3. **Collect Results**: Organizes outputs including final ranked designs, intermediate designs, and metrics
 
+## Pipeline Flow
+
+```mermaid
+flowchart TD
+    A[📋 Input Samplesheet CSV] --> B{Parse & Validate}
+    B --> C[Create Channels per Sample]
+    
+    C --> D1[🧬 Sample 1: Design YAML]
+    C --> D2[🧬 Sample 2: Design YAML]
+    C --> D3[🧬 Sample N: Design YAML]
+    
+    D1 --> E1[⚡ BOLTZGEN_RUN<br/>GPU Process]
+    D2 --> E2[⚡ BOLTZGEN_RUN<br/>GPU Process]
+    D3 --> E3[⚡ BOLTZGEN_RUN<br/>GPU Process]
+    
+    E1 --> F1[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
+    E2 --> F2[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
+    E3 --> F3[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
+    
+    F1 --> G1[📁 Sample 1 Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
+    F2 --> G2[📁 Sample 2 Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
+    F3 --> G3[📁 Sample N Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
+    
+    G1 --> H[✅ Organized Output Directory]
+    G2 --> H
+    G3 --> H
+    
+    H --> I[📊 Final Designs + Metrics<br/>📈 results_overview.pdf]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style E1 fill:#ffe1f5
+    style E2 fill:#ffe1f5
+    style E3 fill:#ffe1f5
+    style H fill:#e1ffe1
+    style I fill:#e1ffe1
+```
+
+### Parallel Execution
+
+Each sample runs **independently and in parallel**, limited only by available GPU resources. This enables high-throughput protein design campaigns with multiple targets or strategies simultaneously.
+
 ## Quick Start
 
 1. Install [`Nextflow`](https://www.nextflow.io/docs/latest/getstarted.html#installation) (`>=23.04.0`)
