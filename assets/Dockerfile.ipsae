@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+LABEL maintainer="nf-proteindesign" \
+      description="IPSAE calculation container with Python and NumPy" \
+      version="1.0.0"
+
+# Install numpy
+RUN pip install --no-cache-dir numpy==1.24.3
+
+# Copy IPSAE script
+COPY ipsae.py /opt/ipsae/ipsae.py
+
+# Set working directory
+WORKDIR /data
+
+# Add /opt/ipsae to PATH so ipsae.py can be found
+ENV PATH="/opt/ipsae:${PATH}"
+
+# Default command
+CMD ["/bin/bash"]
