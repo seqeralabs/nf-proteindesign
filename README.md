@@ -22,9 +22,10 @@ All modes utilize the same core workflow with mode-specific entry points, enabli
 
 1. **Validate Samplesheet**: Checks samplesheet format and validates design YAML files exist
 2. **Run Boltzgen**: Executes Boltzgen for each sample in parallel with specified parameters
-3. **IPSAE Scoring** (optional): Evaluates protein-protein interactions using ipSAE metrics
-4. **PRODIGY Prediction** (optional): Predicts binding affinity (ΔG and Kd) for designed complexes
-5. **Collect Results**: Organizes outputs including final ranked designs, intermediate designs, and metrics
+3. **ProteinMPNN Optimization** (optional): Optimizes sequences for designed structures using ProteinMPNN
+4. **IPSAE Scoring** (optional): Evaluates protein-protein interactions using ipSAE metrics
+5. **PRODIGY Prediction** (optional): Predicts binding affinity (ΔG and Kd) for designed complexes
+6. **Collect Results**: Organizes outputs including final ranked designs, intermediate designs, and metrics
 
 ## Pipeline Flow
 
@@ -64,9 +65,13 @@ flowchart TD
     H2 --> I2[📁 Results 2]
     H3 --> I3[📁 Results N]
     
-    I1 --> J{IPSAE Enabled?}
-    I2 --> J
-    I3 --> J
+    I1 --> I{ProteinMPNN Enabled?}
+    I2 --> I
+    I3 --> I
+    
+    I -->|Yes| I4[🧬 ProteinMPNN<br/>Sequence Optimization]
+    I -->|No| J{IPSAE Enabled?}
+    I4 --> J
     
     J -->|Yes| K[📊 IPSAE Scoring]
     J -->|No| M{PRODIGY Enabled?}
@@ -330,6 +335,21 @@ See the [Boltzgen repository](https://github.com/HannesStark/boltzgen) for more 
 | `--boltzgen_config` | `null` | Path to custom Boltzgen config YAML |
 | `--steps` | `null` | Comma-separated list of pipeline steps to run (e.g., 'filtering') |
 
+### ProteinMPNN Sequence Optimization (Optional)
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--run_proteinmpnn` | `false` | Enable ProteinMPNN sequence optimization of Boltzgen designs |
+| `--mpnn_sampling_temp` | `0.1` | Sampling temperature (0.1-0.3 recommended, lower = more conservative) |
+| `--mpnn_num_seq_per_target` | `8` | Number of sequence variants to generate per structure |
+| `--mpnn_batch_size` | `1` | Batch size for ProteinMPNN inference |
+| `--mpnn_seed` | `37` | Random seed for reproducibility |
+| `--mpnn_backbone_noise` | `0.02` | Backbone noise level (0.02-0.20, lower = more faithful to input) |
+| `--mpnn_save_score` | `true` | Save per-residue scores |
+| `--mpnn_save_probs` | `false` | Save per-residue probabilities (large files) |
+| `--mpnn_fixed_chains` | `null` | Chains to keep fixed (e.g., 'A,B' - typically target chains) |
+| `--mpnn_designed_chains` | `null` | Chains to design (e.g., 'C' - typically binder chain) |
+
 ### Output Options
 
 | Parameter | Default | Description |
@@ -434,6 +454,139 @@ The per-residue file (`*_10_10_byres.txt`) provides:
 
 - **ipTM**: Interface predicted TM-score
   - > 0.5: Good interface alignment
+
+## ProteinMPNN Sequence Optimization (Optional)
+
+The pipeline includes optional **ProteinMPNN** sequence optimization to further refine the sequences of Boltzgen-designed structures. ProteinMPNN is a deep learning model trained to generate protein sequences that fold into desired backbone structures, and has been shown to increase design success rates by **~10-fold** compared to traditional methods.
+
+### What is ProteinMPNN?
+
+ProteinMPNN uses a graph neural network to predict amino acid sequences that will fold into a given protein backbone structure. Key features:
+
+- **Fast**: Generates sequences in ~2 CPU-seconds per structure
+- **Accurate**: Achieves high experimental success rates for protein binders
+- **Flexible**: Supports chain-specific design and fixed positions
+- **Optimized for minibinders**: Default parameters tuned for small protein binder design
+
+Reference: [Dauparas et al., Science 2022](https://www.science.org/doi/10.1126/science.add2187)
+
+### Why Use ProteinMPNN After Boltzgen?
+
+Boltzgen excels at generating novel protein backbones and binding geometries, while ProteinMPNN specializes in sequence design. Combining them provides:
+
+1. **Improved sequence quality**: ProteinMPNN optimizes sequences for the designed backbones
+2. **Sequence diversity**: Generate multiple sequence variants per backbone
+3. **Higher success rates**: Research shows ~5-10× improvement in experimental validation
+4. **Better designability**: Sequences are more likely to fold and express well
+
+### Enabling ProteinMPNN Optimization
+
+To enable ProteinMPNN optimization, add the `--run_proteinmpnn` flag:
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet.csv \
+    --outdir results \
+    --run_proteinmpnn
+```
+
+### Recommended Parameters for Minibinder Design
+
+The pipeline uses parameters optimized for minibinder design based on published literature:
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet.csv \
+    --run_proteinmpnn \
+    --mpnn_sampling_temp 0.1 \         # Conservative sampling (0.1-0.3 range)
+    --mpnn_num_seq_per_target 8 \      # Generate 8 variants per structure
+    --mpnn_backbone_noise 0.02 \       # Low noise for high fidelity
+    --mpnn_save_score true             # Save quality scores
+```
+
+### Advanced Chain Selection
+
+For complex designs, you can specify which chains to design vs. keep fixed:
+
+```bash
+# Design only chain C (binder), keep chains A,B fixed (target)
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet.csv \
+    --run_proteinmpnn \
+    --mpnn_fixed_chains 'A,B' \
+    --mpnn_designed_chains 'C'
+```
+
+### ProteinMPNN Output Files
+
+When ProteinMPNN optimization is enabled, additional outputs are generated:
+
+```
+results/
+└── sample_id/
+    ├── proteinmpnn/
+    │   └── sample_id_mpnn_optimized/
+    │       ├── sequences/                         # Optimized FASTA sequences
+    │       │   ├── structure1.fa                 # Multiple sequences per structure
+    │       │   └── structure2.fa
+    │       ├── scores/                           # Quality scores (if enabled)
+    │       │   ├── structure1.npz
+    │       │   └── structure2.npz
+    │       ├── structures/                       # Input structures
+    │       │   ├── structure1_input.cif
+    │       │   └── structure2_input.cif
+    │       └── summary.json                      # Statistics summary
+```
+
+#### FASTA Sequence Format
+
+Each FASTA file contains multiple sequence variants with scores:
+
+```fasta
+>T=0.1, sample=1, score=0.7291, seq_recovery=0.5736
+MKYKKIGNKYIVSINNEIVKALKEFCKEKNIKS...
+>T=0.1, sample=2, score=0.7414, seq_recovery=0.6075
+MYKKIGNKYIVSINNDIVTAIKEFCEDKKIKS...
+```
+
+#### Summary Statistics
+
+The `summary.json` file provides:
+
+```json
+{
+  "total_structures": 10,
+  "total_sequences": 80,
+  "avg_sequences_per_structure": 8.0,
+  "parameters": {
+    "sampling_temp": 0.1,
+    "num_seq_per_target": 8,
+    "backbone_noise": 0.02,
+    "seed": 37
+  }
+}
+```
+
+### Interpreting ProteinMPNN Scores
+
+- **score**: Per-position negative log-likelihood (lower is better, typical range: 0.6-0.9)
+  - < 0.7: Excellent sequence quality
+  - 0.7-0.8: Good quality
+  - > 0.8: May have design issues
+
+- **seq_recovery**: Fraction of original sequence retained (if comparing to input)
+  - Higher values indicate more conservative designs
+
+### Integration with Downstream Analysis
+
+When `--run_proteinmpnn` is enabled:
+
+- **IPSAE scores**: Still calculated on original Boltzgen predictions (requires PAE files)
+- **PRODIGY predictions**: Automatically use ProteinMPNN-optimized structures
+- **Final designs**: ProteinMPNN outputs become the recommended sequences for experimental validation
 
 ## Protocols
 
