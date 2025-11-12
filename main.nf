@@ -20,6 +20,26 @@ include { samplesheetToList } from 'plugin/nf-schema'
 
 /*
 ========================================================================================
+    HELPER FUNCTIONS
+========================================================================================
+*/
+
+// Helper function to resolve file paths relative to projectDir if they are relative
+def resolveFilePath(path_string) {
+    def path_file = file(path_string)
+    // If the path is not absolute, try to resolve it relative to projectDir
+    if (!path_file.isAbsolute()) {
+        def project_relative = file("${projectDir}/${path_string}")
+        if (project_relative.exists()) {
+            return project_relative
+        }
+    }
+    // Otherwise, return the original path (will throw error if doesn't exist with checkIfExists)
+    return file(path_string, checkIfExists: true)
+}
+
+/*
+========================================================================================
     VALIDATE INPUTS
 ========================================================================================
 */
@@ -108,7 +128,7 @@ workflow NFPROTEINDESIGN {
                 def reuse = tuple.size() > 5 ? tuple[5] : null
                 
                 // Convert to file object and validate existence
-                def design_yaml = file(design_yaml_path, checkIfExists: true)
+                def design_yaml = resolveFilePath(design_yaml_path)
                 
                 def meta = [:]
                 meta.id = sample_id
@@ -138,7 +158,7 @@ workflow NFPROTEINDESIGN {
                 def target_structure_path = tuple[1]
                 
                 // Convert to file object and validate existence
-                def target_structure = file(target_structure_path, checkIfExists: true)
+                def target_structure = resolveFilePath(target_structure_path)
                 
                 def meta = [:]
                 meta.id = sample_id
