@@ -6,9 +6,7 @@ process BOLTZGEN_RUN {
     publishDir "${params.outdir}/${meta.id}", mode: params.publish_dir_mode, saveAs: { filename -> filename }
 
     conda "boltzgen::boltzgen"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://boltz/boltzgen:latest' :
-        'boltz/boltzgen:latest' }"
+    container 'wuennemannflorian/boltzgen:latest'
 
     input:
     tuple val(meta), path(design_yaml)
@@ -27,6 +25,8 @@ process BOLTZGEN_RUN {
     def steps_arg = params.steps ? "--steps ${params.steps}" : ''
     
     """
+    export HF_HOME=./cache
+
     # Run Boltzgen
     boltzgen run ${design_yaml} \\
         --output ${meta.id}_output \\
