@@ -3,6 +3,9 @@
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://flouwuenne.github.io/nf-proteindesign-2025/)
+
+> **📚 Full documentation is now available at:** [https://flouwuenne.github.io/nf-proteindesign-2025/](https://flouwuenne.github.io/nf-proteindesign-2025/)
 
 ## Introduction
 

@@ -1,0 +1,138 @@
+site_name: nf-proteindesign
+site_description: Nextflow pipeline for parallel Boltzgen protein design with automated binding site prediction
+site_author: nf-proteindesign contributors
+repo_name: FloWuenne/nf-proteindesign-2025
+repo_url: https://github.com/FloWuenne/nf-proteindesign-2025
+
+theme:
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+  
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/protein
+  
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/FloWuenne/nf-proteindesign-2025
+  version:
+    provider: mike
+  
+  generator: false
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - mermaid2
+
+nav:
+  - Home:
+    - Overview: index.md
+    - Quick Start: quick-start.md
+  
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Basic Usage: getting-started/usage.md
+    - Quick Reference: getting-started/quick-reference.md
+  
+  - Pipeline Modes:
+    - Overview: modes/overview.md
+    - Design Mode: modes/design-mode.md
+    - Target Mode: modes/target-mode.md
+    - P2Rank Mode: modes/p2rank-mode.md
+  
+  - Analysis Tools:
+    - PRODIGY Binding Affinity: analysis/prodigy.md
+    - ipSAE Scoring: analysis/ipsae.md
+  
+  - Architecture:
+    - Pipeline Design: architecture/design.md
+    - Implementation Details: architecture/implementation.md
+  
+  - Reference:
+    - Parameters: reference/parameters.md
+    - Output Files: reference/outputs.md
+    - Examples: reference/examples.md

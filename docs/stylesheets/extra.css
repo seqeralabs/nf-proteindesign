@@ -1,0 +1,196 @@
+/* Protein Design Theme - Custom Styles */
+
+:root {
+  /* Protein structure inspired colors */
+  --md-primary-fg-color: #6A1B9A;        /* Deep purple - alpha helices */
+  --md-primary-fg-color--light: #9C27B0;
+  --md-primary-fg-color--dark: #4A148C;
+  --md-accent-fg-color: #AB47BC;         /* Purple accent - beta sheets */
+  --protein-helix: #9C27B0;
+  --protein-sheet: #E1BEE7;
+  --protein-loop: #BA68C8;
+  --protein-binding: #8E24AA;
+}
+
+/* Hero section styling */
+.md-typeset h1 {
+  font-weight: 700;
+  background: linear-gradient(135deg, #6A1B9A 0%, #9C27B0 50%, #BA68C8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Code blocks with protein theme */
+.md-typeset pre > code {
+  border-left: 4px solid var(--protein-helix);
+}
+
+/* Admonitions styling */
+.md-typeset .admonition {
+  border-left: 4px solid var(--protein-binding);
+}
+
+.md-typeset .admonition.note {
+  border-left-color: #2196F3;
+}
+
+.md-typeset .admonition.tip {
+  border-left-color: #00C853;
+}
+
+.md-typeset .admonition.warning {
+  border-left-color: #FF6F00;
+}
+
+.md-typeset .admonition.danger {
+  border-left-color: #D50000;
+}
+
+/* Protein-inspired badges */
+.protein-badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.375rem;
+  margin: 0.2em;
+}
+
+.badge-helix {
+  background: linear-gradient(135deg, #6A1B9A, #9C27B0);
+}
+
+.badge-sheet {
+  background: linear-gradient(135deg, #8E24AA, #BA68C8);
+}
+
+.badge-loop {
+  background: linear-gradient(135deg, #AB47BC, #CE93D8);
+}
+
+/* Enhanced navigation tabs */
+.md-tabs {
+  background: linear-gradient(to right, #6A1B9A, #9C27B0);
+}
+
+/* Cards for features */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-card {
+  background: var(--md-code-bg-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  border-left: 4px solid var(--protein-helix);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(106, 27, 154, 0.2);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  color: var(--protein-helix);
+}
+
+/* Protein structure decorative elements */
+.protein-helix-decoration::before {
+  content: "α";
+  color: var(--protein-helix);
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+.protein-sheet-decoration::before {
+  content: "β";
+  color: var(--protein-sheet);
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+/* Enhanced tables */
+.md-typeset table:not([class]) {
+  border: 2px solid var(--protein-helix);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.md-typeset table:not([class]) th {
+  background: linear-gradient(135deg, #6A1B9A, #9C27B0);
+  color: white;
+  font-weight: 600;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: rgba(171, 71, 188, 0.1);
+}
+
+/* Command line styling */
+.md-typeset code {
+  background-color: rgba(106, 27, 154, 0.1);
+  color: #6A1B9A;
+}
+
+/* Mermaid diagrams customization */
+.mermaid {
+  background-color: transparent;
+}
+
+/* Footer styling */
+.md-footer {
+  background: linear-gradient(to right, #6A1B9A, #9C27B0);
+}
+
+/* Search highlighting */
+.md-search-result__article--document:hover {
+  background-color: rgba(171, 71, 188, 0.1);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 76.1875em) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.md-content {
+  animation: fadeIn 0.5s ease-in;
+}
+
+/* Pipeline workflow visualization enhancements */
+.workflow-step {
+  background: linear-gradient(135deg, rgba(106, 27, 154, 0.1), rgba(156, 39, 176, 0.1));
+  border-left: 4px solid var(--protein-binding);
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+}
+
+.workflow-step h4 {
+  color: var(--protein-helix);
+  margin-top: 0;
+}
