@@ -14,7 +14,6 @@
       },
       "target_structure": {
         "type": "string",
-        "format": "file-path",
         "pattern": "^\\S+\\.(pdb|cif|PDB|CIF)$",
         "errorMessage": "Target structure must be a valid file path ending in .pdb or .cif"
       },
