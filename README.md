@@ -230,6 +230,36 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 See [**PRODIGY Usage Documentation**](docs/PRODIGY_USAGE.md) for complete guide.
 
+### Consolidated Metrics Report
+
+Generate a comprehensive ranked report that aggregates all design metrics from Boltzgen, ProteinMPNN, IPSAE, and PRODIGY into a single summary. Enable with `--run_consolidation`.
+
+**The consolidation report provides:**
+- 📊 Ranked list of all designs by composite quality score
+- 📈 Summary statistics across all metrics
+- 📝 Detailed CSV file with all metrics for downstream analysis
+- 📄 Human-readable Markdown report with interpretations
+- 🎯 Top N designs highlighted with quality indicators
+- 💡 Automated recommendations for best designs
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet.csv \
+    --run_ipsae \
+    --run_prodigy \
+    --run_proteinmpnn \
+    --run_consolidation \
+    --report_top_n 15 \
+    --outdir results
+```
+
+**Output files:**
+- `design_metrics_summary.csv`: Complete metrics table (import to Excel/Python/R)
+- `design_metrics_report.md`: Human-readable report with recommendations
+
+See [**Consolidation Report Documentation**](docs/consolidation_report.md) for complete guide including interpretation of metrics and best practices.
+
 ## GPU Requirements
 
 ⚠️ **IMPORTANT: Boltzgen requires GPU (CUDA) to run.** The pipeline cannot run on CPU-only systems.
