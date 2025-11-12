@@ -1,0 +1,17 @@
+# Boltzgen design specification for protein binder to EGFR (1IVO)
+# Designs a protein to bind the EGFR kinase domain (chain A)
+
+entities:
+  # Specify a designed protein chain
+  # Random number between 80 and 120 of designed residues
+  - protein: 
+      id: E
+      sequence: 80..120
+  
+  # Specification of the EGFR target from 1IVO structure
+  - file:
+      path: 1IVO.cif
+      # Use chain A (EGFR kinase domain)
+      include: 
+        - chain:
+            id: A

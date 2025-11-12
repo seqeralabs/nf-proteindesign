@@ -1,0 +1,4 @@
+sample_id,design_yaml,protocol,num_designs,budget
+egfr_protein_binder,assets/test_data/egfr_protein_design.yaml,protein-anything,10,2
+egfr_peptide_binder,assets/test_data/egfr_peptide_design.yaml,peptide-anything,10,2
+egfr_nanobody_binder,assets/test_data/egfr_nanobody_design.yaml,nanobody-anything,10,2

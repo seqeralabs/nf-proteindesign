@@ -119,6 +119,35 @@ This architecture ensures consistent execution and simplifies maintenance while 
        --outdir results
    ```
 
+## Testing the Pipeline
+
+The pipeline includes comprehensive test profiles for all three operational modes using EGFR (PDB: 1IVO) as a real example:
+
+### Quick Test Commands
+
+```bash
+# Test Design Mode (pre-made YAML configs)
+nextflow run FloWuenne/nf-proteindesign-2025 -profile test_design,docker
+
+# Test Target Mode (auto-generate designs from structure)
+nextflow run FloWuenne/nf-proteindesign-2025 -profile test_target,docker
+
+# Test P2Rank Mode (binding site prediction + auto-design)
+nextflow run FloWuenne/nf-proteindesign-2025 -profile test_p2rank,docker
+```
+
+### Test Data
+
+Each test profile includes:
+- ✅ Real EGFR structure (1IVO) from PDB
+- ✅ Three design types: protein, peptide, and nanobody binders
+- ✅ Minimal resource settings for fast execution (~15-45 minutes)
+- ✅ Reduced num_designs (10) and budget (2) for quick testing
+
+**Test outputs**: `./results_test_design`, `./results_test_target`, `./results_test_p2rank`
+
+See [`assets/test_data/TEST_PROFILES.md`](assets/test_data/TEST_PROFILES.md) for detailed documentation and [`assets/test_data/QUICK_TEST_REFERENCE.md`](assets/test_data/QUICK_TEST_REFERENCE.md) for quick reference.
+
 ## Operational Modes
 
 The pipeline automatically detects the mode from your samplesheet, or you can specify it explicitly with `--mode`.

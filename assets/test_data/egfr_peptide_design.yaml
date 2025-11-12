@@ -1,0 +1,27 @@
+# Boltzgen design specification for peptide binder to EGFR (1IVO)
+# Designs a peptide to bind specific residues on EGFR kinase domain
+
+entities:
+  # Specify a designed peptide chain
+  # Random number between 12 and 25 of designed residues
+  - protein: 
+      id: P
+      sequence: 12..25
+
+  # Specification of the EGFR target from 1IVO structure
+  - file:
+      path: 1IVO.cif
+      # Use chain A (EGFR kinase domain)
+      include:
+        - chain:
+            id: A
+      
+      # Target ATP-binding site residues (example key residues)
+      # These are important functional residues in EGFR kinase
+      binding_types:
+        - chain:
+            id: A
+            binding: 721,726,730,768,790,831  # Key active site residues
+      
+      # Specify structure for the entire target
+      structure_groups: "all"

@@ -1,0 +1,27 @@
+# Boltzgen design specification for nanobody against EGFR (1IVO)
+# Designs a nanobody to bind the EGFR kinase domain
+
+entities:
+  # Specify a designed nanobody
+  # Boltzgen will use one of its default nanobody scaffolds
+  # and design the CDR regions
+  - protein: 
+      id: N
+      sequence: 110..130  # Typical nanobody length range
+
+  # Specification of the EGFR target from 1IVO structure
+  - file:
+      path: 1IVO.cif
+      # Use chain A (EGFR kinase domain)
+      include:
+        - chain:
+            id: A
+      
+      # Optional: target specific epitope on EGFR
+      # Targeting surface residues near the kinase active site
+      binding_types:
+        - chain:
+            id: A
+            binding: 696,697,698,721,726,730,768,790,831  # Surface-accessible residues
+      
+      structure_groups: "all"

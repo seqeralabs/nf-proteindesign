@@ -1,0 +1,4 @@
+sample_id,target_structure,use_p2rank,top_n_pockets,min_pocket_score,design_type,min_length,max_length,protocol,num_designs,budget
+egfr_p2rank_protein,assets/test_data/1IVO.cif,true,3,0.5,protein,80,120,protein-anything,10,2
+egfr_p2rank_peptide,assets/test_data/1IVO.cif,true,2,0.5,peptide,12,25,peptide-anything,10,2
+egfr_p2rank_nanobody,assets/test_data/1IVO.cif,true,3,0.5,nanobody,110,130,nanobody-anything,10,2
