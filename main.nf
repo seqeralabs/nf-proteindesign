@@ -21,21 +21,48 @@ if (!params.input) {
     error "ERROR: Please provide a samplesheet with --input"
 }
 
-// Detect workflow mode based on samplesheet headers
-def samplesheet_headers = file(params.input).readLines()[0].split(',').collect { it.trim() }
-def is_target_mode = samplesheet_headers.contains('target_structure')
-def is_design_mode = samplesheet_headers.contains('design_yaml')
+// Determine workflow mode
+// Priority: 1) Explicit --mode parameter, 2) Auto-detect from samplesheet headers
+def workflow_mode = params.mode
 
-if (!is_target_mode && !is_design_mode) {
-    error """
-    ERROR: Invalid samplesheet format!
+if (!workflow_mode) {
+    // Auto-detect mode from samplesheet headers
+    def samplesheet_headers = file(params.input).readLines()[0].split(',').collect { it.trim() }
+    def has_design_yaml = samplesheet_headers.contains('design_yaml')
+    def has_target_structure = samplesheet_headers.contains('target_structure')
+    def has_use_p2rank = samplesheet_headers.contains('use_p2rank')
     
-    Samplesheet must contain either:
-    - 'design_yaml' column for pre-made design mode
-    - 'target_structure' column for target-based design generation mode
+    if (has_design_yaml) {
+        workflow_mode = 'design'
+    } else if (has_target_structure) {
+        // Check if using P2Rank mode via parameter or samplesheet
+        if (params.use_p2rank) {
+            workflow_mode = 'p2rank'
+        } else {
+            workflow_mode = 'target'
+        }
+    } else {
+        error """
+        ERROR: Cannot determine workflow mode!
+        
+        Please either:
+        1. Specify mode explicitly with --mode (design|target|p2rank)
+        2. Use a samplesheet with proper column headers:
+           - 'design_yaml' for design mode
+           - 'target_structure' for target/p2rank mode
+        
+        Found headers: ${samplesheet_headers.join(', ')}
+        """
+    }
     
-    Found headers: ${samplesheet_headers.join(', ')}
-    """
+    log.info "Auto-detected workflow mode: ${workflow_mode}"
+} else {
+    // Validate explicit mode parameter
+    def valid_modes = ['design', 'target', 'p2rank']
+    if (!valid_modes.contains(workflow_mode)) {
+        error "ERROR: Invalid --mode '${workflow_mode}'. Must be one of: ${valid_modes.join(', ')}"
+    }
+    log.info "Using explicit workflow mode: ${workflow_mode}"
 }
 
 /*
@@ -44,21 +71,38 @@ if (!is_target_mode && !is_design_mode) {
 ========================================================================================
 */
 
-include { VALIDATE_SAMPLESHEET } from './modules/local/validate_samplesheet'
-include { BOLTZGEN_RUN } from './modules/local/boltzgen_run'
-include { IPSAE_CALCULATE } from './modules/local/ipsae_calculate'
-include { TARGET_TO_DESIGNS } from './workflows/target_to_designs'
-include { P2RANK_TO_DESIGNS } from './workflows/p2rank_to_designs'
+include { PROTEIN_DESIGN } from './workflows/protein_design'
 
 workflow NFPROTEINDESIGN {
 
-    if (is_target_mode) {
-        /*
-         * TARGET-BASED MODE: Generate design variants from target structures
-         */
-        
-        // Create channel from target samplesheet
-        ch_targets = Channel
+    // ========================================================================
+    // Create input channel based on workflow mode
+    // ========================================================================
+    
+    if (workflow_mode == 'design') {
+        // DESIGN MODE: Use pre-made design YAML files
+        ch_input = Channel
+            .fromPath(params.input, checkIfExists: true)
+            .splitCsv(header: true, sep: ',')
+            .map { row ->
+                def meta = [:]
+                meta.id = row.sample_id
+                meta.protocol = row.protocol ?: params.protocol
+                meta.num_designs = row.num_designs ? row.num_designs.toInteger() : params.num_designs
+                meta.budget = row.budget ? row.budget.toInteger() : params.budget
+                meta.reuse = row.reuse ? row.reuse.toBoolean() : false
+                
+                // Validate design YAML exists
+                if (!file(row.design_yaml).exists()) {
+                    error "ERROR: Design YAML file does not exist: ${row.design_yaml}"
+                }
+                
+                [meta, file(row.design_yaml)]
+            }
+    } 
+    else if (workflow_mode == 'target' || workflow_mode == 'p2rank') {
+        // TARGET or P2RANK MODE: Use target structures
+        ch_input = Channel
             .fromPath(params.input, checkIfExists: true)
             .splitCsv(header: true, sep: ',')
             .map { row ->
@@ -92,109 +136,13 @@ workflow NFPROTEINDESIGN {
                 
                 [meta, file(row.target_structure)]
             }
-
-        // Determine which workflow to use
-        if (params.use_p2rank) {
-            log.info """
-            ========================================
-            Running in P2RANK-BASED MODE
-            ========================================
-            P2Rank will identify binding sites in
-            target structures, then Boltzgen will
-            design binding partners for those sites.
-            ========================================
-            """.stripIndent()
-            
-            P2RANK_TO_DESIGNS(ch_targets)
-        } else {
-            log.info """
-            ========================================
-            Running in TARGET-BASED MODE
-            ========================================
-            Input targets will be used to generate
-            diversified design specifications, then
-            all designs will run in parallel.
-            ========================================
-            """.stripIndent()
-            
-            TARGET_TO_DESIGNS(ch_targets)
-        }
-
-    } else {
-        /*
-         * DESIGN-BASED MODE: Use pre-made design YAML files
-         */
-        log.info """
-        ========================================
-        Running in DESIGN-BASED MODE
-        ========================================
-        Using pre-made design YAML files
-        from samplesheet.
-        ========================================
-        """.stripIndent()
-
-        // Create channel from design samplesheet (original behavior)
-        ch_input = Channel
-            .fromPath(params.input, checkIfExists: true)
-            .splitCsv(header: true, sep: ',')
-            .map { row ->
-                def meta = [:]
-                meta.id = row.sample_id
-                meta.protocol = row.protocol ?: params.protocol
-                meta.num_designs = row.num_designs ? row.num_designs.toInteger() : params.num_designs
-                meta.budget = row.budget ? row.budget.toInteger() : params.budget
-                meta.reuse = row.reuse ? row.reuse.toBoolean() : false
-                
-                // Validate design YAML exists
-                if (!file(row.design_yaml).exists()) {
-                    error "ERROR: Design YAML file does not exist: ${row.design_yaml}"
-                }
-                
-                [meta, file(row.design_yaml)]
-            }
-
-        // Run Boltzgen for each sample
-        BOLTZGEN_RUN(ch_input)
-
-        // Run IPSAE scoring if enabled
-        if (params.run_ipsae) {
-            // Prepare IPSAE script as a channel
-            ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
-            
-            // Create channel with PAE and CIF files from Boltzgen output
-            ch_ipsae_input = BOLTZGEN_RUN.out.results
-                .flatMap { meta, results_dir ->
-                    // Find all model CIF files and corresponding PAE files
-                    def cif_files = file("${results_dir}/predictions/**/*_model_*.cif")
-                    def pairs = []
-                    
-                    cif_files.each { cif ->
-                        // Extract model number and input name from CIF filename
-                        def cif_name = cif.getName()
-                        def matcher = cif_name =~ /(.+)_model_(\\d+)\\.cif$/
-                        
-                        if (matcher.matches()) {
-                            def input_name = matcher[0][1]
-                            def model_num = matcher[0][2]
-                            
-                            // Find corresponding PAE file
-                            def pae_file = file("${results_dir}/predictions/${input_name}/pae_${input_name}_model_${model_num}.npz")
-                            
-                            if (pae_file.exists()) {
-                                // Create unique meta for each model
-                                def model_meta = meta.clone()
-                                model_meta.model_id = "${meta.id}_model_${model_num}"
-                                pairs.add([model_meta, pae_file, cif])
-                            }
-                        }
-                    }
-                    return pairs
-                }
-            
-            // Run IPSAE calculation
-            IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
-        }
     }
+
+    // ========================================================================
+    // Run unified PROTEIN_DESIGN workflow
+    // ========================================================================
+    
+    PROTEIN_DESIGN(ch_input, workflow_mode)
 
 }
 
