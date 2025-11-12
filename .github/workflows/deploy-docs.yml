@@ -30,9 +30,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: |
-          pip install mkdocs-material
-          pip install mkdocs-mermaid2-plugin
+        run: pip install -r requirements.txt
 
       - name: Build MkDocs site
         run: mkdocs build
