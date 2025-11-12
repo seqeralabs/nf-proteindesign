@@ -16,8 +16,7 @@
         "type": "string",
         "format": "file-path",
         "pattern": "^\\S+\\.ya?ml$",
-        "errorMessage": "Design YAML must be a valid file path ending in .yaml or .yml",
-        "exists": true
+        "errorMessage": "Design YAML must be a valid file path ending in .yaml or .yml"
       },
       "protocol": {
         "type": "string",

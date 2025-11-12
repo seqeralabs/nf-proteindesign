@@ -101,11 +101,14 @@ workflow NFPROTEINDESIGN {
                 // samplesheetToList returns list of values in schema order
                 // Order: sample_id, design_yaml, protocol, num_designs, budget, reuse
                 def sample_id = tuple[0]
-                def design_yaml = tuple[1]
+                def design_yaml_path = tuple[1]
                 def protocol = tuple[2]
                 def num_designs = tuple[3]
                 def budget = tuple[4]
                 def reuse = tuple.size() > 5 ? tuple[5] : null
+                
+                // Convert to file object and validate existence
+                def design_yaml = file(design_yaml_path, checkIfExists: true)
                 
                 def meta = [:]
                 meta.id = sample_id
@@ -132,7 +135,10 @@ workflow NFPROTEINDESIGN {
             .map { tuple ->
                 // samplesheetToList returns list of values in schema order
                 def sample_id = tuple[0]
-                def target_structure = tuple[1]
+                def target_structure_path = tuple[1]
+                
+                // Convert to file object and validate existence
+                def target_structure = file(target_structure_path, checkIfExists: true)
                 
                 def meta = [:]
                 meta.id = sample_id

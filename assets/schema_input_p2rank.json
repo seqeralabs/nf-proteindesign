@@ -16,8 +16,7 @@
         "type": "string",
         "format": "file-path",
         "pattern": "^\\S+\\.(pdb|cif|PDB|CIF)$",
-        "errorMessage": "Target structure must be a valid file path ending in .pdb or .cif",
-        "exists": true
+        "errorMessage": "Target structure must be a valid file path ending in .pdb or .cif"
       },
       "use_p2rank": {
         "type": "boolean",
