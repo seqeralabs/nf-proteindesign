@@ -20,7 +20,8 @@ All modes utilize the same core workflow with mode-specific entry points, enabli
 1. **Validate Samplesheet**: Checks samplesheet format and validates design YAML files exist
 2. **Run Boltzgen**: Executes Boltzgen for each sample in parallel with specified parameters
 3. **IPSAE Scoring** (optional): Evaluates protein-protein interactions using ipSAE metrics
-4. **Collect Results**: Organizes outputs including final ranked designs, intermediate designs, and metrics
+4. **PRODIGY Prediction** (optional): Predicts binding affinity (ΔG and Kd) for designed complexes
+5. **Collect Results**: Organizes outputs including final ranked designs, intermediate designs, and metrics
 
 ## Pipeline Flow
 
@@ -65,8 +66,12 @@ flowchart TD
     I3 --> J
     
     J -->|Yes| K[📊 IPSAE Scoring]
-    J -->|No| L
-    K --> L[✅ Final Output]
+    J -->|No| M{PRODIGY Enabled?}
+    K --> M
+    
+    M -->|Yes| N[⚡ PRODIGY Affinity<br/>Prediction]
+    M -->|No| L[✅ Final Output]
+    N --> L
     
     style B fill:#fff4e1
     style C1 fill:#e1f5ff
@@ -188,6 +193,34 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 - High-throughput screening: process many targets automatically
 
 See [**P2Rank Mode Documentation**](docs/P2RANK_MODE.md) for complete usage guide.
+
+## Optional Analysis Features
+
+### IPSAE Scoring
+
+Calculate interface Predicted Aligned Error (ipSAE) scores to evaluate protein-protein interaction confidence. Enable with `--run_ipsae`.
+
+### PRODIGY Binding Affinity Prediction
+
+Predict binding free energy (ΔG) and dissociation constants (Kd) for designed protein-protein complexes using the PRODIGY method. Enable with `--run_prodigy`.
+
+**PRODIGY provides:**
+- 🔬 Binding affinity prediction (ΔG in kcal/mol)
+- 📊 Dissociation constant (Kd in Molar)
+- 🧪 Buried surface area analysis
+- ⚡ Interface composition analysis (charged, apolar residues)
+- 🚀 Fast prediction (~1-5s per structure)
+
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --input samplesheet.csv \
+    --run_prodigy \
+    --run_ipsae \
+    --outdir results
+```
+
+See [**PRODIGY Usage Documentation**](docs/PRODIGY_USAGE.md) for complete guide.
 
 ## GPU Requirements
 
