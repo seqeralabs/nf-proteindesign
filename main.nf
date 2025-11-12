@@ -104,15 +104,16 @@ workflow NFPROTEINDESIGN {
             .fromList(design_samplesheet)
             .map { tuple ->
                 // samplesheetToList returns list of values in schema order
-                // Order: sample_id, design_yaml, protocol, num_designs, budget, reuse
+                // Order: sample_id, design_yaml, structure_files, protocol, num_designs, budget, reuse
                 def sample_id = tuple[0]
                 def design_yaml_path = tuple[1]
-                def protocol = tuple[2]
-                def num_designs = tuple[3]
-                def budget = tuple[4]
-                def reuse = tuple.size() > 5 ? tuple[5] : null
+                def structure_files_str = tuple[2]
+                def protocol = tuple[3]
+                def num_designs = tuple[4]
+                def budget = tuple[5]
+                def reuse = tuple.size() > 6 ? tuple[6] : null
                 
-                // Convert to file object and validate existence
+                // Convert design YAML to file object and validate existence
                 // Smart path resolution: try launchDir first (for local runs), then projectDir (for Platform)
                 def design_yaml
                 if (design_yaml_path.startsWith('/') || design_yaml_path.contains('://')) {
@@ -129,6 +130,24 @@ workflow NFPROTEINDESIGN {
                     }
                 }
                 
+                // Parse structure files (can be comma-separated list)
+                def structure_files = []
+                if (structure_files_str) {
+                    structure_files_str.split(',').each { structure_path ->
+                        def trimmed_path = structure_path.trim()
+                        if (trimmed_path.startsWith('/') || trimmed_path.contains('://')) {
+                            structure_files.add(file(trimmed_path, checkIfExists: true))
+                        } else {
+                            def launchDir_path = file(trimmed_path)
+                            if (launchDir_path.exists()) {
+                                structure_files.add(launchDir_path)
+                            } else {
+                                structure_files.add(file("${project_dir}/${trimmed_path}", checkIfExists: true))
+                            }
+                        }
+                    }
+                }
+                
                 def meta = [:]
                 meta.id = sample_id
                 meta.protocol = protocol ?: params.protocol
@@ -136,7 +155,7 @@ workflow NFPROTEINDESIGN {
                 meta.budget = budget ?: params.budget
                 meta.reuse = reuse ?: false
                 
-                [meta, design_yaml]
+                [meta, design_yaml, structure_files]
             }
     } 
     else if (workflow_mode == 'target' || workflow_mode == 'p2rank') {

@@ -32,9 +32,11 @@ workflow P2RANK_TO_DESIGNS {
     FORMAT_BINDING_SITES(ch_p2rank_results)
 
     // Step 4: Flatten the channel to get individual design YAMLs
-    ch_individual_designs = FORMAT_BINDING_SITES.out.design_yamls
-        .transpose()  // Flatten the list of YAML files
-        .map { meta, yaml_file ->
+    // Keep structure file with the YAML files
+    ch_individual_designs = ch_p2rank_results
+        .join(FORMAT_BINDING_SITES.out.design_yamls, by: 0)
+        .transpose(by: 4)  // Transpose the YAML files list (index 4)
+        .map { meta, structure, predictions_csv, residues_csv, yaml_file ->
             // Create new meta for each design
             def design_meta = meta.clone()
             // Extract design_id from filename
@@ -42,7 +44,8 @@ workflow P2RANK_TO_DESIGNS {
             design_meta.id = design_id
             design_meta.parent_id = meta.id  // Keep reference to original target
             
-            [design_meta, yaml_file]
+            // Return meta, yaml file, and structure file
+            [design_meta, yaml_file, structure]
         }
 
     // Step 5: Run Boltzgen for each design in parallel

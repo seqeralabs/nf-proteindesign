@@ -9,7 +9,7 @@ process BOLTZGEN_RUN {
     container 'wuennemannflorian/boltzgen:latest'
 
     input:
-    tuple val(meta), path(design_yaml)
+    tuple val(meta), path(design_yaml), path(structure_files)
 
     output:
     tuple val(meta), path("${meta.id}_output"), emit: results

@@ -36,6 +36,7 @@ process GENERATE_DESIGN_VARIANTS {
 
     # Parse parameters
     target_file = "${target_structure}"
+    target_file_basename = os.path.basename("${target_structure}")
     target_chains = "${chain_ids}".split(',')
     min_len = int(${min_length})
     max_len = int(${max_length})
@@ -92,7 +93,7 @@ process GENERATE_DESIGN_VARIANTS {
                     designed_entity,
                     {
                         'file': {
-                            'path': target_file,
+                            'path': target_file_basename,
                             'include': []
                         }
                     }

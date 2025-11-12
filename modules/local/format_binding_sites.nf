@@ -83,6 +83,9 @@ process FORMAT_BINDING_SITES {
     structure = parser.get_structure('protein', '${protein_structure}')
     model = structure[0]
     
+    # Get basename of structure file for YAML references
+    structure_basename = os.path.basename('${protein_structure}')
+    
     # Get all chains and their residues
     chain_info = {}
     for chain in model:
@@ -163,7 +166,7 @@ process FORMAT_BINDING_SITES {
                         'protein': {
                             'id': chain_id,
                             'file': {
-                                'path': '${protein_structure}',
+                                'path': structure_basename,
                                 'chain': chain_id
                             },
                             'binding_residues': binding_res
@@ -186,7 +189,7 @@ process FORMAT_BINDING_SITES {
                             'protein': {
                                 'id': chain_id,
                                 'file': {
-                                    'path': '${protein_structure}',
+                                    'path': structure_basename,
                                     'chain': chain_id
                                 },
                                 'binding_box': {
@@ -199,7 +202,7 @@ process FORMAT_BINDING_SITES {
                 # Non-binding chain - include as-is
                 design_spec['entities'].append({
                     'file': {
-                        'path': '${protein_structure}',
+                        'path': structure_basename,
                         'include': [{'chain': {'id': chain_id}}]
                     }
                 })

@@ -25,7 +25,7 @@ include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
 workflow PROTEIN_DESIGN {
     
     take:
-    ch_input    // channel: [meta, file] - can be design YAML or target structure depending on mode
+    ch_input    // channel: [meta, file] or [meta, file, files] - can be design YAML or target structure depending on mode
     mode        // string: 'design', 'target', or 'p2rank'
 
     main:
@@ -43,7 +43,8 @@ workflow PROTEIN_DESIGN {
         ========================================
         """.stripIndent()
         
-        // Input is already [meta, design_yaml], ready for Boltzgen
+        // Input is [meta, design_yaml, structure_files], ready for Boltzgen
+        // Reformat to match BOLTZGEN_RUN input: [meta, yaml, structures]
         ch_designs_for_boltzgen = ch_input
     }
     
@@ -62,19 +63,21 @@ workflow PROTEIN_DESIGN {
         """.stripIndent()
         
         // Step 1: Generate diversified design YAML files from target
+        // Input is [meta, target_structure]
         GENERATE_DESIGN_VARIANTS(ch_input)
         
-        // Step 2: Flatten to get individual design YAMLs
+        // Step 2: Flatten to get individual design YAMLs and add structure file
         ch_designs_for_boltzgen = GENERATE_DESIGN_VARIANTS.out.design_yamls
-            .transpose()  // Flatten list of YAML files
-            .map { meta, yaml_file ->
+            .join(ch_input, by: 0)  // Join with original input to get structure file
+            .transpose(by: 1)  // Flatten list of YAML files (index 1)
+            .map { meta, yaml_file, structure_file ->
                 // Create new meta for each design
                 def design_meta = meta.clone()
                 def design_id = yaml_file.baseName
                 design_meta.id = design_id
                 design_meta.parent_id = meta.id
                 
-                [design_meta, yaml_file]
+                [design_meta, yaml_file, structure_file]
             }
     }
     
@@ -93,6 +96,7 @@ workflow PROTEIN_DESIGN {
         """.stripIndent()
         
         // Step 1: Run P2Rank to identify binding sites
+        // Input is [meta, target_structure]
         P2RANK_PREDICT(ch_input)
         
         // Step 2: Combine P2Rank outputs for formatting
@@ -105,16 +109,20 @@ workflow PROTEIN_DESIGN {
         // Step 3: Format P2Rank predictions into Boltz2 YAML files
         FORMAT_BINDING_SITES(ch_p2rank_results)
         
-        // Step 4: Flatten to get individual design YAMLs
-        ch_designs_for_boltzgen = FORMAT_BINDING_SITES.out.design_yamls
-            .transpose()
-            .map { meta, yaml_file ->
+        // Step 4: Flatten to get individual design YAMLs and keep structure file
+        ch_designs_for_boltzgen = ch_p2rank_results
+            .join(FORMAT_BINDING_SITES.out.design_yamls, by: 0)
+            .transpose(by: 4)  // Transpose the YAML files list (index 4)
+            .map { meta, structure, predictions_csv, residues_csv, yaml_file ->
+                // Create new meta for each design
                 def design_meta = meta.clone()
+                // Extract design_id from filename
                 def design_id = yaml_file.baseName
                 design_meta.id = design_id
-                design_meta.parent_id = meta.id
+                design_meta.parent_id = meta.id  // Keep reference to original target
                 
-                [design_meta, yaml_file]
+                // Return meta, yaml file, and structure file
+                [design_meta, yaml_file, structure]
             }
     }
     
