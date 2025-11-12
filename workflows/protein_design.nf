@@ -20,6 +20,7 @@ include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
+include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
 
 workflow PROTEIN_DESIGN {
     
@@ -237,6 +238,30 @@ workflow PROTEIN_DESIGN {
         // Run PRODIGY binding affinity prediction
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
     }
+    
+    // ========================================================================
+    // CONSOLIDATION: Generate comprehensive metrics report
+    // ========================================================================
+    if (params.run_consolidation) {
+        log.info """
+        ========================================
+        Generating Consolidated Metrics Report
+        ========================================
+        Aggregating all design metrics and
+        generating ranked summary report.
+        ========================================
+        """.stripIndent()
+        
+        // Prepare consolidation script as a channel
+        ch_consolidate_script = Channel.fromPath("${projectDir}/assets/consolidate_design_metrics.py", checkIfExists: true)
+        
+        // Collect output directory path
+        // We'll pass the outdir parameter to the consolidation process
+        ch_outdir = Channel.fromPath(params.outdir, type: 'dir')
+        
+        // Run consolidation after all analyses are complete
+        CONSOLIDATE_METRICS(ch_outdir, ch_consolidate_script)
+    }
 
     emit:
     // Common outputs for all modes
@@ -255,4 +280,8 @@ workflow PROTEIN_DESIGN {
     p2rank_residues = mode == 'p2rank' ? P2RANK_PREDICT.out.residues : Channel.empty()
     design_yamls = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.design_yamls : Channel.empty()
     pocket_summary = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.pocket_summary : Channel.empty()
+    
+    // Consolidation outputs (will be empty if not run)
+    metrics_summary = params.run_consolidation ? CONSOLIDATE_METRICS.out.summary_csv : Channel.empty()
+    metrics_report = params.run_consolidation ? CONSOLIDATE_METRICS.out.report_markdown : Channel.empty()
 }
