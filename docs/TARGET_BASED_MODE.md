@@ -1,20 +1,27 @@
-# Target-Based Design Generation Mode
+# Target Mode - Design Generation
 
 ## Overview
 
-The target-based mode allows you to start with a target structure (e.g., a protein you want to bind to) and automatically generate multiple diversified design specifications. The pipeline will:
+Target mode allows you to start with a target structure (e.g., a protein you want to bind to) and automatically generate multiple diversified design specifications. This mode is part of the unified PROTEIN_DESIGN workflow.
+
+The pipeline will:
 
 1. **Generate Design Variants**: Create multiple YAML design files with different parameters (length, composition, etc.)
-2. **Run Boltzgen in Parallel**: Execute all designs simultaneously on available GPU resources
-3. **Collect Results**: Organize outputs for easy comparison and analysis
+2. **Enter Unified Workflow**: All designs proceed through the same execution path
+3. **Run Boltzgen in Parallel**: Execute all designs simultaneously on available GPU resources
+4. **Collect Results**: Organize outputs for easy comparison and analysis
 
 ## Workflow Diagram
 
 ```
 Target Structure (PDB/CIF)
          ↓
+   [Mode Selection: TARGET]
+         ↓
    GENERATE_DESIGN_VARIANTS
    (Creates N design YAMLs)
+         ↓
+   [Unified Workflow Entry]
          ↓
    ┌─────┴─────┬─────────┬─────────┐
    ↓           ↓         ↓         ↓
@@ -24,6 +31,8 @@ BOLTZGEN   BOLTZGEN  BOLTZGEN  ... BOLTZGEN
 (Parallel execution on available GPUs)
    ↓           ↓         ↓         ↓
    └─────┬─────┴─────────┴─────────┘
+         ↓
+    [IPSAE Scoring - Optional]
          ↓
     Results Collection
 ```
@@ -86,6 +95,14 @@ Different variants at the same length can have:
 Design protein binders of various sizes:
 
 ```bash
+# Explicit mode specification (recommended)
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --mode target \
+    --input target_samplesheet.csv \
+    --outdir results
+
+# Auto-detection (if samplesheet has target_structure column)
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
     --input target_samplesheet.csv \

@@ -8,12 +8,12 @@
 
 **nf-proteindesign** is a Nextflow pipeline for running [Boltzgen](https://github.com/HannesStark/boltzgen) protein design workflows in parallel across multiple design specifications. Boltzgen is an all-atom generative diffusion model that can design proteins, peptides, and nanobodies to bind various biomolecular targets (proteins, nucleic acids, small molecules).
 
-The pipeline supports three operational modes:
-1. **Design-based mode**: Use pre-made design YAML files
-2. **Target-based mode**: Automatically generate design variants from target structures
-3. **P2Rank mode**: Use ML to identify binding sites and design binders (⭐ NEW!)
+The pipeline features a **unified workflow architecture** with three operational modes accessible through a single entry point:
+1. **Design mode** (`--mode design`): Use pre-made design YAML files
+2. **Target mode** (`--mode target`): Automatically generate design variants from target structures
+3. **P2Rank mode** (`--mode p2rank`): Use ML to identify binding sites and design binders
 
-The pipeline enables high-throughput parallel protein design campaigns with automatic binding site prediction using [P2Rank](https://github.com/rdk/p2rank), a state-of-the-art machine learning tool.
+All modes utilize the same core workflow with mode-specific entry points, enabling high-throughput parallel protein design campaigns with automatic binding site prediction using [P2Rank](https://github.com/rdk/p2rank), a state-of-the-art machine learning tool.
 
 ## Pipeline summary
 
@@ -26,43 +26,66 @@ The pipeline enables high-throughput parallel protein design campaigns with auto
 
 ```mermaid
 flowchart TD
-    A[📋 Input Samplesheet CSV] --> B{Parse & Validate}
-    B --> C[Create Channels per Sample]
+    A[📋 Input Samplesheet CSV] --> B{Mode Selection}
+    B -->|--mode design| C1[📄 Design Mode]
+    B -->|--mode target| C2[🎯 Target Mode]
+    B -->|--mode p2rank| C3[🔬 P2Rank Mode]
+    B -->|auto-detect| C4{Detect from Headers}
     
-    C --> D1[🧬 Sample 1: Design YAML]
-    C --> D2[🧬 Sample 2: Design YAML]
-    C --> D3[🧬 Sample N: Design YAML]
+    C4 -->|design_yaml column| C1
+    C4 -->|target_structure column| C2
     
-    D1 --> E1[⚡ BOLTZGEN_RUN<br/>GPU Process]
-    D2 --> E2[⚡ BOLTZGEN_RUN<br/>GPU Process]
-    D3 --> E3[⚡ BOLTZGEN_RUN<br/>GPU Process]
+    C1 --> D1[Use Pre-made<br/>Design YAMLs]
+    C2 --> D2[Generate Design<br/>Variants from Target]
+    C3 --> D3[P2Rank Predict<br/>Binding Sites]
     
-    E1 --> F1[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
-    E2 --> F2[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
-    E3 --> F3[🔄 Design Generation<br/>Inverse Folding<br/>Refolding<br/>Analysis<br/>Filtering]
+    D2 --> D2a[Create Multiple<br/>Length/Type Variants]
+    D3 --> D3a[Format Binding Sites<br/>into Design YAMLs]
     
-    F1 --> G1[📁 Sample 1 Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
-    F2 --> G2[📁 Sample 2 Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
-    F3 --> G3[📁 Sample N Results<br/>- intermediate_designs/<br/>- inverse_folded/<br/>- final_ranked_designs/]
+    D1 --> E[🔀 Unified Workflow Entry]
+    D2a --> E
+    D3a --> E
     
-    G1 --> H[✅ Organized Output Directory]
-    G2 --> H
-    G3 --> H
+    E --> F[📦 Parallel Design Processing]
     
-    H --> I[📊 Final Designs + Metrics<br/>📈 results_overview.pdf]
+    F --> G1[⚡ Design 1<br/>BOLTZGEN_RUN]
+    F --> G2[⚡ Design 2<br/>BOLTZGEN_RUN]
+    F --> G3[⚡ Design N<br/>BOLTZGEN_RUN]
     
-    style A fill:#e1f5ff
+    G1 --> H1[🔄 Generation Pipeline<br/>Design → Inverse Fold<br/>Refold → Filter]
+    G2 --> H2[🔄 Generation Pipeline<br/>Design → Inverse Fold<br/>Refold → Filter]
+    G3 --> H3[🔄 Generation Pipeline<br/>Design → Inverse Fold<br/>Refold → Filter]
+    
+    H1 --> I1[📁 Results 1]
+    H2 --> I2[📁 Results 2]
+    H3 --> I3[📁 Results N]
+    
+    I1 --> J{IPSAE Enabled?}
+    I2 --> J
+    I3 --> J
+    
+    J -->|Yes| K[📊 IPSAE Scoring]
+    J -->|No| L
+    K --> L[✅ Final Output]
+    
     style B fill:#fff4e1
-    style E1 fill:#ffe1f5
-    style E2 fill:#ffe1f5
-    style E3 fill:#ffe1f5
-    style H fill:#e1ffe1
-    style I fill:#e1ffe1
+    style C1 fill:#e1f5ff
+    style C2 fill:#ffe1e1
+    style C3 fill:#e1ffe1
+    style E fill:#ffe1f5
+    style F fill:#ffe1f5
+    style L fill:#e1ffe1
 ```
 
-### Parallel Execution
+### Unified Workflow Architecture
 
-Each sample runs **independently and in parallel**, limited only by available GPU resources. This enables high-throughput protein design campaigns with multiple targets or strategies simultaneously.
+All three modes converge into a **single unified workflow** (`PROTEIN_DESIGN`) after their respective preprocessing steps:
+
+- **Design mode**: Direct entry with pre-made YAMLs
+- **Target mode**: Generates design variants, then enters unified workflow
+- **P2Rank mode**: Predicts binding sites, formats as designs, then enters unified workflow
+
+This architecture ensures consistent execution and simplifies maintenance while providing flexible entry points for different use cases.
 
 ## Quick Start
 
@@ -85,10 +108,21 @@ Each sample runs **independently and in parallel**, limited only by available GP
 
 ## Operational Modes
 
-### 1. Design-Based Mode (Default)
+The pipeline automatically detects the mode from your samplesheet, or you can specify it explicitly with `--mode`.
+
+### 1. Design Mode
 
 Provide pre-made design YAML files in your samplesheet:
 
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --mode design \
+    --input samplesheet_designs.csv \
+    --outdir results
+```
+
+Or let the pipeline auto-detect (if samplesheet has `design_yaml` column):
 ```bash
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
@@ -96,12 +130,19 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
     --outdir results
 ```
 
-See [Samplesheet Format](#samplesheet-format) below for details.
-
-### 2. Target-Based Mode
+### 2. Target Mode
 
 Automatically generate design variants from target structures:
 
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --mode target \
+    --input samplesheet_targets.csv \
+    --outdir results
+```
+
+Or with auto-detection (samplesheet has `target_structure` column):
 ```bash
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
@@ -109,12 +150,22 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
     --outdir results
 ```
 
-See [Target-Based Mode Documentation](docs/TARGET_MODE.md) for details.
+See [Target Mode Documentation](docs/TARGET_BASED_MODE.md) for details.
 
-### 3. P2Rank Mode (⭐ NEW!)
+### 3. P2Rank Mode
 
 Use machine learning to automatically identify binding sites and design binders:
 
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --mode p2rank \
+    --input samplesheet_targets.csv \
+    --top_n_pockets 3 \
+    --outdir results
+```
+
+Or enable via parameter (auto-detects target mode + P2Rank):
 ```bash
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \

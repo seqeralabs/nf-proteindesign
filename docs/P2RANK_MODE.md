@@ -23,18 +23,26 @@ P2Rank identifies binding pockets by scoring points on the protein's solvent-acc
 
 ## Workflow
 
+P2Rank mode is part of the unified PROTEIN_DESIGN workflow:
+
 ```
 Input: Target Protein Structure (PDB/CIF)
     ↓
-[P2RANK_PREDICT]
+[Mode Selection: P2RANK]
+    ↓
+[P2RANK_PREDICT] - Identify binding sites
     ↓
 Predicted Binding Sites (ranked, scored, with residues)
     ↓
-[FORMAT_BINDING_SITES]
+[FORMAT_BINDING_SITES] - Convert to design YAMLs
     ↓
-Boltz2 Design YAMLs (one per pocket, targeting binding sites)
+Boltz2 Design YAMLs (one per pocket)
     ↓
-[BOLTZGEN_RUN]
+[Unified Workflow Entry Point]
+    ↓
+[BOLTZGEN_RUN] - Generate designs in parallel
+    ↓
+[IPSAE_CALCULATE] - Optional scoring
     ↓
 Designed Binding Partners
 ```
@@ -43,11 +51,21 @@ Designed Binding Partners
 
 ### 1. Enable P2Rank Mode
 
-Set `use_p2rank = true` in your configuration or samplesheet:
+Specify P2Rank mode explicitly or enable via parameter:
 
-**Via command line:**
+**Option A: Explicit mode (Recommended):**
 ```bash
-nextflow run main.nf \
+nextflow run FloWuenne/nf-proteindesign-2025 \
+    -profile docker \
+    --mode p2rank \
+    --input targets.csv \
+    --top_n_pockets 3 \
+    --outdir results
+```
+
+**Option B: Via --use_p2rank parameter:**
+```bash
+nextflow run FloWuenne/nf-proteindesign-2025 \
   --input samplesheet.csv \
   --use_p2rank \
   --outdir results
