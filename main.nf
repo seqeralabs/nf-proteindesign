@@ -113,11 +113,21 @@ workflow NFPROTEINDESIGN {
                 def reuse = tuple.size() > 5 ? tuple[5] : null
                 
                 // Convert to file object and validate existence
-                // Resolve relative paths against projectDir
-                // Check if path string starts with / to determine if absolute
-                def design_yaml = design_yaml_path.startsWith('/') ? 
-                    file(design_yaml_path, checkIfExists: true) : 
-                    file("${project_dir}/${design_yaml_path}", checkIfExists: true)
+                // Smart path resolution: try launchDir first (for local runs), then projectDir (for Platform)
+                def design_yaml
+                if (design_yaml_path.startsWith('/') || design_yaml_path.contains('://')) {
+                    // Absolute path or remote URL - use as-is
+                    design_yaml = file(design_yaml_path, checkIfExists: true)
+                } else {
+                    // Relative path - try launchDir first, then projectDir
+                    def launchDir_path = file(design_yaml_path)
+                    if (launchDir_path.exists()) {
+                        design_yaml = launchDir_path
+                    } else {
+                        // Fall back to projectDir (for Seqera Platform)
+                        design_yaml = file("${project_dir}/${design_yaml_path}", checkIfExists: true)
+                    }
+                }
                 
                 def meta = [:]
                 meta.id = sample_id
@@ -147,11 +157,21 @@ workflow NFPROTEINDESIGN {
                 def target_structure_path = tuple[1]
                 
                 // Convert to file object and validate existence
-                // Resolve relative paths against projectDir
-                // Check if path string starts with / to determine if absolute
-                def target_structure = target_structure_path.startsWith('/') ? 
-                    file(target_structure_path, checkIfExists: true) : 
-                    file("${project_dir}/${target_structure_path}", checkIfExists: true)
+                // Smart path resolution: try launchDir first (for local runs), then projectDir (for Platform)
+                def target_structure
+                if (target_structure_path.startsWith('/') || target_structure_path.contains('://')) {
+                    // Absolute path or remote URL - use as-is
+                    target_structure = file(target_structure_path, checkIfExists: true)
+                } else {
+                    // Relative path - try launchDir first, then projectDir
+                    def launchDir_path = file(target_structure_path)
+                    if (launchDir_path.exists()) {
+                        target_structure = launchDir_path
+                    } else {
+                        // Fall back to projectDir (for Seqera Platform)
+                        target_structure = file("${project_dir}/${target_structure_path}", checkIfExists: true)
+                    }
+                }
                 
                 def meta = [:]
                 meta.id = sample_id
