@@ -47,7 +47,7 @@ theme:
   
   icon:
     repo: fontawesome/brands/github
-    logo: material/protein
+    logo: material/dna
   
   font:
     text: Roboto
@@ -136,3 +136,6 @@ nav:
     - Parameters: reference/parameters.md
     - Output Files: reference/outputs.md
     - Examples: reference/examples.md
+  
+  - Deployment:
+    - GitHub Pages: deployment/github-pages.md
