@@ -18,6 +18,7 @@ include { FORMAT_BINDING_SITES } from '../modules/local/format_binding_sites'
 include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_variants'
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
+include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
 
 workflow PROTEIN_DESIGN {
     
@@ -158,6 +159,36 @@ workflow PROTEIN_DESIGN {
         
         // Run IPSAE calculation
         IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
+    }
+    
+    // ========================================================================
+    // OPTIONAL: PRODIGY binding affinity prediction if enabled
+    // ========================================================================
+    if (params.run_prodigy) {
+        // Prepare PRODIGY parser script as a channel
+        ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
+        
+        // Create channel with CIF structures from Boltzgen final ranked designs
+        ch_prodigy_input = BOLTZGEN_RUN.out.final_designs
+            .flatMap { meta, designs_dir ->
+                // Find all CIF files in final_ranked_designs directory
+                def cif_files = file("${designs_dir}/*.cif")
+                def structures = []
+                
+                cif_files.each { cif ->
+                    def cif_name = cif.getName()
+                    // Extract design ID from filename
+                    def design_meta = meta.clone()
+                    design_meta.id = cif_name.replaceAll(/\\.cif$/, '')
+                    design_meta.parent_id = meta.id
+                    
+                    structures.add([design_meta, cif])
+                }
+                return structures
+            }
+        
+        // Run PRODIGY binding affinity prediction
+        PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
     }
 
     emit:
