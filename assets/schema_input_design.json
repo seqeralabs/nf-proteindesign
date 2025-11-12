@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/assets/schema_input_design.json",
+  "title": "FloWuenne/nf-proteindesign-2025 - Design mode samplesheet schema",
+  "description": "Schema for validating samplesheets in design mode where pre-made design YAML files are provided",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "errorMessage": "Sample ID must be alphanumeric with underscores or hyphens only"
+      },
+      "design_yaml": {
+        "type": "string",
+        "format": "file-path",
+        "pattern": "^\\S+\\.ya?ml$",
+        "errorMessage": "Design YAML must be a valid file path ending in .yaml or .yml",
+        "exists": true
+      },
+      "protocol": {
+        "type": "string",
+        "enum": [
+          "protein-anything",
+          "peptide-anything",
+          "protein-small_molecule",
+          "nanobody-anything"
+        ],
+        "errorMessage": "Protocol must be one of: protein-anything, peptide-anything, protein-small_molecule, nanobody-anything"
+      },
+      "num_designs": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Number of designs must be a positive integer"
+      },
+      "budget": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Budget must be a positive integer"
+      },
+      "reuse": {
+        "type": "boolean",
+        "errorMessage": "Reuse must be true or false"
+      }
+    },
+    "required": ["sample_id", "design_yaml"]
+  }
+}

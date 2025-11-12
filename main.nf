@@ -12,6 +12,14 @@ nextflow.enable.dsl = 2
 
 /*
 ========================================================================================
+    IMPORT FUNCTIONS / MODULES
+========================================================================================
+*/
+
+include { samplesheetToList } from 'plugin/nf-schema'
+
+/*
+========================================================================================
     VALIDATE INPUTS
 ========================================================================================
 */
@@ -81,60 +89,93 @@ workflow NFPROTEINDESIGN {
     
     if (workflow_mode == 'design') {
         // DESIGN MODE: Use pre-made design YAML files
+        // Validate and parse samplesheet using nf-schema
+        def design_samplesheet = samplesheetToList(
+            params.input, 
+            "${projectDir}/assets/schema_input_design.json"
+        )
+        
         ch_input = Channel
-            .fromPath(params.input, checkIfExists: true)
-            .splitCsv(header: true, sep: ',')
-            .map { row ->
+            .fromList(design_samplesheet)
+            .map { tuple ->
+                // samplesheetToList returns list of values in schema order
+                // Order: sample_id, design_yaml, protocol, num_designs, budget, reuse
+                def sample_id = tuple[0]
+                def design_yaml = tuple[1]
+                def protocol = tuple[2]
+                def num_designs = tuple[3]
+                def budget = tuple[4]
+                def reuse = tuple.size() > 5 ? tuple[5] : null
+                
                 def meta = [:]
-                meta.id = row.sample_id
-                meta.protocol = row.protocol ?: params.protocol
-                meta.num_designs = row.num_designs ? row.num_designs.toInteger() : params.num_designs
-                meta.budget = row.budget ? row.budget.toInteger() : params.budget
-                meta.reuse = row.reuse ? row.reuse.toBoolean() : false
+                meta.id = sample_id
+                meta.protocol = protocol ?: params.protocol
+                meta.num_designs = num_designs ?: params.num_designs
+                meta.budget = budget ?: params.budget
+                meta.reuse = reuse ?: false
                 
-                // Validate design YAML exists
-                if (!file(row.design_yaml).exists()) {
-                    error "ERROR: Design YAML file does not exist: ${row.design_yaml}"
-                }
-                
-                [meta, file(row.design_yaml)]
+                [meta, design_yaml]
             }
     } 
     else if (workflow_mode == 'target' || workflow_mode == 'p2rank') {
         // TARGET or P2RANK MODE: Use target structures
+        // Select appropriate schema based on mode
+        def schema_path = workflow_mode == 'p2rank' ? 
+            "${projectDir}/assets/schema_input_p2rank.json" : 
+            "${projectDir}/assets/schema_input_target.json"
+        
+        // Validate and parse samplesheet using nf-schema
+        def target_samplesheet = samplesheetToList(params.input, schema_path)
+        
         ch_input = Channel
-            .fromPath(params.input, checkIfExists: true)
-            .splitCsv(header: true, sep: ',')
-            .map { row ->
+            .fromList(target_samplesheet)
+            .map { tuple ->
+                // samplesheetToList returns list of values in schema order
+                def sample_id = tuple[0]
+                def target_structure = tuple[1]
+                
                 def meta = [:]
-                meta.id = row.sample_id
+                meta.id = sample_id
                 
-                // Target-specific parameters
-                meta.target_chain_ids = row.target_chain_ids ?: 'A'
-                meta.min_length = row.min_length ? row.min_length.toInteger() : params.min_design_length
-                meta.max_length = row.max_length ? row.max_length.toInteger() : params.max_design_length
-                meta.length_step = row.length_step ? row.length_step.toInteger() : params.length_step
-                meta.n_variants_per_length = row.n_variants_per_length ? row.n_variants_per_length.toInteger() : params.n_variants_per_length
-                meta.design_type = row.design_type ?: params.design_type
-                
-                // P2Rank-specific parameters
-                meta.use_p2rank = row.use_p2rank ? row.use_p2rank.toBoolean() : params.use_p2rank
-                meta.top_n_pockets = row.top_n_pockets ? row.top_n_pockets.toInteger() : params.top_n_pockets
-                meta.min_pocket_score = row.min_pocket_score ? row.min_pocket_score.toFloat() : params.min_pocket_score
-                meta.binding_region_mode = row.binding_region_mode ?: params.binding_region_mode
-                meta.expand_region = row.expand_region ? row.expand_region.toInteger() : params.expand_region
-                
-                // Boltzgen parameters
-                meta.protocol = row.protocol ?: params.protocol
-                meta.num_designs = row.num_designs ? row.num_designs.toInteger() : params.num_designs
-                meta.budget = row.budget ? row.budget.toInteger() : params.budget
-                
-                // Validate target structure exists
-                if (!file(row.target_structure).exists()) {
-                    error "ERROR: Target structure file does not exist: ${row.target_structure}"
+                if (workflow_mode == 'p2rank') {
+                    // P2Rank mode field order: sample_id, target_structure, use_p2rank, top_n_pockets, 
+                    // min_pocket_score, binding_region_mode, expand_region, min_length, max_length, 
+                    // length_step, n_variants_per_length, design_type, protocol, num_designs, budget
+                    meta.use_p2rank = tuple[2] ?: params.use_p2rank
+                    meta.top_n_pockets = tuple[3] ?: params.top_n_pockets
+                    meta.min_pocket_score = tuple[4] ?: params.min_pocket_score
+                    meta.binding_region_mode = tuple[5] ?: params.binding_region_mode
+                    meta.expand_region = tuple[6] ?: params.expand_region
+                    meta.min_length = tuple[7] ?: params.min_design_length
+                    meta.max_length = tuple[8] ?: params.max_design_length
+                    meta.length_step = tuple[9] ?: params.length_step
+                    meta.n_variants_per_length = tuple[10] ?: params.n_variants_per_length
+                    meta.design_type = tuple[11] ?: params.design_type
+                    meta.protocol = tuple[12] ?: params.protocol
+                    meta.num_designs = tuple[13] ?: params.num_designs
+                    meta.budget = tuple[14] ?: params.budget
+                    meta.target_chain_ids = 'A'  // Default for p2rank mode
+                } else {
+                    // Target mode field order: sample_id, target_structure, target_chain_ids, min_length, 
+                    // max_length, length_step, n_variants_per_length, design_type, protocol, num_designs, budget
+                    meta.target_chain_ids = tuple[2] ?: 'A'
+                    meta.min_length = tuple[3] ?: params.min_design_length
+                    meta.max_length = tuple[4] ?: params.max_design_length
+                    meta.length_step = tuple[5] ?: params.length_step
+                    meta.n_variants_per_length = tuple[6] ?: params.n_variants_per_length
+                    meta.design_type = tuple[7] ?: params.design_type
+                    meta.protocol = tuple[8] ?: params.protocol
+                    meta.num_designs = tuple[9] ?: params.num_designs
+                    meta.budget = tuple[10] ?: params.budget
+                    // Set p2rank defaults for target mode
+                    meta.use_p2rank = params.use_p2rank
+                    meta.top_n_pockets = params.top_n_pockets
+                    meta.min_pocket_score = params.min_pocket_score
+                    meta.binding_region_mode = params.binding_region_mode
+                    meta.expand_region = params.expand_region
                 }
                 
-                [meta, file(row.target_structure)]
+                [meta, target_structure]
             }
     }
 

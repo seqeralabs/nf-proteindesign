@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/assets/schema_input_target.json",
+  "title": "FloWuenne/nf-proteindesign-2025 - Target mode samplesheet schema",
+  "description": "Schema for validating samplesheets in target mode where target structures are provided for design generation",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "errorMessage": "Sample ID must be alphanumeric with underscores or hyphens only"
+      },
+      "target_structure": {
+        "type": "string",
+        "format": "file-path",
+        "pattern": "^\\S+\\.(pdb|cif|PDB|CIF)$",
+        "errorMessage": "Target structure must be a valid file path ending in .pdb or .cif",
+        "exists": true
+      },
+      "target_chain_ids": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9]+(,[A-Za-z0-9]+)*$",
+        "errorMessage": "Target chain IDs must be comma-separated chain identifiers (e.g., 'A' or 'A,B')"
+      },
+      "min_length": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Minimum length must be a positive integer"
+      },
+      "max_length": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Maximum length must be a positive integer"
+      },
+      "length_step": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Length step must be a positive integer"
+      },
+      "n_variants_per_length": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Number of variants per length must be a positive integer"
+      },
+      "design_type": {
+        "type": "string",
+        "enum": ["protein", "peptide", "nanobody"],
+        "errorMessage": "Design type must be one of: protein, peptide, nanobody"
+      },
+      "protocol": {
+        "type": "string",
+        "enum": [
+          "protein-anything",
+          "peptide-anything",
+          "protein-small_molecule",
+          "nanobody-anything"
+        ],
+        "errorMessage": "Protocol must be one of: protein-anything, peptide-anything, protein-small_molecule, nanobody-anything"
+      },
+      "num_designs": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Number of designs must be a positive integer"
+      },
+      "budget": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Budget must be a positive integer"
+      }
+    },
+    "required": ["sample_id", "target_structure"]
+  }
+}
