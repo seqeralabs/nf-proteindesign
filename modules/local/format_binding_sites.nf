@@ -25,7 +25,8 @@ process FORMAT_BINDING_SITES {
     def expand_region = meta.expand_region ?: params.expand_region ?: 5  // Expand binding region by N residues
     def min_design_length = meta.min_length ?: params.min_design_length ?: 50
     def max_design_length = meta.max_length ?: params.max_design_length ?: 150
-    def design_type = meta.design_type ?: 'protein'
+    // P2Rank identifies pockets suitable for small molecule binders like nanobodies
+    def design_type = meta.design_type ?: params.p2rank_design_type ?: 'nanobody'
     
     """
     #!/usr/bin/env python3
