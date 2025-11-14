@@ -18,7 +18,7 @@ flowchart LR
     B --> C[Ranked Pockets]
     C --> D[Top N Pockets]
     D --> E[Generate Design YAMLs]
-    E --> F[Design Binders]
+    E --> F[Design Nanobinders]
     
     style B fill:#9C27B0,color:#fff
     style F fill:#8E24AA,color:#fff
@@ -30,12 +30,24 @@ flowchart LR
 4. **Generate**: Design variants created for each pocket
 5. **Design**: Boltzgen designs binders for all pockets in parallel
 
+!!! info "Design Type Selection"
+    **P2Rank mode defaults to nanobody design** because P2Rank is optimized for identifying binding pockets suitable for small molecule ligands. These pockets are ideal for:
+    
+    - **Nanobodies** (~15 kDa, single-domain antibodies) - **Default and recommended**
+    - Short peptides (can also bind in pockets, but less optimal)
+    
+    ❌ **Not recommended for:**
+    - Full proteins (protein-protein interfaces are typically larger and flatter than the pockets P2Rank identifies)
+    - Long peptides (>30 amino acids)
+    
+    You can override this default by specifying `design_type` in your samplesheet, but nanobodies provide the best match for P2Rank-identified binding sites.
+
 ## :material-file-table: Samplesheet Format
 
 ```csv title="samplesheet_p2rank.csv"
-sample,target_structure,chain_type,min_length,max_length
-unknown_target1,data/target1.pdb,protein,50,100
-unknown_target2,data/target2.cif,nanobody,110,130
+sample,target_structure,design_type,min_length,max_length
+unknown_target1,data/target1.pdb,nanobody,110,130
+unknown_target2,data/target2.cif,,110,130
 drug_target,data/kinase.pdb,peptide,15,30
 ```
 
@@ -45,7 +57,7 @@ drug_target,data/kinase.pdb,peptide,15,30
 |--------|----------|-------------|---------|
 | `sample` | ✅ | Unique identifier | `target1` |
 | `target_structure` | ✅ | Target PDB/CIF file | `data/target.pdb` |
-| `chain_type` | Optional | Binder type | `protein` (default) |
+| `design_type` | Optional | Binder type: `nanobody` (default), `peptide`, or `protein` | `nanobody` |
 | `min_length` | Optional | Min length | `50` (default) |
 | `max_length` | Optional | Max length | `150` (default) |
 

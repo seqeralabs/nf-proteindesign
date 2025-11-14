@@ -208,7 +208,8 @@ workflow NFPROTEINDESIGN {
                     meta.max_length = tuple[8] ?: params.max_design_length
                     meta.length_step = tuple[9] ?: params.length_step
                     meta.n_variants_per_length = tuple[10] ?: params.n_variants_per_length
-                    meta.design_type = tuple[11] ?: params.design_type
+                    // P2Rank identifies binding pockets suitable for small molecule binders like nanobodies
+                    meta.design_type = tuple[11] ?: params.p2rank_design_type
                     meta.protocol = tuple[12] ?: params.protocol
                     meta.num_designs = tuple[13] ?: params.num_designs
                     meta.budget = tuple[14] ?: params.budget
