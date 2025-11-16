@@ -6,8 +6,8 @@ process GENERATE_DESIGN_VARIANTS {
 
     conda "conda-forge::python=3.11 conda-forge::pyyaml=6.0"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://python:3.11-slim' :
-        'python:3.11-slim' }"
+        'docker://python:3.11' :
+        'python:3.11' }"
 
     input:
     tuple val(meta), path(target_structure)

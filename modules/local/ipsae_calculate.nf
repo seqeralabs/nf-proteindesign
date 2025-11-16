@@ -7,8 +7,8 @@ process IPSAE_CALCULATE {
 
     conda "conda-forge::python=3.11 conda-forge::numpy=1.24"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://python:3.11-slim' :
-        'python:3.11-slim' }"
+        'docker://python:3.11' :
+        'python:3.11' }"
 
     input:
     tuple val(meta), path(pae_file), path(structure_file)

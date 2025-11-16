@@ -6,8 +6,8 @@ process CONSOLIDATE_METRICS {
 
     conda "conda-forge::python=3.11"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://python:3.11-slim' :
-        'python:3.11-slim' }"
+        'docker://python:3.11' :
+        'python:3.11' }"
 
     input:
     path output_dir  // The complete output directory with all results
