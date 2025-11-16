@@ -16,12 +16,3 @@ entities:
       include:
         - chain:
             id: A
-      
-      # Optional: target specific epitope on EGFR
-      # Targeting surface residues near the kinase active site
-      binding_types:
-        - chain:
-            id: A
-            binding: 696,697,698,721,726,730,768,790,831  # Surface-accessible residues
-      
-      structure_groups: "all"

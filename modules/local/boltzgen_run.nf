@@ -20,20 +20,26 @@ process BOLTZGEN_RUN {
 
     script:
     def reuse_flag = meta.reuse ? '--reuse' : ''
-    def cache_arg = params.cache_dir ? "--cache ${params.cache_dir}" : ''
     def config_arg = params.boltzgen_config ? "--config ${params.boltzgen_config}" : ''
     def steps_arg = params.steps ? "--steps ${params.steps}" : ''
-    
     """
-    export HF_HOME=./cache
+    export HF_HOME=${params.cache_dir}
+    export NUMBA_CACHE_DIR=/tmp
+    export MPLCONFIGDIR=/tmp/matplotlib
+    export XET_LOG_DIR=/tmp/xet_logs
+    export TRITON_CACHE_DIR=/tmp/triton  # Add this line
+    export XDG_CACHE_HOME=/tmp/cache
+
+    # Create cache directory if it doesn't exist
+    mkdir -p ./cache
 
     # Run Boltzgen
     boltzgen run ${design_yaml} \\
+        --cache cache \\
         --output ${meta.id}_output \\
         --protocol ${meta.protocol} \\
         --num_designs ${meta.num_designs} \\
         --budget ${meta.budget} \\
-        ${cache_arg} \\
         ${config_arg} \\
         ${steps_arg} \\
         ${reuse_flag}

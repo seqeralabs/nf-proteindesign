@@ -15,13 +15,3 @@ entities:
       include:
         - chain:
             id: A
-      
-      # Target ATP-binding site residues (example key residues)
-      # These are important functional residues in EGFR kinase
-      binding_types:
-        - chain:
-            id: A
-            binding: 721,726,730,768,790,831  # Key active site residues
-      
-      # Specify structure for the entire target
-      structure_groups: "all"
