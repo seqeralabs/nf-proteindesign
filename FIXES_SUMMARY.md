@@ -176,13 +176,29 @@ nextflow run main.nf -profile test_target,docker
 
 | Fix | Status | Impact |
 |-----|--------|--------|
-| Startup banner | ✅ Complete | Better UX, cleaner output |
-| ProteinMPNN CIF parsing | ✅ Complete | Pipeline now works end-to-end |
+| Startup banner | ✅ Complete | Better UX, emojis, proper alignment |
+| ProteinMPNN CIF parsing | ✅ Complete | Pipeline now works end-to-end with CIF files |
+| Variable escaping | ✅ Complete | Correct Nextflow/bash variable handling |
 | Test optimization | ✅ Complete | 5-10 min runtime, all modules tested |
 | Transpose error | ✅ Complete | Handles single/multiple designs |
 | Consolidation timing | ✅ Complete | Runs after all metrics |
 
-All changes committed and pushed to repository: **commit d9a9eb8**
+All changes committed and pushed to repository: **commits d9a9eb8, ad253e2, a8f560f, 3c19f9f**
+
+### Variable Escaping Fix (Session 2)
+After initial implementation, encountered Nextflow variable interpolation issues. The problem was with how variables are escaped in `script:` blocks with triple-quoted strings (`"""`):
+
+**The Challenge**: In Nextflow DSL2, when using `script:` with triple quotes:
+- `${var}` → Nextflow variable interpolation  
+- `\${var}` → Bash variable (escaped for shell)
+- `$?` → Must be `\$?` (bash exit code)
+
+**Solution**: Systematically reviewed all variable references in `proteinmpnn_optimize.nf`:
+- Nextflow variables (meta.id, boltzgen_output, etc.) → `${var}`
+- Bash variables (structure, base_name, etc.) → `\${var}`
+- Bash special variables ($?, $#, etc.) → `\$?`, `\$#`
+
+This ensures Nextflow interpolates its variables at workflow compile time, while bash variables are preserved for runtime execution.
 
 ---
 
