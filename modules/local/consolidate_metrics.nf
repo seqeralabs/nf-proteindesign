@@ -10,7 +10,7 @@ process CONSOLIDATE_METRICS {
         'python:3.11' }"
 
     input:
-    path output_dir  // The complete output directory with all results
+    val output_dir  // Path to the complete output directory with all results
     path consolidate_script
 
     output:

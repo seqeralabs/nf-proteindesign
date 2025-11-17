@@ -272,9 +272,31 @@ workflow PROTEIN_DESIGN {
         // Prepare consolidation script as a channel
         ch_consolidate_script = Channel.fromPath("${projectDir}/assets/consolidate_design_metrics.py", checkIfExists: true)
         
-        // Collect output directory path
-        // We'll pass the outdir parameter to the consolidation process
-        ch_outdir = Channel.fromPath(params.outdir, type: 'dir')
+        // Create a trigger channel that waits for all analyses to complete
+        // Start with Boltzgen results (always runs)
+        ch_trigger = BOLTZGEN_RUN.out.results.collect()
+        
+        // Mix in other outputs based on what's enabled
+        if (params.run_proteinmpnn) {
+            ch_trigger = ch_trigger
+                .concat(PROTEINMPNN_OPTIMIZE.out.optimized_designs.collect())
+        }
+        
+        if (params.run_ipsae) {
+            ch_trigger = ch_trigger
+                .concat(IPSAE_CALCULATE.out.scores.collect())
+        }
+        
+        if (params.run_prodigy) {
+            ch_trigger = ch_trigger
+                .concat(PRODIGY_PREDICT.out.summary.collect())
+        }
+        
+        // After all outputs are collected, create a single trigger
+        // and map it to the output directory path
+        ch_outdir = ch_trigger
+            .collect()
+            .map { params.outdir }
         
         // Run consolidation after all analyses are complete
         CONSOLIDATE_METRICS(ch_outdir, ch_consolidate_script)
