@@ -239,10 +239,24 @@ workflow NFPROTEINDESIGN {
     }
 
     // ========================================================================
+    // Prepare cache directory channel for Boltzgen
+    // ========================================================================
+    
+    // If cache_dir is specified, stage it as input; otherwise use empty placeholder
+    if (params.cache_dir) {
+        ch_cache = Channel
+            .fromPath(params.cache_dir, type: 'dir', checkIfExists: true)
+            .first()
+    } else {
+        // Create a placeholder file when no cache is provided
+        ch_cache = Channel.value(file('EMPTY_CACHE'))
+    }
+    
+    // ========================================================================
     // Run unified PROTEIN_DESIGN workflow
     // ========================================================================
     
-    PROTEIN_DESIGN(ch_input, workflow_mode)
+    PROTEIN_DESIGN(ch_input, ch_cache, workflow_mode)
 
 }
 

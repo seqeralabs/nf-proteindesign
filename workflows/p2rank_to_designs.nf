@@ -16,6 +16,7 @@ workflow P2RANK_TO_DESIGNS {
     
     take:
     ch_targets  // channel: [meta, target_structure_file]
+    ch_cache    // channel: path to cache directory or EMPTY_CACHE placeholder
 
     main:
     // Step 1: Run P2Rank to identify binding sites
@@ -49,7 +50,7 @@ workflow P2RANK_TO_DESIGNS {
         }
 
     // Step 5: Run Boltzgen for each design in parallel
-    BOLTZGEN_RUN(ch_individual_designs)
+    BOLTZGEN_RUN(ch_individual_designs, ch_cache)
 
     // Step 6: Optionally run IPSAE scoring if enabled
     if (params.run_ipsae) {
