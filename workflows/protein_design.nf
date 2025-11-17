@@ -17,6 +17,7 @@ include { P2RANK_PREDICT } from '../modules/local/p2rank_predict'
 include { FORMAT_BINDING_SITES } from '../modules/local/format_binding_sites'
 include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_variants'
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
+include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
@@ -117,7 +118,18 @@ workflow PROTEIN_DESIGN {
     // ProteinMPNN: Optimize sequences for designed structures
     // ========================================================================
     if (params.run_proteinmpnn) {
-        PROTEINMPNN_OPTIMIZE(BOLTZGEN_RUN.out.results)
+        // Step 1: Convert CIF structures to PDB format (ProteinMPNN requires PDB)
+        // Prepare input channel with structures from Boltzgen final_ranked_designs
+        ch_structures_for_conversion = BOLTZGEN_RUN.out.results
+            .map { meta, results_dir ->
+                def final_designs_dir = file("${results_dir}/final_ranked_designs")
+                [meta, final_designs_dir]
+            }
+        
+        CONVERT_CIF_TO_PDB(ch_structures_for_conversion)
+        
+        // Step 2: Run ProteinMPNN on converted PDB structures
+        PROTEINMPNN_OPTIMIZE(CONVERT_CIF_TO_PDB.out.pdb_files)
         
         // Use ProteinMPNN optimized structures for downstream analyses
         ch_final_designs_for_analysis = PROTEINMPNN_OPTIMIZE.out.optimized_designs
