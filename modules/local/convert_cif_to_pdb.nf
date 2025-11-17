@@ -51,11 +51,11 @@ process CONVERT_CIF_TO_PDB {
     for structure_file in structure_files:
         try:
             file_stem = structure_file.stem
-            output_file = output_dir / f"{file_stem}.pdb"
+            output_file = output_dir / f"{{file_stem}}.pdb"
             
             if structure_file.suffix.lower() == '.cif':
                 # Parse CIF file
-                print(f"Converting {structure_file.name} to PDB format...")
+                print(f"Converting {{structure_file.name}} to PDB format...")
                 structure = cif_parser.get_structure(file_stem, str(structure_file))
                 
                 # Write as PDB
@@ -65,7 +65,7 @@ process CONVERT_CIF_TO_PDB {
                 
             elif structure_file.suffix.lower() == '.pdb':
                 # Validate and copy PDB file
-                print(f"Validating and copying {structure_file.name}...")
+                print(f"Validating and copying {{structure_file.name}}...")
                 structure = pdb_parser.get_structure(file_stem, str(structure_file))
                 
                 # Re-write to ensure proper formatting
@@ -74,23 +74,23 @@ process CONVERT_CIF_TO_PDB {
                 copied_count += 1
                 
             else:
-                print(f"WARNING: Skipping {structure_file.name} - not a CIF or PDB file", file=sys.stderr)
+                print(f"WARNING: Skipping {{structure_file.name}} - not a CIF or PDB file", file=sys.stderr)
                 continue
                 
-            print(f"  -> Output: {output_file}")
+            print(f"  -> Output: {{output_file}}")
             
         except Exception as e:
-            print(f"ERROR: Failed to process {structure_file.name}: {e}", file=sys.stderr)
+            print(f"ERROR: Failed to process {{structure_file.name}}: {{e}}", file=sys.stderr)
             error_count += 1
             continue
     
     # Summary
     total_processed = converted_count + copied_count
     print(f"\\nConversion complete:")
-    print(f"  CIF files converted: {converted_count}")
-    print(f"  PDB files validated: {copied_count}")
-    print(f"  Total processed: {total_processed}")
-    print(f"  Errors: {error_count}")
+    print(f"  CIF files converted: {{converted_count}}")
+    print(f"  PDB files validated: {{copied_count}}")
+    print(f"  Total processed: {{total_processed}}")
+    print(f"  Errors: {{error_count}}")
     
     if total_processed == 0:
         print("ERROR: No structure files were successfully processed", file=sys.stderr)
@@ -100,8 +100,8 @@ process CONVERT_CIF_TO_PDB {
     import Bio
     with open("versions.yml", "w") as f:
         f.write(f"\\"${task.process}\\":\\n")
-        f.write(f"    biopython: {Bio.__version__}\\n")
-        f.write(f"    python: {sys.version.split()[0]}\\n")
+        f.write(f"    biopython: {{Bio.__version__}}\\n")
+        f.write(f"    python: {{sys.version.split()[0]}}\\n")
     """
 
     stub:
