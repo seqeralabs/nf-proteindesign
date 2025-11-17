@@ -38,6 +38,7 @@ process PROTEINMPNN_OPTIMIZE {
     def fixed_chains_flag = fixed_chains ? "--fixed_positions_jsonl fixed_chains.jsonl" : ''
     def designed_chains_flag = designed_chains ? "--chain_id_jsonl designed_chains.jsonl" : ''
     
+    script:
     """
     # Create output directories
     mkdir -p ${meta.id}_mpnn_optimized/sequences
