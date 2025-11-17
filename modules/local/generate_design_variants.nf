@@ -62,16 +62,16 @@ process GENERATE_DESIGN_VARIANTS {
             # Define the base entity for designed molecule
             if design_type == 'peptide':
                 designed_entity = {
-                    'peptide': {
+                    'protein': {
                         'id': 'C',
                         'sequence': f"{length}"
                     }
                 }
                 # For single-length peptides, use exact length
-                designed_entity['peptide']['sequence'] = f"{length}"
+                designed_entity['protein']['sequence'] = f"{length}"
             elif design_type == 'nanobody':
                 designed_entity = {
-                    'nanobody': {
+                    'protein': {
                         'id': 'C',
                         'sequence': f"{length-5}..{length+5}"  # Narrower range for nanobodies
                     }
@@ -125,7 +125,7 @@ process GENERATE_DESIGN_VARIANTS {
             with open(yaml_file, 'w') as f:
                 yaml.dump(design_spec, f, default_flow_style=False, sort_keys=False)
             
-            info_lines.append(f"{design_id}\\t{yaml_file}\\tlength_range:{designed_entity[design_type].get('sequence', length)}\\tvariant:{variant_idx + 1}")
+            info_lines.append(f"{design_id}\\t{yaml_file}\\tlength_range:{designed_entity['protein'].get('sequence', length)}\\tvariant:{variant_idx + 1}")
 
     # Write design info file
     with open('design_info.txt', 'w') as f:
