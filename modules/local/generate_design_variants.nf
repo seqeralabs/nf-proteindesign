@@ -26,7 +26,11 @@ process GENERATE_DESIGN_VARIANTS {
     def design_type = meta.design_type ?: 'protein'  // protein, peptide, nanobody
     
     """
-    #!/usr/bin/env python3
+    # Install required Python packages
+    pip install --no-cache-dir pyyaml 2>&1 | grep -v "Requirement already satisfied" || true
+    
+    # Run Python script
+    python3 << 'EOF'
     import yaml
     import os
     from pathlib import Path
@@ -144,6 +148,7 @@ process GENERATE_DESIGN_VARIANTS {
         f.write(f'"${task.process}":\\n')
         f.write(f'    python: "3.11"\\n')
         f.write(f'    pyyaml: "6.0"\\n')
+EOF
     """
 
     stub:
