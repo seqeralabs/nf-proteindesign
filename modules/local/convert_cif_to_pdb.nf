@@ -41,10 +41,19 @@ process CONVERT_CIF_TO_PDB {
     structures_input = Path("${structures}")
     
     if structures_input.is_dir():
-        # If input is a directory, get all CIF and PDB files from it
-        structure_files = list(structures_input.glob("*.cif")) + list(structures_input.glob("*.pdb"))
+        # If input is a directory, search recursively for CIF and PDB files
+        # This handles nested directories like final_1_designs, intermediate_ranked_10_designs, etc.
+        structure_files = list(structures_input.rglob("*.cif")) + list(structures_input.rglob("*.pdb"))
         print("Found directory: " + str(structures_input))
-        print("  Files found: " + str(len(structure_files)))
+        print("  Files found (recursive search): " + str(len(structure_files)))
+        
+        # Show which subdirectories contain files
+        subdirs_with_files = set()
+        for f in structure_files:
+            subdir = f.parent.name
+            subdirs_with_files.add(subdir)
+        if subdirs_with_files:
+            print("  Subdirectories with structures: " + ", ".join(sorted(subdirs_with_files)))
     elif structures_input.is_file():
         # If input is a single file
         structure_files = [structures_input]
