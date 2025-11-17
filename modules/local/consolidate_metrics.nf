@@ -10,7 +10,7 @@ process CONSOLIDATE_METRICS {
         'python:3.11' }"
 
     input:
-    val output_dir  // Path to the complete output directory with all results
+    val output_dir  // Path to the complete output directory with all results (as string)
     path consolidate_script
 
     output:
@@ -25,13 +25,21 @@ process CONSOLIDATE_METRICS {
         "**/ipsae_scores/*_10_10.txt"
     def prodigy_pattern = "**/prodigy/*_prodigy_summary.csv"
     
+    // Convert to absolute path if relative
+    def abs_output_dir = output_dir.startsWith('/') ? output_dir : "${workflow.launchDir}/${output_dir}"
+    
     """
     # Make script executable
     chmod +x ${consolidate_script}
     
-    # Run consolidation script
+    # Debug: Show what directory we're searching
+    echo "Searching in directory: ${abs_output_dir}"
+    echo "Current working directory: \$(pwd)"
+    ls -la ${abs_output_dir} || echo "Warning: Could not list output directory"
+    
+    # Run consolidation script with absolute path
     python ${consolidate_script} \\
-        --output_dir ${output_dir} \\
+        --output_dir "${abs_output_dir}" \\
         --output_csv design_metrics_summary.csv \\
         --output_markdown design_metrics_report.md \\
         --top_n ${top_n} \\

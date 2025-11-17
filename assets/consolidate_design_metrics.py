@@ -191,10 +191,32 @@ def aggregate_metrics_from_directories(
     """
     all_metrics = defaultdict(dict)
     
+    # Debug: Show what we're working with
+    print(f"\n{'='*60}")
+    print(f"Consolidating metrics from: {output_dir}")
+    print(f"Directory exists: {os.path.exists(output_dir)}")
+    if os.path.exists(output_dir):
+        print(f"Directory contents:")
+        try:
+            for item in os.listdir(output_dir):
+                item_path = os.path.join(output_dir, item)
+                if os.path.isdir(item_path):
+                    print(f"  [DIR]  {item}")
+                else:
+                    print(f"  [FILE] {item}")
+        except Exception as e:
+            print(f"Error listing directory: {e}")
+    print(f"{'='*60}\n")
+    
     # Find and parse IPSAE scores
     print(f"Searching for IPSAE scores with pattern: {ipsae_pattern}")
-    ipsae_files = glob.glob(os.path.join(output_dir, ipsae_pattern))
+    ipsae_search_path = os.path.join(output_dir, ipsae_pattern)
+    print(f"Full search path: {ipsae_search_path}")
+    ipsae_files = glob.glob(ipsae_search_path, recursive=True)
     print(f"Found {len(ipsae_files)} IPSAE files")
+    if ipsae_files:
+        for f in ipsae_files[:5]:  # Show first 5
+            print(f"  - {f}")
     
     for ipsae_file in ipsae_files:
         design_id = extract_design_id_from_path(ipsae_file)
@@ -206,9 +228,14 @@ def aggregate_metrics_from_directories(
         all_metrics[design_id].update(metrics)
     
     # Find and parse PRODIGY results
-    print(f"Searching for PRODIGY results with pattern: {prodigy_pattern}")
-    prodigy_files = glob.glob(os.path.join(output_dir, prodigy_pattern))
+    print(f"\nSearching for PRODIGY results with pattern: {prodigy_pattern}")
+    prodigy_search_path = os.path.join(output_dir, prodigy_pattern)
+    print(f"Full search path: {prodigy_search_path}")
+    prodigy_files = glob.glob(prodigy_search_path, recursive=True)
     print(f"Found {len(prodigy_files)} PRODIGY files")
+    if prodigy_files:
+        for f in prodigy_files[:5]:  # Show first 5
+            print(f"  - {f}")
     
     for prodigy_file in prodigy_files:
         # Extract design ID from CSV file name
@@ -219,9 +246,14 @@ def aggregate_metrics_from_directories(
         all_metrics[design_id].update(metrics)
     
     # Find and parse Boltzgen predictions
-    print(f"Searching for Boltzgen predictions with pattern: {boltzgen_pattern}")
-    boltzgen_dirs = glob.glob(os.path.join(output_dir, boltzgen_pattern))
+    print(f"\nSearching for Boltzgen predictions with pattern: {boltzgen_pattern}")
+    boltzgen_search_path = os.path.join(output_dir, boltzgen_pattern)
+    print(f"Full search path: {boltzgen_search_path}")
+    boltzgen_dirs = glob.glob(boltzgen_search_path, recursive=True)
     print(f"Found {len(boltzgen_dirs)} Boltzgen directories")
+    if boltzgen_dirs:
+        for d in boltzgen_dirs[:5]:  # Show first 5
+            print(f"  - {d}")
     
     for boltzgen_dir in boltzgen_dirs:
         parent_dir = Path(boltzgen_dir).parent.name
@@ -231,9 +263,14 @@ def aggregate_metrics_from_directories(
         all_metrics[design_id].update(metrics)
     
     # Find and parse ProteinMPNN results
-    print(f"Searching for ProteinMPNN results with pattern: {mpnn_pattern}")
-    mpnn_dirs = glob.glob(os.path.join(output_dir, mpnn_pattern))
+    print(f"\nSearching for ProteinMPNN results with pattern: {mpnn_pattern}")
+    mpnn_search_path = os.path.join(output_dir, mpnn_pattern)
+    print(f"Full search path: {mpnn_search_path}")
+    mpnn_dirs = glob.glob(mpnn_search_path, recursive=True)
     print(f"Found {len(mpnn_dirs)} ProteinMPNN directories")
+    if mpnn_dirs:
+        for d in mpnn_dirs[:5]:  # Show first 5
+            print(f"  - {d}")
     
     for mpnn_dir in mpnn_dirs:
         parent_dir = Path(mpnn_dir).parent.name
@@ -316,6 +353,10 @@ def write_summary_report(ranked_designs, output_file):
     """
     if not ranked_designs:
         print("Warning: No designs to report", file=sys.stderr)
+        # Create empty CSV with headers
+        with open(output_file, 'w', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=['design_id', 'rank', 'composite_score'])
+            writer.writeheader()
         return
     
     # Determine all available metrics
