@@ -6,9 +6,7 @@ process PRODIGY_PREDICT {
     publishDir "${params.outdir}/${meta.parent_id ?: meta.id}/prodigy", mode: params.publish_dir_mode
 
     conda "bioconda::prodigy-prot=2.3.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/prodigy-prot:2.3.0--pyhdfd78af_0' :
-        'quay.io/biocontainers/prodigy-prot:2.3.0--pyhdfd78af_0' }"
+    container 'community.wave.seqera.io/library/gcc_linux-64_pip_prodigy-prot:2e23eabd18cdbd0a'
 
     input:
     tuple val(meta), path(structure)
