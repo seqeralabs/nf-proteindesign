@@ -44,7 +44,7 @@ process PROTEINMPNN_OPTIMIZE {
     mkdir -p ${meta.id}_mpnn_optimized/scores
     mkdir -p ${meta.id}_mpnn_optimized/structures
     
-    # Find all CIF files in Boltzgen final_ranked_designs
+    # Find all CIF/PDB files in Boltzgen final_ranked_designs
     find ${boltzgen_output}/final_ranked_designs -name "*.cif" -o -name "*.pdb" > input_structures.txt
     
     if [ ! -s input_structures.txt ]; then
@@ -56,6 +56,83 @@ process PROTEINMPNN_OPTIMIZE {
     while IFS= read -r structure; do
         base_name=\$(basename "\${structure}" | sed 's/\\.[^.]*\$//')
         echo "Processing \${base_name}..."
+        
+        # Convert CIF to PDB if needed (ProteinMPNN's parser has issues with CIF format)
+        if [[ "\${structure}" == *.cif ]]; then
+            echo "  Converting CIF to PDB format..."
+            pdb_file="${meta.id}_mpnn_optimized/structures/\${base_name}.pdb"
+            
+            # Simple CIF to PDB conversion using Python (no external dependencies)
+            python3 <<'EOPYTHON'
+import sys
+
+def cif_to_pdb(cif_file, pdb_file):
+    """Convert mmCIF ATOM records to PDB format"""
+    try:
+        with open(cif_file, 'r') as f_in, open(pdb_file, 'w') as f_out:
+            in_atom_site = False
+            atom_serial = 1
+            
+            for line in f_in:
+                # Check if we're in the atom_site loop
+                if line.startswith('_atom_site.'):
+                    in_atom_site = True
+                    continue
+                elif line.startswith('#') or (in_atom_site and line.startswith('_')):
+                    in_atom_site = False
+                    continue
+                    
+                # Process ATOM/HETATM records
+                if in_atom_site and not line.startswith('#') and line.strip():
+                    fields = line.split()
+                    if len(fields) < 17:  # mmCIF atom_site has many fields
+                        continue
+                        
+                    # Extract fields (order may vary, but typically):
+                    # group_PDB, id, type_symbol, label_atom_id, label_alt_id,
+                    # label_comp_id, label_asym_id, label_entity_id, label_seq_id,
+                    # pdbx_PDB_ins_code, Cartn_x, Cartn_y, Cartn_z,
+                    # occupancy, B_iso_or_equiv, pdbx_formal_charge,
+                    # auth_seq_id, auth_comp_id, auth_asym_id, auth_atom_id
+                    
+                    record_type = fields[0] if fields[0] in ['ATOM', 'HETATM'] else 'ATOM'
+                    atom_name = fields[3] if len(fields) > 3 else 'CA'
+                    res_name = fields[5] if len(fields) > 5 else 'ALA'
+                    chain_id = fields[6] if len(fields) > 6 else 'A'
+                    res_seq = fields[8] if len(fields) > 8 else '1'
+                    x = fields[10] if len(fields) > 10 else '0.000'
+                    y = fields[11] if len(fields) > 11 else '0.000'
+                    z = fields[12] if len(fields) > 12 else '0.000'
+                    occupancy = fields[13] if len(fields) > 13 else '1.00'
+                    temp_factor = fields[14] if len(fields) > 14 else '0.00'
+                    element = fields[2] if len(fields) > 2 else atom_name[0]
+                    
+                    # Format PDB ATOM line
+                    pdb_line = f"{record_type:<6}{atom_serial:>5}  {atom_name:<4} {res_name:>3} {chain_id:>1}{res_seq:>4}    {float(x):>8.3f}{float(y):>8.3f}{float(z):>8.3f}{float(occupancy):>6.2f}{float(temp_factor):>6.2f}          {element:>2}\n"
+                    f_out.write(pdb_line)
+                    atom_serial += 1
+                    
+            f_out.write("END\n")
+            print(f"  Successfully converted to PDB: {pdb_file}")
+            return True
+            
+    except Exception as e:
+        print(f"ERROR: Failed to convert CIF to PDB: {e}", file=sys.stderr)
+        return False
+
+if __name__ == "__main__":
+    success = cif_to_pdb("\${structure}", "\${pdb_file}")
+    sys.exit(0 if success else 1)
+EOPYTHON
+            
+            if [ $? -ne 0 ]; then
+                echo "ERROR: CIF to PDB conversion failed"
+                exit 1
+            fi
+            
+            # Use the converted PDB file
+            structure="\${pdb_file}"
+        fi
         
         # Create chain specification files if needed
         ${fixed_chains ? """

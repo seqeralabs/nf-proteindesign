@@ -35,15 +35,6 @@ workflow PROTEIN_DESIGN {
     // BRANCH 1: DESIGN MODE - Use pre-made design YAML files
     // ========================================================================
     if (mode == 'design') {
-        log.info """
-        ========================================
-        Running in DESIGN-BASED MODE
-        ========================================
-        Using pre-made design YAML files
-        from samplesheet.
-        ========================================
-        """.stripIndent()
-        
         // Input is [meta, design_yaml, structure_files], ready for Boltzgen
         // Reformat to match BOLTZGEN_RUN input: [meta, yaml, structures]
         ch_designs_for_boltzgen = ch_input
@@ -53,16 +44,6 @@ workflow PROTEIN_DESIGN {
     // BRANCH 2: TARGET MODE - Generate design variants from target structure
     // ========================================================================
     else if (mode == 'target') {
-        log.info """
-        ========================================
-        Running in TARGET-BASED MODE
-        ========================================
-        Input targets will be used to generate
-        diversified design specifications, then
-        all designs will run in parallel.
-        ========================================
-        """.stripIndent()
-        
         // Step 1: Generate diversified design YAML files from target
         // Input is [meta, target_structure]
         GENERATE_DESIGN_VARIANTS(ch_input)
@@ -90,16 +71,6 @@ workflow PROTEIN_DESIGN {
     // BRANCH 3: P2RANK MODE - Predict binding sites then design binders
     // ========================================================================
     else if (mode == 'p2rank') {
-        log.info """
-        ========================================
-        Running in P2RANK MODE
-        ========================================
-        P2Rank will identify binding sites in
-        target structures, then Boltzgen will
-        design binding partners for those sites.
-        ========================================
-        """.stripIndent()
-        
         // Step 1: Run P2Rank to identify binding sites
         // Input is [meta, target_structure]
         P2RANK_PREDICT(ch_input)
@@ -146,16 +117,6 @@ workflow PROTEIN_DESIGN {
     // ProteinMPNN: Optimize sequences for designed structures
     // ========================================================================
     if (params.run_proteinmpnn) {
-        log.info """
-        ========================================
-        Running ProteinMPNN optimization
-        ========================================
-        Optimizing sequences for Boltzgen
-        designed structures using ProteinMPNN
-        with parameters optimized for minibinders.
-        ========================================
-        """.stripIndent()
-        
         PROTEINMPNN_OPTIMIZE(BOLTZGEN_RUN.out.results)
         
         // Use ProteinMPNN optimized structures for downstream analyses
@@ -260,15 +221,6 @@ workflow PROTEIN_DESIGN {
     // CONSOLIDATION: Generate comprehensive metrics report
     // ========================================================================
     if (params.run_consolidation) {
-        log.info """
-        ========================================
-        Generating Consolidated Metrics Report
-        ========================================
-        Aggregating all design metrics and
-        generating ranked summary report.
-        ========================================
-        """.stripIndent()
-        
         // Prepare consolidation script as a channel
         ch_consolidate_script = Channel.fromPath("${projectDir}/assets/consolidate_design_metrics.py", checkIfExists: true)
         

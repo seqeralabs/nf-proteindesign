@@ -84,6 +84,41 @@ include { PROTEIN_DESIGN } from './workflows/protein_design'
 workflow NFPROTEINDESIGN {
 
     // ========================================================================
+    // Print pipeline startup banner
+    // ========================================================================
+    def mode_name = workflow_mode.toUpperCase()
+    def mode_description = [
+        'design': 'Using pre-made design YAML files',
+        'target': 'Auto-generating design specs from target structures',
+        'p2rank': 'Predicting binding sites and generating designs'
+    ][workflow_mode]
+    
+    // Build list of enabled analysis modules
+    def enabled_modules = []
+    if (params.run_proteinmpnn) enabled_modules.add('ProteinMPNN')
+    if (params.run_ipsae) enabled_modules.add('IPSAE')
+    if (params.run_prodigy) enabled_modules.add('PRODIGY')
+    if (params.run_consolidation) enabled_modules.add('Metrics Consolidation')
+    def modules_str = enabled_modules.size() > 0 ? enabled_modules.join(', ') : 'None'
+    
+    log.info """
+    ╔════════════════════════════════════════════════════════════════╗
+    ║                   nf-proteindesign v1.0.0                      ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║  Mode:       ${mode_name.padRight(48)} ║
+    ║  ${mode_description.padRight(59)}║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║  Design Parameters:                                            ║
+    ║    • num_designs: ${params.num_designs.toString().padRight(41)} ║
+    ║    • budget: ${params.budget.toString().padRight(46)} ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║  Analysis Modules: ${modules_str.padRight(41)} ║
+    ╠════════════════════════════════════════════════════════════════╣
+    ║  Output: ${params.outdir.padRight(50)} ║
+    ╚════════════════════════════════════════════════════════════════╝
+    """.stripIndent()
+
+    // ========================================================================
     // Store projectDir for use in closures
     // ========================================================================
     def project_dir = projectDir
