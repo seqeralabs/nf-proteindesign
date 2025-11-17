@@ -101,21 +101,41 @@ workflow NFPROTEINDESIGN {
     if (params.run_consolidation) enabled_modules.add('Metrics Consolidation')
     def modules_str = enabled_modules.size() > 0 ? enabled_modules.join(', ') : 'None'
     
+    // Format the banner with proper width (64 chars inside the box)
+    def banner_width = 64
+    def version_text = "nf-proteindesign v1.0.0"
+    def mode_line = "Mode: ${mode_name}"
+    def desc_line = mode_description
+    def params_header = "Design Parameters:"
+    def num_designs_line = "• num_designs: ${params.num_designs}"
+    def budget_line = "• budget: ${params.budget}"
+    def modules_header = "Analysis Modules:"
+    def output_line = "Output: ${params.outdir}"
+    
+    // Truncate modules string if too long
+    def max_modules_len = banner_width - 2
+    if (modules_str.length() > max_modules_len) {
+        modules_str = modules_str.substring(0, max_modules_len - 3) + "..."
+    }
+    
     log.info """
+    
     ╔════════════════════════════════════════════════════════════════╗
-    ║                   nf-proteindesign v1.0.0                      ║
+    ║${version_text.center(banner_width)}║
     ╠════════════════════════════════════════════════════════════════╣
-    ║  Mode:       ${mode_name.padRight(48)} ║
-    ║  ${mode_description.padRight(59)}║
+    ║  🎯 ${mode_line.padRight(banner_width - 6)}║
+    ║     ${desc_line.padRight(banner_width - 5)}║
     ╠════════════════════════════════════════════════════════════════╣
-    ║  Design Parameters:                                            ║
-    ║    • num_designs: ${params.num_designs.toString().padRight(41)} ║
-    ║    • budget: ${params.budget.toString().padRight(46)} ║
+    ║  ⚙️  ${params_header.padRight(banner_width - 7)}║
+    ║      ${num_designs_line.padRight(banner_width - 6)}║
+    ║      ${budget_line.padRight(banner_width - 6)}║
     ╠════════════════════════════════════════════════════════════════╣
-    ║  Analysis Modules: ${modules_str.padRight(41)} ║
+    ║  🔬 ${modules_header.padRight(banner_width - 6)}║
+    ║     ${modules_str.padRight(banner_width - 5)}║
     ╠════════════════════════════════════════════════════════════════╣
-    ║  Output: ${params.outdir.padRight(50)} ║
+    ║  📁 ${output_line.padRight(banner_width - 6)}║
     ╚════════════════════════════════════════════════════════════════╝
+    
     """.stripIndent()
 
     // ========================================================================
