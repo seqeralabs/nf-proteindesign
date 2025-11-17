@@ -37,16 +37,39 @@ process CONVERT_CIF_TO_PDB {
     pdb_writer = PDBIO()
     
     # Get all structure files
-    structure_files = [Path(f) for f in "${structures}".split()]
+    # Handle both file and directory inputs
+    structures_input = Path("${structures}")
     
-    # If structures is a directory, get all files from it
-    if len(structure_files) == 1 and structure_files[0].is_dir():
-        structure_dir = structure_files[0]
-        structure_files = list(structure_dir.glob("*.cif")) + list(structure_dir.glob("*.pdb"))
+    if structures_input.is_dir():
+        # If input is a directory, get all CIF and PDB files from it
+        structure_files = list(structures_input.glob("*.cif")) + list(structures_input.glob("*.pdb"))
+        print("Found directory: " + str(structures_input))
+        print("  Files found: " + str(len(structure_files)))
+    elif structures_input.is_file():
+        # If input is a single file
+        structure_files = [structures_input]
+        print("Found single file: " + str(structures_input))
+    else:
+        # Try to parse as space-separated list of files
+        structure_files = [Path(f) for f in "${structures}".split() if Path(f).exists()]
+        print("Parsed file list: " + str(len(structure_files)) + " files")
     
     converted_count = 0
     copied_count = 0
     error_count = 0
+    
+    if len(structure_files) == 0:
+        print("ERROR: No structure files found to process!", file=sys.stderr)
+        print("  Input path: ${structures}", file=sys.stderr)
+        print("  Resolved to: " + str(structures_input), file=sys.stderr)
+        print("  Is directory: " + str(structures_input.is_dir()), file=sys.stderr)
+        print("  Is file: " + str(structures_input.is_file()), file=sys.stderr)
+        print("  Exists: " + str(structures_input.exists()), file=sys.stderr)
+        if structures_input.is_dir():
+            all_files = list(structures_input.glob("*"))
+            print("  All files in directory: " + str(len(all_files)), file=sys.stderr)
+            for f in all_files[:10]:  # Show first 10 files
+                print("    - " + str(f), file=sys.stderr)
     
     for structure_file in structure_files:
         try:
