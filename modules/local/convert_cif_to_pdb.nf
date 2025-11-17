@@ -3,7 +3,7 @@ process CONVERT_CIF_TO_PDB {
     label 'process_low'
     
     conda "bioconda::biopython=1.83"
-    container 'biocontainers/biopython:v1.83_cv1'
+    container 'biopython/biopython:latest'
 
     input:
     tuple val(meta), path(structures)
