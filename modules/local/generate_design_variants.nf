@@ -106,19 +106,12 @@ process GENERATE_DESIGN_VARIANTS {
                     'chain': {'id': chain.strip()}
                 })
 
-            # Add optional constraints/specifications based on variant
-            # This adds diversity between variants of same length
-            if variant_idx == 1:
-                # Variant 2: Add composition constraint
-                if design_type == 'protein':
-                    designed_entity['protein']['composition'] = {
-                        'min_helix': 0.3,
-                        'min_sheet': 0.2
-                    }
-            elif variant_idx == 2:
-                # Variant 3: Different strategy (e.g., more compact)
-                if design_type == 'protein':
-                    designed_entity['protein']['compactness'] = 'high'
+            # Variants are differentiated primarily by their length ranges
+            # Boltzgen's design diversity comes from:
+            # 1. Different length specifications
+            # 2. Random seed variations during generation
+            # 3. Different num_designs parameter
+            # We keep the YAML spec simple and valid according to Boltzgen schema
 
             # Write design YAML
             yaml_file = f"design_variants/{design_id}.yaml"
