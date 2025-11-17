@@ -70,15 +70,19 @@ workflow PROTEIN_DESIGN {
         // Step 2: Flatten to get individual design YAMLs and add structure file
         ch_designs_for_boltzgen = GENERATE_DESIGN_VARIANTS.out.design_yamls
             .join(ch_input, by: 0)  // Join with original input to get structure file
-            .transpose(by: 1)  // Flatten list of YAML files (index 1)
-            .map { meta, yaml_file, structure_file ->
-                // Create new meta for each design
-                def design_meta = meta.clone()
-                def design_id = yaml_file.baseName
-                design_meta.id = design_id
-                design_meta.parent_id = meta.id
+            .flatMap { meta, yaml_files, structure_file ->
+                // Handle both single file and list of files
+                def yaml_list = yaml_files instanceof List ? yaml_files : [yaml_files]
                 
-                [design_meta, yaml_file, structure_file]
+                // Create a tuple for each YAML file
+                yaml_list.collect { yaml_file ->
+                    def design_meta = meta.clone()
+                    def design_id = yaml_file.baseName
+                    design_meta.id = design_id
+                    design_meta.parent_id = meta.id
+                    
+                    [design_meta, yaml_file, structure_file]
+                }
             }
     }
     
@@ -113,17 +117,21 @@ workflow PROTEIN_DESIGN {
         // Step 4: Flatten to get individual design YAMLs and keep structure file
         ch_designs_for_boltzgen = ch_p2rank_results
             .join(FORMAT_BINDING_SITES.out.design_yamls, by: 0)
-            .transpose(by: 4)  // Transpose the YAML files list (index 4)
-            .map { meta, structure, predictions_csv, residues_csv, yaml_file ->
-                // Create new meta for each design
-                def design_meta = meta.clone()
-                // Extract design_id from filename
-                def design_id = yaml_file.baseName
-                design_meta.id = design_id
-                design_meta.parent_id = meta.id  // Keep reference to original target
+            .flatMap { meta, structure, predictions_csv, residues_csv, yaml_files ->
+                // Handle both single file and list of files
+                def yaml_list = yaml_files instanceof List ? yaml_files : [yaml_files]
                 
-                // Return meta, yaml file, and structure file
-                [design_meta, yaml_file, structure]
+                // Create a tuple for each YAML file
+                yaml_list.collect { yaml_file ->
+                    def design_meta = meta.clone()
+                    // Extract design_id from filename
+                    def design_id = yaml_file.baseName
+                    design_meta.id = design_id
+                    design_meta.parent_id = meta.id  // Keep reference to original target
+                    
+                    // Return meta, yaml file, and structure file
+                    [design_meta, yaml_file, structure]
+                }
             }
     }
     
