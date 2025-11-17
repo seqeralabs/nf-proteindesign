@@ -125,7 +125,7 @@ if __name__ == "__main__":
     sys.exit(0 if success else 1)
 EOPYTHON
             
-            if [ $? -ne 0 ]; then
+            if [ \$? -ne 0 ]; then
                 echo "ERROR: CIF to PDB conversion failed"
                 exit 1
             fi
