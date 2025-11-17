@@ -1,4 +1,4 @@
 sample_id,target_structure,target_chain_ids,min_length,max_length,length_step,n_variants_per_length,design_type,protocol,num_designs,budget
-egfr_target_protein,assets/test_data/1IVO.cif,A,80,120,20,2,protein,protein-anything,10,2
-egfr_target_peptide,assets/test_data/1IVO.cif,A,12,25,6,2,peptide,peptide-anything,10,2
-egfr_target_nanobody,assets/test_data/1IVO.cif,A,110,130,10,2,nanobody,nanobody-anything,10,2
+egfr_target_protein,assets/test_data/1IVO.cif,A,90,100,10,1,protein,protein-anything,3,1
+egfr_target_peptide,assets/test_data/1IVO.cif,A,15,15,1,1,peptide,peptide-anything,3,1
+egfr_target_nanobody,assets/test_data/1IVO.cif,A,120,120,1,1,nanobody,nanobody-anything,3,1
