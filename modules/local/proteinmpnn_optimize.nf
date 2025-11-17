@@ -6,9 +6,7 @@ process PROTEINMPNN_OPTIMIZE {
     publishDir "${params.outdir}/${meta.id}/proteinmpnn", mode: params.publish_dir_mode
 
     conda "bioconda::proteinmpnn=1.0.1"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/proteinmpnn:1.0.1--pyhdfd78af_0' :
-        'quay.io/biocontainers/proteinmpnn:1.0.1--pyhdfd78af_0' }"
+    container 'cr.seqera.io/scidev/proteinmpnn:1.0.1'
 
     input:
     tuple val(meta), path(boltzgen_output)
@@ -81,7 +79,7 @@ EOF
         """ : ''}
         
         # Run ProteinMPNN on this structure
-        protein_mpnn_run \\
+        python3 /home/ProteinMPNN/protein_mpnn_run.py \\
             --pdb_path "\${structure}" \\
             --out_folder ${meta.id}_mpnn_optimized \\
             --num_seq_per_target ${num_seq_per_target} \\
