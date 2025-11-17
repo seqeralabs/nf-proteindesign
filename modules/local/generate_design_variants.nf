@@ -6,8 +6,8 @@ process GENERATE_DESIGN_VARIANTS {
 
     conda "conda-forge::python=3.11 conda-forge::pyyaml=6.0"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://python:3.11' :
-        'python:3.11' }"
+        'docker://quay.io/biocontainers/mulled-v2-3a59640f3fe1ed11819984087d31d68600200c3f:185a25ca79923df85b58f42deb48f5ac4481e91f-0' :
+        'quay.io/biocontainers/mulled-v2-3a59640f3fe1ed11819984087d31d68600200c3f:185a25ca79923df85b58f42deb48f5ac4481e91f-0' }"
 
     input:
     tuple val(meta), path(target_structure)
@@ -26,11 +26,7 @@ process GENERATE_DESIGN_VARIANTS {
     def design_type = meta.design_type ?: 'protein'  // protein, peptide, nanobody
     
     """
-    # Install required Python packages
-    pip install --no-cache-dir pyyaml 2>&1 | grep -v "Requirement already satisfied" || true
-    
-    # Run Python script
-    python3 << 'EOF'
+    #!/usr/bin/env python3
     import yaml
     import os
     from pathlib import Path
@@ -148,7 +144,6 @@ process GENERATE_DESIGN_VARIANTS {
         f.write(f'"${task.process}":\\n')
         f.write(f'    python: "3.11"\\n')
         f.write(f'    pyyaml: "6.0"\\n')
-EOF
     """
 
     stub:
