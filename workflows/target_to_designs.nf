@@ -16,6 +16,7 @@ workflow TARGET_TO_DESIGNS {
     
     take:
     ch_targets  // channel: [meta, target_structure_file]
+    ch_cache    // channel: path to cache directory or EMPTY_CACHE placeholder
 
     main:
     // Step 1: Generate diversified design YAML files from target
@@ -37,7 +38,7 @@ workflow TARGET_TO_DESIGNS {
         }
 
     // Step 3: Run Boltzgen for each design in parallel
-    BOLTZGEN_RUN(ch_individual_designs)
+    BOLTZGEN_RUN(ch_individual_designs, ch_cache)
 
     // Step 4: Optionally run IPSAE scoring if enabled
     if (params.run_ipsae) {

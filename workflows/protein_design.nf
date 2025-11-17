@@ -26,6 +26,7 @@ workflow PROTEIN_DESIGN {
     
     take:
     ch_input    // channel: [meta, file] or [meta, file, files] - can be design YAML or target structure depending on mode
+    ch_cache    // channel: path to cache directory or EMPTY_CACHE placeholder
     mode        // string: 'design', 'target', or 'p2rank'
 
     main:
@@ -131,7 +132,7 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     
     // Run Boltzgen for each design in parallel
-    BOLTZGEN_RUN(ch_designs_for_boltzgen)
+    BOLTZGEN_RUN(ch_designs_for_boltzgen, ch_cache)
     
     // ========================================================================
     // ProteinMPNN: Optimize sequences for designed structures
