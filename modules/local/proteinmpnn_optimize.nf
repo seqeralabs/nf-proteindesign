@@ -58,7 +58,7 @@ process PROTEINMPNN_OPTIMIZE {
         base_name=\$(basename "\${structure}" | sed 's/\\.[^.]*\$//')
         echo "Processing \${base_name}..."
         
-        # Convert CIF to PDB if needed (ProteinMPNN's parser has issues with CIF format)
+        # CIF to PDB conversion if needed - ProteinMPNN parser has issues with CIF format
         if [[ "\${structure}" == *.cif ]]; then
             echo "  Converting CIF to PDB format..."
             pdb_file="${meta.id}_mpnn_optimized/structures/\${base_name}.pdb"
