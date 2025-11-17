@@ -5,9 +5,7 @@ process GENERATE_DESIGN_VARIANTS {
     publishDir "${params.outdir}/${meta.id}/design_variants", mode: params.publish_dir_mode
 
     conda "conda-forge::python=3.11 conda-forge::pyyaml=6.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://quay.io/biocontainers/mulled-v2-3a59640f3fe1ed11819984087d31d68600200c3f:185a25ca79923df85b58f42deb48f5ac4481e91f-0' :
-        'quay.io/biocontainers/mulled-v2-3a59640f3fe1ed11819984087d31d68600200c3f:185a25ca79923df85b58f42deb48f5ac4481e91f-0' }"
+    container "community.wave.seqera.io/library/python_pyyaml:7d7b918a5ce0fc0d"
 
     input:
     tuple val(meta), path(target_structure)
