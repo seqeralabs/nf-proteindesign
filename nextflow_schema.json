@@ -1,0 +1,439 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/nextflow_schema.json",
+    "title": "nf-proteindesign pipeline parameters",
+    "description": "Nextflow pipeline for Boltzgen protein design with three execution modes: Design (pre-made YAMLs), Target (auto-generate variants), and P2Rank (binding site prediction)",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["input", "outdir"],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "mimetype": "text/csv",
+                    "pattern": "^\\S+\\.csv$",
+                    "description": "Path to comma-separated samplesheet file.",
+                    "help_text": "The samplesheet must contain sample information and mode-specific columns:\n- **Design mode**: `sample`, `design_yaml`, optional: `structure_files`, `protocol`, `num_designs`, `budget`\n- **Target mode**: `sample`, `target_structure`, optional: `target_chain_ids`, `min_length`, `max_length`, `design_type`, `protocol`, `num_designs`, `budget`\n- **P2Rank mode**: `sample`, `target_structure`, optional: `use_p2rank`, `top_n_pockets`, `min_pocket_score`, `design_type`, `protocol`, `num_designs`, `budget`\n\nSee schema files in assets/ for detailed column specifications.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "outdir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "The output directory where the results will be saved.",
+                    "default": "./results",
+                    "fa_icon": "fas fa-folder-open"
+                },
+                "mode": {
+                    "type": "string",
+                    "description": "Workflow execution mode (auto-detected from samplesheet if not specified).",
+                    "help_text": "Three modes are available:\n- **design**: Use pre-made design YAML files\n- **target**: Generate design variants from target structures\n- **p2rank**: Use P2Rank to predict binding sites, then design binders\n\nIf not specified, the mode is automatically detected from samplesheet column headers.",
+                    "enum": ["design", "target", "p2rank"],
+                    "fa_icon": "fas fa-route"
+                }
+            }
+        },
+        "design_generation_options": {
+            "title": "Design generation options",
+            "type": "object",
+            "description": "Parameters for generating design variants in target and P2Rank modes.",
+            "default": "",
+            "fa_icon": "fas fa-drafting-compass",
+            "properties": {
+                "min_design_length": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Minimum length for designed proteins/peptides (amino acids).",
+                    "fa_icon": "fas fa-ruler",
+                    "minimum": 10,
+                    "maximum": 500
+                },
+                "max_design_length": {
+                    "type": "integer",
+                    "default": 150,
+                    "description": "Maximum length for designed proteins/peptides (amino acids).",
+                    "fa_icon": "fas fa-ruler",
+                    "minimum": 10,
+                    "maximum": 500
+                },
+                "length_step": {
+                    "type": "integer",
+                    "default": 20,
+                    "description": "Step size between length variants.",
+                    "fa_icon": "fas fa-shoe-prints",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "n_variants_per_length": {
+                    "type": "integer",
+                    "default": 3,
+                    "description": "Number of design variants to generate per length.",
+                    "fa_icon": "fas fa-layer-group",
+                    "minimum": 1,
+                    "maximum": 20
+                },
+                "design_type": {
+                    "type": "string",
+                    "default": "protein",
+                    "description": "Type of molecule to design in target mode.",
+                    "enum": ["protein", "peptide", "nanobody"],
+                    "fa_icon": "fas fa-dna"
+                },
+                "p2rank_design_type": {
+                    "type": "string",
+                    "default": "nanobody",
+                    "description": "Type of molecule to design in P2Rank mode (nanobody optimal for binding pockets).",
+                    "enum": ["protein", "peptide", "nanobody"],
+                    "fa_icon": "fas fa-bullseye"
+                }
+            }
+        },
+        "p2rank_options": {
+            "title": "P2Rank binding site prediction",
+            "type": "object",
+            "description": "Options for P2Rank binding site prediction (P2Rank mode only).",
+            "default": "",
+            "fa_icon": "fas fa-crosshairs",
+            "properties": {
+                "use_p2rank": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Use P2Rank to identify binding sites for design.",
+                    "help_text": "When enabled, P2Rank will predict binding pockets in the target structure, and designs will be generated to target these pockets.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "top_n_pockets": {
+                    "type": "integer",
+                    "default": 3,
+                    "description": "Number of top-scoring pockets to target.",
+                    "fa_icon": "fas fa-award",
+                    "minimum": 1,
+                    "maximum": 20
+                },
+                "min_pocket_score": {
+                    "type": "number",
+                    "default": 0.5,
+                    "description": "Minimum P2Rank score for pocket selection (0-1 scale).",
+                    "fa_icon": "fas fa-filter",
+                    "minimum": 0,
+                    "maximum": 1
+                },
+                "binding_region_mode": {
+                    "type": "string",
+                    "default": "residues",
+                    "description": "How to specify binding regions in design YAML.",
+                    "enum": ["residues", "bounding_box"],
+                    "fa_icon": "fas fa-map-marker-alt"
+                },
+                "expand_region": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Expand binding region by N residues around predicted pocket.",
+                    "fa_icon": "fas fa-expand",
+                    "minimum": 0,
+                    "maximum": 20
+                }
+            }
+        },
+        "boltzgen_options": {
+            "title": "Boltzgen design parameters",
+            "type": "object",
+            "description": "Core parameters for Boltzgen protein design execution.",
+            "default": "",
+            "fa_icon": "fas fa-cogs",
+            "properties": {
+                "protocol": {
+                    "type": "string",
+                    "default": "protein-anything",
+                    "description": "Boltzgen design protocol.",
+                    "help_text": "Available protocols:\n- **protein-anything**: General protein design\n- **peptide-anything**: Peptide binder design\n- **protein-small_molecule**: Protein-small molecule interaction\n- **nanobody-anything**: Nanobody design",
+                    "enum": ["protein-anything", "peptide-anything", "protein-small_molecule", "nanobody-anything"],
+                    "fa_icon": "fas fa-flask"
+                },
+                "num_designs": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Number of intermediate designs to generate.",
+                    "help_text": "For production runs, recommend 10,000-60,000 designs. Lower values (100-1000) suitable for testing.",
+                    "fa_icon": "fas fa-hashtag",
+                    "minimum": 1
+                },
+                "budget": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Number of designs in final diversity-optimized set.",
+                    "help_text": "Boltzgen will select this many diverse, high-quality designs from the intermediate pool.",
+                    "fa_icon": "fas fa-star",
+                    "minimum": 1
+                },
+                "cache_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Cache directory for model weights (~6GB).",
+                    "help_text": "If not specified, defaults to ~/.cache. The cache directory stores downloaded model weights for faster execution.",
+                    "fa_icon": "fas fa-database"
+                },
+                "boltzgen_config": {
+                    "type": "string",
+                    "format": "file-path",
+                    "description": "Optional path to custom Boltzgen config YAML to override defaults.",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "steps": {
+                    "type": "string",
+                    "description": "Optional comma-separated list of steps to run (e.g., 'filtering' to rerun only filtering).",
+                    "help_text": "Advanced option for rerunning specific Boltzgen pipeline steps.",
+                    "fa_icon": "fas fa-tasks"
+                }
+            }
+        },
+        "proteinmpnn_options": {
+            "title": "ProteinMPNN sequence optimization",
+            "type": "object",
+            "description": "Options for ProteinMPNN sequence optimization of designed structures.",
+            "default": "",
+            "fa_icon": "fas fa-dna",
+            "properties": {
+                "run_proteinmpnn": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable ProteinMPNN sequence optimization of Boltzgen designs.",
+                    "help_text": "ProteinMPNN can further optimize sequences for the designed structures.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "mpnn_sampling_temp": {
+                    "type": "number",
+                    "default": 0.1,
+                    "description": "Sampling temperature (lower = more conservative).",
+                    "help_text": "Recommended range: 0.1-0.3. Lower values produce more conservative sequences.",
+                    "fa_icon": "fas fa-thermometer-half",
+                    "minimum": 0.01,
+                    "maximum": 1.0
+                },
+                "mpnn_num_seq_per_target": {
+                    "type": "integer",
+                    "default": 8,
+                    "description": "Number of sequence variants to generate per structure.",
+                    "fa_icon": "fas fa-list-ol",
+                    "minimum": 1,
+                    "maximum": 100
+                },
+                "mpnn_batch_size": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Batch size for ProteinMPNN inference.",
+                    "fa_icon": "fas fa-layer-group",
+                    "minimum": 1
+                },
+                "mpnn_seed": {
+                    "type": "integer",
+                    "default": 37,
+                    "description": "Random seed for reproducibility.",
+                    "fa_icon": "fas fa-random"
+                },
+                "mpnn_backbone_noise": {
+                    "type": "number",
+                    "default": 0.02,
+                    "description": "Backbone noise level (lower = more faithful to input).",
+                    "help_text": "Recommended range: 0.02-0.20",
+                    "fa_icon": "fas fa-wave-square",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "mpnn_save_score": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Save per-residue scores.",
+                    "fa_icon": "fas fa-save"
+                },
+                "mpnn_save_probs": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Save per-residue probabilities (large files, use for detailed analysis).",
+                    "fa_icon": "fas fa-chart-bar"
+                },
+                "mpnn_fixed_chains": {
+                    "type": "string",
+                    "description": "Chains to keep fixed (e.g., 'A,B' - typically the target chains).",
+                    "fa_icon": "fas fa-lock"
+                },
+                "mpnn_designed_chains": {
+                    "type": "string",
+                    "description": "Chains to design (e.g., 'C' - typically the binder chain).",
+                    "fa_icon": "fas fa-unlock"
+                }
+            }
+        },
+        "analysis_options": {
+            "title": "Analysis and scoring options",
+            "type": "object",
+            "description": "Options for scoring and evaluating designed structures.",
+            "default": "",
+            "fa_icon": "fas fa-chart-line",
+            "properties": {
+                "run_ipsae": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable IPSAE scoring of Boltzgen predictions.",
+                    "help_text": "IPSAE evaluates protein-protein interface quality using predicted aligned error (PAE) and structural distances.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "ipsae_pae_cutoff": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "PAE cutoff for IPSAE calculation (Angstroms).",
+                    "fa_icon": "fas fa-ruler-horizontal",
+                    "minimum": 0
+                },
+                "ipsae_dist_cutoff": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Distance cutoff for CA-CA contacts (Angstroms).",
+                    "fa_icon": "fas fa-arrows-alt-h",
+                    "minimum": 0
+                },
+                "run_prodigy": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable PRODIGY binding affinity prediction on final designs.",
+                    "help_text": "PRODIGY predicts binding free energy (ΔG) based on interface properties.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "prodigy_selection": {
+                    "type": "string",
+                    "description": "Chain selection for PRODIGY (e.g., 'A,B'). If null, auto-detects from structure.",
+                    "fa_icon": "fas fa-link"
+                },
+                "run_consolidation": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable consolidated metrics report generation.",
+                    "help_text": "Generates a comprehensive report combining Boltzgen, ProteinMPNN, IPSAE, and PRODIGY results.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "report_top_n": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Number of top designs to highlight in consolidated report.",
+                    "fa_icon": "fas fa-trophy",
+                    "minimum": 1
+                }
+            }
+        },
+        "resource_options": {
+            "title": "Resource allocation",
+            "type": "object",
+            "description": "Maximum resource limits for pipeline execution.",
+            "default": "",
+            "fa_icon": "fas fa-server",
+            "properties": {
+                "max_cpus": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "Maximum number of CPUs per process.",
+                    "fa_icon": "fas fa-microchip",
+                    "minimum": 1
+                },
+                "max_memory": {
+                    "type": "string",
+                    "default": "128.GB",
+                    "description": "Maximum memory per process.",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(K|M|G|T)?B$",
+                    "fa_icon": "fas fa-memory"
+                },
+                "max_time": {
+                    "type": "string",
+                    "default": "240.h",
+                    "description": "Maximum time per process.",
+                    "pattern": "^\\d+(\\.\\d+)?\\.?\\s*(m|h|d|s)?$",
+                    "fa_icon": "fas fa-clock"
+                },
+                "max_gpus": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Maximum number of GPUs per process.",
+                    "fa_icon": "fas fa-microchip",
+                    "minimum": 0
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline, typically set in a config file.",
+            "help_text": "These options are common to all nf-core pipelines and allow you to customize things like pipeline name, tracedir, etc.",
+            "properties": {
+                "publish_dir_mode": {
+                    "type": "string",
+                    "default": "copy",
+                    "description": "Method for publishing outputs.",
+                    "help_text": "Determines how output files are published:\n- **copy**: Copy files to output directory\n- **symlink**: Create symbolic links\n- **move**: Move files (use with caution)",
+                    "enum": ["copy", "symlink", "move"],
+                    "fa_icon": "fas fa-copy"
+                },
+                "tracedir": {
+                    "type": "string",
+                    "default": "${params.outdir}/pipeline_info",
+                    "description": "Directory to store pipeline execution traces.",
+                    "fa_icon": "fas fa-history"
+                },
+                "validate_params": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate parameters against the schema at runtime.",
+                    "fa_icon": "fas fa-check-square"
+                },
+                "show_hidden_params": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Show hidden parameters in help message.",
+                    "fa_icon": "fas fa-eye-slash"
+                },
+                "help": {
+                    "type": "boolean",
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                },
+                "version": {
+                    "type": "boolean",
+                    "description": "Display version and exit.",
+                    "fa_icon": "fas fa-tag",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/definitions/input_output_options"
+        },
+        {
+            "$ref": "#/definitions/design_generation_options"
+        },
+        {
+            "$ref": "#/definitions/p2rank_options"
+        },
+        {
+            "$ref": "#/definitions/boltzgen_options"
+        },
+        {
+            "$ref": "#/definitions/proteinmpnn_options"
+        },
+        {
+            "$ref": "#/definitions/analysis_options"
+        },
+        {
+            "$ref": "#/definitions/resource_options"
+        },
+        {
+            "$ref": "#/definitions/generic_options"
+        }
+    ]
+}
