@@ -7,22 +7,37 @@ Complete reference for all pipeline parameters.
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `--input` | file | Samplesheet CSV file | *Required* |
-| `--outdir` | path | Output directory | *Required* |
-| `--mode` | string | Pipeline mode | Auto-detect |
+| `--outdir` | path | Output directory | `./results` |
+| `--mode` | string | Pipeline mode (`design`, `target`, `p2rank`) | Auto-detect |
+| `--publish_dir_mode` | string | How to publish output files | `copy` |
 
 ## :material-robot: Mode Selection
 
-| Parameter | Type | Description | Options |
-|-----------|------|-------------|---------|
-| `--mode` | string | Explicit mode selection | `design`, `target`, `p2rank` |
+The pipeline automatically detects the mode based on samplesheet columns, but you can override with `--mode`:
 
-## :material-tune: Design Parameters
+| Mode | Description | Samplesheet Column(s) |
+|------|-------------|----------------------|
+| `design` | Use pre-made design YAMLs | `design_yaml` |
+| `target` | Generate designs from target structure | `target_structure` |
+| `p2rank` | Predict binding sites + generate designs | `target_structure` + `use_p2rank=true` |
+
+## :material-dna: Boltzgen Design Parameters
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--n_samples` | integer | Designs per specification | 10 |
-| `--timesteps` | integer | Diffusion timesteps | 100 |
-| `--save_traj` | boolean | Save trajectories | false |
+| `--protocol` | string | Boltzgen protocol | `protein-anything` |
+| `--num_designs` | integer | Number of intermediate designs | 100 |
+| `--budget` | integer | Final diversity-optimized designs | 10 |
+| `--cache_dir` | path | Cache directory for model weights (~6GB) | `null` (uses ~/.cache) |
+| `--boltzgen_config` | file | Custom Boltzgen config YAML | `null` |
+| `--steps` | string | Comma-separated steps to run | `null` (all steps) |
+
+### Protocol Options
+
+- `protein-anything`: Design proteins to bind any biomolecule
+- `peptide-anything`: Design peptides to bind any biomolecule
+- `protein-small_molecule`: Design proteins to bind small molecules
+- `nanobody-anything`: Design nanobodies to bind any biomolecule
 
 ## :material-target: Target Mode Parameters
 
@@ -30,39 +45,79 @@ Complete reference for all pipeline parameters.
 |-----------|------|-------------|---------|
 | `--min_design_length` | integer | Minimum binder length | 50 |
 | `--max_design_length` | integer | Maximum binder length | 150 |
-| `--length_step` | integer | Length increment | 20 |
+| `--length_step` | integer | Length increment between variants | 20 |
 | `--n_variants_per_length` | integer | Variants per length | 3 |
-| `--chain_type` | string | Binder type | `protein` |
+| `--design_type` | string | Type of binder to design | `protein` |
 
-### Chain Type Options
+### Design Type Options
 
 - `protein`: Full-length protein binders
-- `peptide`: Short peptide binders
-- `nanobody`: Single-domain antibodies
+- `peptide`: Short peptide binders (typically <50 residues)
+- `nanobody`: Single-domain antibodies (~110-130 residues)
 
-## :material-brain: P2Rank Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--p2rank_top_n` | integer | Number of top pockets | 5 |
-| `--p2rank_min_score` | float | Minimum pocket score | 0.5 |
-| `--p2rank_conservation` | boolean | Use conservation analysis | false |
-
-## :material-chart-line: Analysis Parameters
+## :material-brain: P2Rank Binding Site Prediction
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--run_ipsae` | boolean | Enable ipSAE scoring | false |
-| `--run_prodigy` | boolean | Enable PRODIGY | false |
-| `--prodigy_selection` | string | Chain selection | Auto-detect |
+| `--use_p2rank` | boolean | Enable P2Rank pocket prediction | `false` |
+| `--top_n_pockets` | integer | Number of top-scoring pockets | 3 |
+| `--min_pocket_score` | float | Minimum P2Rank score threshold | 0.5 |
+| `--binding_region_mode` | string | How to specify binding region | `residues` |
+| `--expand_region` | integer | Expand region by N residues | 5 |
+| `--p2rank_design_type` | string | Design type for P2Rank mode | `nanobody` |
+
+### Binding Region Mode Options
+
+- `residues`: Use residue numbers for binding specification
+- `bounding_box`: Use 3D bounding box coordinates
+
+## :material-chart-line: Analysis Modules
+
+### ProteinMPNN Sequence Optimization
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--run_proteinmpnn` | boolean | Enable ProteinMPNN optimization | `false` |
+| `--mpnn_sampling_temp` | float | Sampling temperature (0.1-0.3) | 0.1 |
+| `--mpnn_num_seq_per_target` | integer | Sequences per structure | 8 |
+| `--mpnn_batch_size` | integer | Batch size for inference | 1 |
+| `--mpnn_seed` | integer | Random seed for reproducibility | 37 |
+| `--mpnn_backbone_noise` | float | Backbone noise level (0.02-0.20) | 0.02 |
+| `--mpnn_save_score` | boolean | Save per-residue scores | `true` |
+| `--mpnn_save_probs` | boolean | Save per-residue probabilities | `false` |
+| `--mpnn_fixed_chains` | string | Chains to keep fixed (e.g., 'A,B') | `null` |
+| `--mpnn_designed_chains` | string | Chains to design (e.g., 'C') | `null` |
+
+### IPSAE Interface Scoring
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--run_ipsae` | boolean | Enable IPSAE scoring | `false` |
+| `--ipsae_pae_cutoff` | float | PAE cutoff in Angstroms | 10 |
+| `--ipsae_dist_cutoff` | float | CA-CA distance cutoff | 10 |
+
+### PRODIGY Binding Affinity
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--run_prodigy` | boolean | Enable PRODIGY prediction | `false` |
+| `--prodigy_selection` | string | Chain selection (e.g., 'A,B') | `null` (auto-detect) |
+
+### Metrics Consolidation
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `--run_consolidation` | boolean | Enable consolidated report | `false` |
+| `--report_top_n` | integer | Number of top designs to highlight | 10 |
 
 ## :material-server: Resource Parameters
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--max_cpus` | integer | Maximum CPUs | 16 |
-| `--max_memory` | memory | Maximum memory | 128.GB |
-| `--max_time` | time | Maximum time | 48.h |
+| `--max_cpus` | integer | Maximum CPUs per process | 16 |
+| `--max_memory` | memory | Maximum memory per process | 128.GB |
+| `--max_time` | time | Maximum time per process | 240.h |
+| `--max_gpus` | integer | Maximum GPUs per process | 1 |
 
 ### Memory Units
 
@@ -75,14 +130,6 @@ Complete reference for all pipeline parameters.
 - `h`: Hours
 - `m`: Minutes
 - `d`: Days
-
-## :material-docker: Container Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--boltzgen_container` | string | Boltzgen container | `ghcr.io/flouwuenne/boltzgen:latest` |
-| `--prodigy_container` | string | PRODIGY container | `ghcr.io/flouwuenne/prodigy:latest` |
-| `--p2rank_container` | string | P2Rank container | `biocontainers/p2rank:2.4.1--hdfd78af_0` |
 
 ## :material-cog: Advanced Parameters
 

@@ -13,8 +13,10 @@ The pipeline uses specialized containers for each component:
 ```yaml
 Containers:
   boltzgen: "ghcr.io/flouwuenne/boltzgen:latest"
+  proteinmpnn: "ghcr.io/flouwuenne/proteinmpnn:latest"
+  ipsae: "ghcr.io/flouwuenne/ipsae:latest"
   prodigy: "ghcr.io/flouwuenne/prodigy:latest"  
-  p2rank: "biocontainers/p2rank:2.4.1--hdfd78af_0"
+  p2rank: "davidhoksza/p2rank:2.4.2"
 ```
 
 ### GPU Support
@@ -32,26 +34,42 @@ RUN pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 ```
 nf-proteindesign-2025/
-├── main.nf                  # Main entry point
-├── nextflow.config          # Pipeline configuration
+├── main.nf                              # Main entry point with mode detection
+├── nextflow.config                      # Pipeline configuration
 ├── conf/
-│   ├── base.config         # Base settings
-│   ├── test.config         # Test profile
-│   └── modules.config      # Module-specific config
+│   ├── base.config                     # Base resource settings
+│   ├── modules.config                  # Module-specific configuration
+│   ├── test.config                     # Test profile configuration
+│   └── test_full.config                # Full test profile
 ├── workflows/
-│   ├── design.nf
-│   ├── target.nf
-│   ├── p2rank.nf
-│   └── protein_design.nf
-├── modules/
-│   ├── boltzgen/
-│   ├── p2rank/
-│   ├── prodigy/
-│   └── ipsae/
+│   ├── protein_design.nf               # Unified workflow (design mode)
+│   ├── target_to_designs.nf            # Target mode preprocessing
+│   └── p2rank_to_designs.nf            # P2Rank mode preprocessing
+├── modules/local/
+│   ├── p2rank_predict.nf
+│   ├── format_binding_sites.nf
+│   ├── generate_design_variants.nf
+│   ├── create_design_samplesheet.nf
+│   ├── boltzgen_run.nf
+│   ├── convert_cif_to_pdb.nf
+│   ├── collect_design_files.nf
+│   ├── proteinmpnn_optimize.nf
+│   ├── ipsae_calculate.nf
+│   ├── prodigy_predict.nf
+│   └── consolidate_metrics.nf
 ├── bin/
-│   └── check_samplesheet.py
+│   ├── convert_cif_to_pdb.py          # CIF to PDB conversion
+│   ├── collect_boltzgen_outputs.py    # Collect Boltzgen results
+│   ├── consolidate_metrics.py         # Generate unified metrics report
+│   └── create_design_yaml.py          # Generate design YAML files
 └── assets/
-    └── schema_input.json
+    ├── schema_input_design.json        # Design mode samplesheet schema
+    ├── schema_input_target.json        # Target mode samplesheet schema
+    ├── schema_input_p2rank.json        # P2Rank mode samplesheet schema
+    └── test_data/                       # Test datasets
+        ├── designs/                     # Pre-made design YAMLs
+        ├── structures/                  # Test structures
+        └── samplesheets/                # Test samplesheets
 ```
 
 ## :material-language-python: Helper Scripts

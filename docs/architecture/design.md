@@ -106,12 +106,16 @@ process BOLTZGEN_RUN {
 
 | Process | Purpose | Label |
 |---------|---------|-------|
-| `VALIDATE_SAMPLESHEET` | Check input format | `cpu` |
-| `GENERATE_VARIANTS` | Create design YAMLs | `cpu` |
-| `P2RANK_PREDICT` | Find binding sites | `cpu` |
-| `BOLTZGEN_RUN` | Design proteins | `gpu` |
-| `IPSAE_SCORE` | Score interfaces | `cpu` |
-| `PRODIGY_PREDICT` | Predict affinity | `cpu` |
+| `P2RANK_PREDICT` | Find binding sites (P2Rank mode) | `cpu` |
+| `FORMAT_BINDING_SITES` | Convert pockets to design specs | `cpu` |
+| `GENERATE_DESIGN_VARIANTS` | Create design YAMLs (Target mode) | `cpu` |
+| `BOLTZGEN_RUN` | Design proteins with Boltzgen | `gpu` |
+| `CONVERT_CIF_TO_PDB` | Convert CIF to PDB format | `cpu` |
+| `COLLECT_DESIGN_FILES` | Gather final outputs | `cpu` |
+| `PROTEINMPNN_OPTIMIZE` | Sequence optimization | `gpu` |
+| `IPSAE_CALCULATE` | Interface scoring | `gpu` |
+| `PRODIGY_PREDICT` | Binding affinity prediction | `cpu` |
+| `CONSOLIDATE_METRICS` | Generate unified report | `cpu` |
 
 ### Resource Labels
 
@@ -133,23 +137,24 @@ process {
 ## :material-file-tree: Module Structure
 
 ```
+main.nf                           # Main entry point with mode detection
 workflows/
-├── design.nf          # Design mode workflow
-├── target.nf          # Target mode workflow
-├── p2rank.nf          # P2Rank mode workflow
-└── protein_design.nf  # Unified workflow
+├── protein_design.nf             # Unified workflow (handles design mode)
+├── target_to_designs.nf          # Target mode preprocessing
+└── p2rank_to_designs.nf          # P2Rank mode preprocessing
 
-modules/
-├── boltzgen/
-│   ├── run.nf
-│   └── collect.nf
-├── p2rank/
-│   ├── predict.nf
-│   └── format.nf
-├── prodigy/
-│   └── predict.nf
-└── ipsae/
-    └── score.nf
+modules/local/
+├── p2rank_predict.nf             # P2Rank binding site prediction
+├── format_binding_sites.nf       # Convert P2Rank output to design specs
+├── generate_design_variants.nf   # Generate design YAMLs for target mode
+├── create_design_samplesheet.nf  # Create samplesheet for unified workflow
+├── boltzgen_run.nf               # Execute Boltzgen design
+├── convert_cif_to_pdb.nf         # Convert CIF outputs to PDB format
+├── collect_design_files.nf       # Collect final design files
+├── proteinmpnn_optimize.nf       # ProteinMPNN sequence optimization
+├── ipsae_calculate.nf            # IPSAE interface scoring
+├── prodigy_predict.nf            # PRODIGY binding affinity
+└── consolidate_metrics.nf        # Consolidated metrics report
 ```
 
 ## :material-cog: Configuration
