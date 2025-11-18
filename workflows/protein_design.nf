@@ -164,15 +164,17 @@ workflow PROTEIN_DESIGN {
             }
         
         ch_intermediate_npz = BOLTZGEN_RUN.out.intermediate_npz
+            .view { meta, files -> "🔍 intermediate_npz from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
             .filter { meta, files ->
                 // Only keep emissions with files  
                 def has_files = files && (files instanceof List ? !files.isEmpty() : true)
                 if (!has_files) {
-                    log.warn "No intermediate NPZ files found for ${meta.id}"
+                    log.warn "⚠️  No intermediate NPZ files found for ${meta.id}"
                 }
                 return has_files
             }
             .transpose()  // Split list of files into individual items
+            .view { meta, file -> "  ↳ Transposed NPZ: ${meta.id} → ${file.name}" }
             .map { meta, npz_file ->
                 def base_name = npz_file.baseName
                 [meta.id, base_name, npz_file]
@@ -181,6 +183,7 @@ workflow PROTEIN_DESIGN {
         // Join on parent_id and base_name to create CIF/NPZ pairs
         ch_ipsae_input = ch_intermediate_cifs
             .join(ch_intermediate_npz, by: [0, 1])  // Join on [parent_id, base_name]
+            .view { "  ✓ Joined for IPSAE: ${it[0]}_${it[1]}" }
             .map { parent_id, base_name, meta, cif_file, npz_file ->
                 def model_meta = [:]
                 model_meta.id = "${parent_id}_${base_name}"
@@ -189,6 +192,7 @@ workflow PROTEIN_DESIGN {
                 
                 [model_meta, npz_file, cif_file]
             }
+            .view { meta, npz, cif -> "  → IPSAE input: ${meta.id}" }
         
         // Run IPSAE calculation
         IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
@@ -222,6 +226,7 @@ workflow PROTEIN_DESIGN {
                 
                 [design_meta, cif_file]
             }
+            .view { meta, file -> "  → PRODIGY input: ${meta.id}" }
         
         // Run PRODIGY binding affinity prediction
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
