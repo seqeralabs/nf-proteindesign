@@ -1,6 +1,6 @@
 # Critical Fixes Applied to nf-proteindesign-2025
 
-## Fixed Issues: IPSAE Path Resolution, Regex Bug, and Debug Logging Cleanup
+## Fixed Issues: IPSAE Path Resolution, Regex Bug, Boltz2 Compatibility, and Debug Logging Cleanup
 
 ---
 
@@ -43,7 +43,46 @@ def base_name = cif_name.take(cif_name.lastIndexOf('.'))
 
 ---
 
-## Problem 2: IPSAE Path Resolution Error ❌→✅
+## Problem 2: IPSAE Boltz2/Boltzgen Compatibility ❌→✅
+
+### Root Cause
+**IPSAE script was designed for Boltz1, not Boltz2/Boltzgen!**
+
+The ipsae.py script expected:
+- **Boltz1 format**: Separate `pae_*.npz` and `plddt_*.npz` files
+- **Boltzgen format**: Single `design.npz` file with both 'pae' and 'plddt' keys
+
+### Problem
+```
+Error: KeyError: 'plddt'
+Script tried to load plddt from separate file, but Boltzgen stores it in same NPZ
+```
+
+### Solution Applied
+**Modified `assets/ipsae.py` to detect and handle both formats**:
+
+```python
+# NEW: Check if pLDDT is in same file (Boltz2/Boltzgen)
+data_pae = np.load(pae_file_path)
+if 'plddt' in data_pae.keys():
+    # Boltz2/Boltzgen format: plddt in same file as pae
+    plddt_boltz1 = np.array(100.0*data_pae['plddt']) if data_pae['plddt'].max() <= 1.0 else np.array(data_pae['plddt'])
+else:
+    # Boltz1 format: separate plddt file
+    plddt_file_path = pae_file_path.replace("pae","plddt")
+    data_plddt = np.load(plddt_file_path)
+    plddt_boltz1 = np.array(100.0*data_plddt['plddt'])
+```
+
+**Key improvements**:
+1. ✅ Checks for 'plddt' key in PAE file first (Boltz2/Boltzgen style)
+2. ✅ Falls back to separate file if not found (Boltz1 style)
+3. ✅ Handles both 0-1 and 0-100 scaled plddt values
+4. ✅ No changes needed to workflow - transparent to user
+
+---
+
+## Problem 3: IPSAE Path Resolution Error ❌→✅
 
 ### Root Cause
 The IPSAE channel creation logic was searching for CIF files in the wrong location:
@@ -91,7 +130,7 @@ ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_designs
 
 ---
 
-## Problem 3: Excessive Debug Logging 🔊→🔇
+## Problem 4: Excessive Debug Logging 🔊→🔇
 
 ### Root Cause
 Multiple `println` debug statements throughout channel creation:
@@ -154,6 +193,7 @@ nextflow log last -f workdir,status,process
 | Issue | Status | Impact |
 |-------|--------|--------|
 | **Regex escaping bug** | ✅ **FIXED** | **Extension now properly removed** |
+| **Boltz2/Boltzgen compatibility** | ✅ **FIXED** | **IPSAE now works with Boltzgen** |
 | IPSAE path resolution | ✅ Fixed | Now finds CIF/PAE pairs correctly |
 | Debug logging | ✅ Cleaned | Production-ready logs |
 | PRODIGY functionality | ✅ Fixed | Regex bug affected this too |

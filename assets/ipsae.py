@@ -437,24 +437,38 @@ if boltz1:
     # pae_AURKA_TPX2_model_0.npz
     # plddt_AURKA_TPX2_model_0.npz
     
-
-    plddt_file_path=pae_file_path.replace("pae","plddt")
-    if os.path.exists(plddt_file_path):
-        data_plddt=np.load(plddt_file_path)
-        plddt_boltz1=np.array(100.0*data_plddt['plddt'])
+    # Boltzgen (Boltz2) filenames (no pae_ prefix):
+    # design_0.cif
+    # design_0.npz  (contains PAE data)
+    # confidence_design_0.json (optional)
+    # Note: Boltzgen uses same filename for CIF and NPZ
+    
+    # First check if pLDDT data is in the same NPZ file (Boltz2/Boltzgen style)
+    data_pae = np.load(pae_file_path)
+    if 'plddt' in data_pae.keys():
+        # Boltz2/Boltzgen format: plddt in same file as pae
+        plddt_boltz1=np.array(100.0*data_pae['plddt']) if data_pae['plddt'].max() <= 1.0 else np.array(data_pae['plddt'])
         plddt =    plddt_boltz1[np.ix_(token_array.astype(bool))]
         cb_plddt = plddt_boltz1[np.ix_(token_array.astype(bool))]
     else:
-        plddt = np.zeros(ntokens)
-        cb_plddt = np.zeros(ntokens)
-        
-    if os.path.exists(pae_file_path):
-        data_pae = np.load(pae_file_path)
+        # Boltz1 format: separate plddt file
+        plddt_file_path=pae_file_path.replace("pae","plddt")
+        if os.path.exists(plddt_file_path):
+            data_plddt=np.load(plddt_file_path)
+            plddt_boltz1=np.array(100.0*data_plddt['plddt'])
+            plddt =    plddt_boltz1[np.ix_(token_array.astype(bool))]
+            cb_plddt = plddt_boltz1[np.ix_(token_array.astype(bool))]
+        else:
+            plddt = np.zeros(ntokens)
+            cb_plddt = np.zeros(ntokens)
+    
+    # data_pae already loaded above
+    if 'pae' in data_pae.keys():
         pae_matrix_boltz1=np.array(data_pae['pae'])
         pae_matrix = pae_matrix_boltz1[np.ix_(token_array.astype(bool), token_array.astype(bool))]
-
     else:
-        print("Boltz1 PAE file does not exist: ", pae_file_path)
+        print("Boltz1/Boltz2 PAE file does not contain 'pae' key: ", pae_file_path)
+        print("Available keys:", list(data_pae.keys()))
         sys.exit()
     
     summary_file_path=pae_file_path.replace("pae","confidence")
