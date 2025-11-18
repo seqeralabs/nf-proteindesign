@@ -5,9 +5,7 @@ process P2RANK_PREDICT {
     publishDir "${params.outdir}/${meta.id}/p2rank_predictions", mode: params.publish_dir_mode
 
     conda "${moduleDir}/environment.yml"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://quay.io/biocontainers/p2rank:2.4.2--hdfd78af_0' :
-        'quay.io/biocontainers/p2rank:2.4.2--hdfd78af_0' }"
+    container 'docker.io/externelly/p2rank:latest'
 
     input:
     tuple val(meta), path(protein_structure)
