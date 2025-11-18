@@ -19,6 +19,8 @@ include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_vari
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
+include { COLLECT_DESIGN_FILES } from '../modules/local/collect_design_files'
+include { COLLECT_IPSAE_PAIRS } from '../modules/local/collect_design_files'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
 include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
@@ -145,35 +147,30 @@ workflow PROTEIN_DESIGN {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
-        // Create channel with PAE and CIF files
-        // Boltzgen outputs CIF files to intermediate_designs/ directory
-        ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_designs
-            .flatMap { meta, designs_dir ->
-                // Find all CIF files in intermediate_designs directory
-                def cif_pattern = "${designs_dir}/*.cif"
-                def cif_files_found = file(cif_pattern)
-                
-                // Ensure cif_files is always a list
-                def cif_files = cif_files_found instanceof List ? cif_files_found : [cif_files_found]
-                
+        // Step 1: Collect CIF/NPZ pairs from intermediate_designs
+        COLLECT_IPSAE_PAIRS(BOLTZGEN_RUN.out.intermediate_designs)
+        
+        // Step 2: Parse the pairs file and create input channel for IPSAE
+        ch_ipsae_input = COLLECT_IPSAE_PAIRS.out.pairs
+            .flatMap { meta, pairs_file ->
                 def pairs = []
-                
-                cif_files.each { cif ->
-                    if (cif.exists() && cif.isFile()) {
-                        def cif_name = cif.getName()
-                        // Boltzgen CIF files: <design_name>.cif
-                        // Corresponding PAE: <design_name>.npz (in same directory)
-                        def base_name = cif_name.take(cif_name.lastIndexOf('.'))
-                        def pae_file = file("${designs_dir}/${base_name}.npz")
-                        
-                        if (pae_file.exists()) {
-                            def model_meta = meta.clone()
-                            model_meta.model_id = "${meta.id}_${base_name}"
-                            pairs.add([model_meta, pae_file, cif])
+                pairs_file.text.split('\n').each { line ->
+                    if (line.trim()) {
+                        def parts = line.split(',')
+                        if (parts.size() == 3) {
+                            def cif_path = parts[0]
+                            def npz_path = parts[1]
+                            def design_id = parts[2]
+                            
+                            def model_meta = [:]
+                            model_meta.id = design_id
+                            model_meta.parent_id = meta.id
+                            model_meta.model_id = design_id
+                            
+                            pairs.add([model_meta, file(npz_path), file(cif_path)])
                         }
                     }
                 }
-                
                 return pairs
             }
         
@@ -189,62 +186,29 @@ workflow PROTEIN_DESIGN {
         ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
         
         // Create channel with structures
-        // If ProteinMPNN was run, use those structures; otherwise use Boltzgen final designs
-        if (params.run_proteinmpnn) {
-            ch_prodigy_input = PROTEINMPNN_OPTIMIZE.out.optimized_designs
-                .flatMap { meta, mpnn_dir ->
-                    // Find all structure files in ProteinMPNN structures directory
-                    def structure_pattern = "${mpnn_dir}/structures/*"
-                    def structure_files_found = file(structure_pattern)
-                    
-                    // Ensure structure_files is always a list
-                    def structure_files = structure_files_found instanceof List ? structure_files_found : [structure_files_found]
-                    
-                    def structures = []
-                    
-                    structure_files.each { structure ->
-                        if (structure.exists() && structure.isFile() && 
-                            (structure.getName().endsWith('.cif') || structure.getName().endsWith('.pdb'))) {
-                            def structure_name = structure.getName()
-                            def design_meta = meta.clone()
-                            // Remove file extension and _input suffix
-                            def base_name = structure_name.take(structure_name.lastIndexOf('.'))
-                            design_meta.id = base_name.replaceAll(/_input$/, '')
-                            design_meta.parent_id = meta.id
-                            
-                            structures.add([design_meta, structure])
-                        }
+        // Use final_designs from Boltzgen (works whether ProteinMPNN ran or not)
+        COLLECT_DESIGN_FILES(BOLTZGEN_RUN.out.final_designs, "*.cif")
+        
+        // Parse the file list and create input channel for PRODIGY
+        ch_prodigy_input = COLLECT_DESIGN_FILES.out.file_list
+            .flatMap { meta, file_list ->
+                def structures = []
+                file_list.text.split('\n').each { line ->
+                    def structure_path = line.trim()
+                    if (structure_path && structure_path != '') {
+                        def structure_file = file(structure_path)
+                        def structure_name = structure_file.getName()
+                        def base_name = structure_name.take(structure_name.lastIndexOf('.'))
+                        
+                        def design_meta = [:]
+                        design_meta.id = "${meta.id}_${base_name}"
+                        design_meta.parent_id = meta.id
+                        
+                        structures.add([design_meta, structure_file])
                     }
-                    
-                    return structures
                 }
-        } else {
-            ch_prodigy_input = BOLTZGEN_RUN.out.final_designs
-                .flatMap { meta, designs_dir ->
-                    // Find all CIF files in final_ranked_designs directory
-                    def cif_pattern = "${designs_dir}/*.cif"
-                    def cif_files_found = file(cif_pattern)
-                    
-                    // Ensure cif_files is always a list
-                    def cif_files = cif_files_found instanceof List ? cif_files_found : [cif_files_found]
-                    
-                    def structures = []
-                    
-                    cif_files.each { cif ->
-                        if (cif.exists() && cif.isFile()) {
-                            def cif_name = cif.getName()
-                            // Extract design ID from filename
-                            def design_meta = meta.clone()
-                            design_meta.id = cif_name.take(cif_name.lastIndexOf('.'))
-                            design_meta.parent_id = meta.id
-                            
-                            structures.add([design_meta, cif])
-                        }
-                    }
-                    
-                    return structures
-                }
-        }
+                return structures
+            }
         
         // Run PRODIGY binding affinity prediction
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
