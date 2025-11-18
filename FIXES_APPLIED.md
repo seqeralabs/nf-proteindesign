@@ -1,10 +1,49 @@
 # Critical Fixes Applied to nf-proteindesign-2025
 
-## Fixed Issues: IPSAE Path Resolution and Debug Logging Cleanup
+## Fixed Issues: IPSAE Path Resolution, Regex Bug, and Debug Logging Cleanup
 
 ---
 
-## Problem 1: IPSAE Path Resolution Error ❌→✅
+## Problem 1: Regex Escaping Bug (CRITICAL) ❌→✅
+
+### Root Cause
+**The file extension was NOT being removed!**
+
+The regex pattern `cif_name.replaceAll(/\\.cif$/, '')` was **broken** due to improper escaping:
+- In Groovy, `\\.` in a slashy string becomes `\.` which matches backslash + any character
+- Result: `.cif` was NOT removed from filename
+- PAE lookup became: `egfr_peptide_design_5.cif.npz` ❌ (doesn't exist)
+- Should be: `egfr_peptide_design_5.npz` ✅ (exists)
+
+### Debug Output Showing the Bug
+```
+DEBUG: Checking CIF=egfr_peptide_design_5.cif, PAE=egfr_peptide_design_5.cif.npz, PAE exists=false
+DEBUG: SKIPPED - PAE file not found
+```
+
+The `.cif` extension was still present in the PAE filename! ❌
+
+### Solution Applied
+**Replaced regex with reliable string method**:
+
+```groovy
+// BEFORE (BROKEN):
+def base_name = cif_name.replaceAll(/\\.cif$/, '')
+// Result: "egfr_peptide_design_5.cif" (extension NOT removed!)
+
+// AFTER (FIXED):
+def base_name = cif_name.take(cif_name.lastIndexOf('.'))
+// Result: "egfr_peptide_design_5" (extension correctly removed!)
+```
+
+**Applied to 3 locations**:
+1. ✅ IPSAE channel creation (line ~166)
+2. ✅ PRODIGY Boltzgen path (line ~236)
+3. ✅ PRODIGY ProteinMPNN path (line ~210)
+
+---
+
+## Problem 2: IPSAE Path Resolution Error ❌→✅
 
 ### Root Cause
 The IPSAE channel creation logic was searching for CIF files in the wrong location:
@@ -52,7 +91,7 @@ ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_designs
 
 ---
 
-## Problem 2: Excessive Debug Logging 🔊→🔇
+## Problem 3: Excessive Debug Logging 🔊→🔇
 
 ### Root Cause
 Multiple `println` debug statements throughout channel creation:
@@ -114,9 +153,14 @@ nextflow log last -f workdir,status,process
 
 | Issue | Status | Impact |
 |-------|--------|--------|
+| **Regex escaping bug** | ✅ **FIXED** | **Extension now properly removed** |
 | IPSAE path resolution | ✅ Fixed | Now finds CIF/PAE pairs correctly |
 | Debug logging | ✅ Cleaned | Production-ready logs |
-| PRODIGY functionality | ✅ Maintained | Already working, now cleaner |
+| PRODIGY functionality | ✅ Fixed | Regex bug affected this too |
 | Syntax validation | ✅ Passed | No errors |
+
+### What Changed
+**Before**: `egfr_peptide_design_5.cif.npz` ❌ (file not found)  
+**After**: `egfr_peptide_design_5.npz` ✅ (file found!)
 
 **All critical issues resolved. Pipeline ready for testing.**

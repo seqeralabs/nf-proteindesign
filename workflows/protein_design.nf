@@ -163,7 +163,7 @@ workflow PROTEIN_DESIGN {
                         def cif_name = cif.getName()
                         // Boltzgen CIF files: <design_name>.cif
                         // Corresponding PAE: <design_name>.npz (in same directory)
-                        def base_name = cif_name.replaceAll(/\\.cif$/, '')
+                        def base_name = cif_name.take(cif_name.lastIndexOf('.'))
                         def pae_file = file("${designs_dir}/${base_name}.npz")
                         
                         if (pae_file.exists()) {
@@ -207,7 +207,9 @@ workflow PROTEIN_DESIGN {
                             (structure.getName().endsWith('.cif') || structure.getName().endsWith('.pdb'))) {
                             def structure_name = structure.getName()
                             def design_meta = meta.clone()
-                            design_meta.id = structure_name.replaceAll(/\\.(cif|pdb)$/, '').replaceAll(/_input$/, '')
+                            // Remove file extension and _input suffix
+                            def base_name = structure_name.take(structure_name.lastIndexOf('.'))
+                            design_meta.id = base_name.replaceAll(/_input$/, '')
                             design_meta.parent_id = meta.id
                             
                             structures.add([design_meta, structure])
@@ -233,7 +235,7 @@ workflow PROTEIN_DESIGN {
                             def cif_name = cif.getName()
                             // Extract design ID from filename
                             def design_meta = meta.clone()
-                            design_meta.id = cif_name.replaceAll(/\\.cif$/, '')
+                            design_meta.id = cif_name.take(cif_name.lastIndexOf('.'))
                             design_meta.parent_id = meta.id
                             
                             structures.add([design_meta, cif])
