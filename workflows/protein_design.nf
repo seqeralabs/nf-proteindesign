@@ -147,8 +147,9 @@ workflow PROTEIN_DESIGN {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
-        // Step 1: Collect CIF/NPZ pairs from intermediate_designs
-        COLLECT_IPSAE_PAIRS(BOLTZGEN_RUN.out.intermediate_designs)
+        // Step 1: Collect CIF/NPZ pairs from Boltzgen results
+        // Pass the results directory directly - collector will find intermediate_designs
+        COLLECT_IPSAE_PAIRS(BOLTZGEN_RUN.out.results)
         
         // Step 2: Parse the pairs file and create input channel for IPSAE
         ch_ipsae_input = COLLECT_IPSAE_PAIRS.out.pairs
@@ -186,8 +187,8 @@ workflow PROTEIN_DESIGN {
         ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
         
         // Create channel with structures
-        // Use final_designs from Boltzgen (works whether ProteinMPNN ran or not)
-        COLLECT_DESIGN_FILES(BOLTZGEN_RUN.out.final_designs, "*.cif")
+        // Pass the results directory directly - collector will find final_ranked_designs
+        COLLECT_DESIGN_FILES(BOLTZGEN_RUN.out.results, "*.cif")
         
         // Parse the file list and create input channel for PRODIGY
         ch_prodigy_input = COLLECT_DESIGN_FILES.out.file_list
