@@ -21,6 +21,7 @@ include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
+include { FOLDSEEK_SEARCH } from '../modules/local/foldseek_search'
 include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
 
 workflow PROTEIN_DESIGN {
@@ -213,6 +214,40 @@ workflow PROTEIN_DESIGN {
     }
     
     // ========================================================================
+    // OPTIONAL: Foldseek structural similarity search if enabled
+    // ========================================================================
+    if (params.run_foldseek) {
+        // Prepare database channel
+        if (params.foldseek_database) {
+            ch_foldseek_database = Channel.fromPath(params.foldseek_database, checkIfExists: true).first()
+        } else {
+            log.warn "⚠️  Foldseek is enabled but no database specified. Please set --foldseek_database parameter."
+            ch_foldseek_database = Channel.value(file('NO_DATABASE'))
+        }
+        
+        // Use final CIF files directly from Boltzgen
+        // Strategy: Use flatMap to create individual tasks for each CIF file
+        ch_foldseek_input = BOLTZGEN_RUN.out.final_cifs
+            .flatMap { meta, cif_files ->
+                // Convert to list if single file
+                def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                
+                // Create a separate entry for each CIF file
+                cif_list.collect { cif_file ->
+                    def base_name = cif_file.baseName
+                    def design_meta = [:]
+                    design_meta.id = "${meta.id}_${base_name}"
+                    design_meta.parent_id = meta.id
+                    
+                    [design_meta, cif_file]
+                }
+            }
+        
+        // Run Foldseek structural search for each CIF file
+        FOLDSEEK_SEARCH(ch_foldseek_input, ch_foldseek_database)
+    }
+    
+    // ========================================================================
     // CONSOLIDATION: Generate comprehensive metrics report
     // ========================================================================
     if (params.run_consolidation) {
@@ -237,6 +272,11 @@ workflow PROTEIN_DESIGN {
         if (params.run_prodigy) {
             ch_trigger = ch_trigger
                 .concat(PRODIGY_PREDICT.out.summary.collect())
+        }
+        
+        if (params.run_foldseek) {
+            ch_trigger = ch_trigger
+                .concat(FOLDSEEK_SEARCH.out.summary.collect())
         }
         
         // After all outputs are collected, create a single trigger
@@ -266,6 +306,10 @@ workflow PROTEIN_DESIGN {
     p2rank_residues = mode == 'p2rank' ? P2RANK_PREDICT.out.residues : Channel.empty()
     design_yamls = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.design_yamls : Channel.empty()
     pocket_summary = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.pocket_summary : Channel.empty()
+    
+    // Optional analysis outputs (will be empty if not run)
+    foldseek_results = params.run_foldseek ? FOLDSEEK_SEARCH.out.results : Channel.empty()
+    foldseek_summary = params.run_foldseek ? FOLDSEEK_SEARCH.out.summary : Channel.empty()
     
     // Consolidation outputs (will be empty if not run)
     metrics_summary = params.run_consolidation ? CONSOLIDATE_METRICS.out.summary_csv : Channel.empty()

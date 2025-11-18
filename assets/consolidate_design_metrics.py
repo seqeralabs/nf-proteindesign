@@ -7,6 +7,7 @@ This script aggregates metrics from:
 - ProteinMPNN (sequence optimization scores)
 - IPSAE (interface scores)
 - PRODIGY (binding affinity predictions)
+- Foldseek (structural similarity search results)
 
 The output is a comprehensive ranked report showing which designs performed best
 across multiple metrics.
@@ -79,6 +80,45 @@ def parse_prodigy_csv(prodigy_csv):
                 break  # Only first row
     except Exception as e:
         print(f"Warning: Could not parse PRODIGY CSV {prodigy_csv}: {e}", file=sys.stderr)
+    
+    return metrics
+
+
+def parse_foldseek_summary(foldseek_tsv):
+    """
+    Parse Foldseek summary TSV output.
+    
+    Returns:
+        dict with top Foldseek hit metrics
+    """
+    metrics = {
+        'foldseek_top_hit': None,
+        'foldseek_top_evalue': None,
+        'foldseek_top_bits': None,
+        'foldseek_num_hits': 0
+    }
+    
+    if not os.path.exists(foldseek_tsv):
+        return metrics
+    
+    try:
+        with open(foldseek_tsv, 'r') as f:
+            # Skip header line
+            next(f)
+            hit_count = 0
+            for line in f:
+                hit_count += 1
+                # First data line is the top hit
+                if hit_count == 1:
+                    fields = line.strip().split('\t')
+                    if len(fields) >= 12:
+                        metrics['foldseek_top_hit'] = fields[1]  # target name
+                        metrics['foldseek_top_evalue'] = float(fields[10])  # evalue
+                        metrics['foldseek_top_bits'] = float(fields[11])  # bits
+            
+            metrics['foldseek_num_hits'] = hit_count
+    except Exception as e:
+        print(f"Warning: Could not parse Foldseek TSV {foldseek_tsv}: {e}", file=sys.stderr)
     
     return metrics
 
@@ -173,6 +213,7 @@ def aggregate_metrics_from_directories(
     output_dir,
     ipsae_pattern='*/ipsae_scores/*_10_10.txt',
     prodigy_pattern='*/prodigy/*_prodigy_summary.csv',
+    foldseek_pattern='*/foldseek/*_foldseek_summary.tsv',
     boltzgen_pattern='*/predictions',
     mpnn_pattern='*_mpnn_optimized'
 ):
@@ -183,6 +224,7 @@ def aggregate_metrics_from_directories(
         output_dir: Path to the Nextflow output directory
         ipsae_pattern: Glob pattern to find IPSAE score files
         prodigy_pattern: Glob pattern to find PRODIGY CSV files
+        foldseek_pattern: Glob pattern to find Foldseek TSV files
         boltzgen_pattern: Glob pattern to find Boltzgen predictions
         mpnn_pattern: Glob pattern to find ProteinMPNN outputs
     
@@ -243,6 +285,24 @@ def aggregate_metrics_from_directories(
         design_id = basename.replace('_prodigy_summary.csv', '')
         
         metrics = parse_prodigy_csv(prodigy_file)
+        all_metrics[design_id].update(metrics)
+    
+    # Find and parse Foldseek results
+    print(f"\nSearching for Foldseek results with pattern: {foldseek_pattern}")
+    foldseek_search_path = os.path.join(output_dir, foldseek_pattern)
+    print(f"Full search path: {foldseek_search_path}")
+    foldseek_files = glob.glob(foldseek_search_path, recursive=True)
+    print(f"Found {len(foldseek_files)} Foldseek files")
+    if foldseek_files:
+        for f in foldseek_files[:5]:  # Show first 5
+            print(f"  - {f}")
+    
+    for foldseek_file in foldseek_files:
+        # Extract design ID from TSV file name
+        basename = os.path.basename(foldseek_file)
+        design_id = basename.replace('_foldseek_summary.tsv', '')
+        
+        metrics = parse_foldseek_summary(foldseek_file)
         all_metrics[design_id].update(metrics)
     
     # Find and parse Boltzgen predictions

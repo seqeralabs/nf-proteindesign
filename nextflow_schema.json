@@ -309,6 +309,57 @@
                     "description": "Chain selection for PRODIGY (e.g., 'A,B'). If null, auto-detects from structure.",
                     "fa_icon": "fas fa-link"
                 },
+                "run_foldseek": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable Foldseek structural similarity search for final designs.",
+                    "help_text": "Foldseek searches for structurally similar proteins in databases to identify related structures.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "foldseek_database": {
+                    "type": "string",
+                    "description": "Path to Foldseek database (required if run_foldseek is true).",
+                    "help_text": "Path to a pre-built Foldseek database. Common databases include PDB, AlphaFold, or custom databases created with 'foldseek createdb'.",
+                    "fa_icon": "fas fa-database"
+                },
+                "foldseek_evalue": {
+                    "type": "number",
+                    "default": 0.001,
+                    "description": "E-value threshold for reporting matches (lower = more stringent).",
+                    "fa_icon": "fas fa-filter",
+                    "minimum": 0.0
+                },
+                "foldseek_max_seqs": {
+                    "type": "integer",
+                    "default": 100,
+                    "description": "Maximum number of target sequences to report per query.",
+                    "fa_icon": "fas fa-list-ol",
+                    "minimum": 1,
+                    "maximum": 10000
+                },
+                "foldseek_sensitivity": {
+                    "type": "number",
+                    "default": 9.5,
+                    "description": "Search sensitivity (1.0-9.5, higher = more sensitive but slower).",
+                    "fa_icon": "fas fa-sliders-h",
+                    "minimum": 1.0,
+                    "maximum": 9.5
+                },
+                "foldseek_coverage": {
+                    "type": "number",
+                    "default": 0.0,
+                    "description": "Minimum fraction of aligned residues (0.0-1.0, higher = more global alignment).",
+                    "fa_icon": "fas fa-percentage",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "foldseek_alignment_type": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "Alignment type: 0=3Di only, 1=TMalign (global), 2=3Di+AA (local, default).",
+                    "enum": [0, 1, 2],
+                    "fa_icon": "fas fa-align-center"
+                },
                 "run_consolidation": {
                     "type": "boolean",
                     "default": false,
