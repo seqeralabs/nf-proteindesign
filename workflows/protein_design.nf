@@ -145,56 +145,41 @@ workflow PROTEIN_DESIGN {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
-        // Join CIF and NPZ files by matching filenames
-        ch_intermediate_cifs = BOLTZGEN_RUN.out.intermediate_cifs
-            .view { meta, files -> "🔍 intermediate_cifs from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
-            .filter { meta, files -> 
-                // Only keep emissions with files
-                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
-                if (!has_files) {
-                    log.warn "⚠️  No intermediate CIF files found for ${meta.id}"
-                }
-                return has_files
-            }
-            .transpose()  // Split list of files into individual items
-            .view { meta, file -> "  ↳ Transposed: ${meta.id} → ${file.name}" }
-            .map { meta, cif_file ->
-                def base_name = cif_file.baseName
-                [meta.id, base_name, meta, cif_file]
-            }
-        
-        ch_intermediate_npz = BOLTZGEN_RUN.out.intermediate_npz
-            .view { meta, files -> "🔍 intermediate_npz from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
-            .filter { meta, files ->
-                // Only keep emissions with files  
-                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
-                if (!has_files) {
-                    log.warn "⚠️  No intermediate NPZ files found for ${meta.id}"
-                }
-                return has_files
-            }
-            .transpose()  // Split list of files into individual items
-            .view { meta, file -> "  ↳ Transposed NPZ: ${meta.id} → ${file.name}" }
-            .map { meta, npz_file ->
-                def base_name = npz_file.baseName
-                [meta.id, base_name, npz_file]
-            }
-        
-        // Join on parent_id and base_name to create CIF/NPZ pairs
-        ch_ipsae_input = ch_intermediate_cifs
-            .join(ch_intermediate_npz, by: [0, 1])  // Join on [parent_id, base_name]
-            .view { "  ✓ Joined for IPSAE: ${it[0]}_${it[1]}" }
-            .map { parent_id, base_name, meta, cif_file, npz_file ->
-                def model_meta = [:]
-                model_meta.id = "${parent_id}_${base_name}"
-                model_meta.parent_id = parent_id
-                model_meta.model_id = "${parent_id}_${base_name}"
+        // Process intermediate CIF and NPZ files
+        // Strategy: Use flatMap to pair CIF and NPZ files with matching basenames
+        ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_cifs
+            .join(BOLTZGEN_RUN.out.intermediate_npz, by: 0)
+            .flatMap { meta, cif_files, npz_files ->
+                // Convert to list if single file
+                def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                def npz_list = npz_files instanceof List ? npz_files : [npz_files]
                 
-                [model_meta, npz_file, cif_file]
+                // Create a map of basenames to files for quick lookup
+                def npz_map = [:]
+                npz_list.each { npz_file ->
+                    npz_map[npz_file.baseName] = npz_file
+                }
+                
+                // Match CIF files with corresponding NPZ files
+                cif_list.collect { cif_file ->
+                    def base_name = cif_file.baseName
+                    def npz_file = npz_map[base_name]
+                    
+                    if (npz_file) {
+                        def model_meta = [:]
+                        model_meta.id = "${meta.id}_${base_name}"
+                        model_meta.parent_id = meta.id
+                        model_meta.model_id = "${meta.id}_${base_name}"
+                        
+                        [model_meta, npz_file, cif_file]
+                    } else {
+                        log.warn "⚠️  No matching NPZ file found for ${cif_file.name} in design ${meta.id}"
+                        null
+                    }
+                }.findAll { it != null }  // Remove null entries where no match was found
             }
-            .view { meta, npz, cif -> "  → IPSAE input: ${meta.id}" }
         
-        // Run IPSAE calculation
+        // Run IPSAE calculation for each CIF/NPZ pair
         IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
     }
     
@@ -206,29 +191,24 @@ workflow PROTEIN_DESIGN {
         ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
         
         // Use final CIF files directly from Boltzgen
+        // Strategy: Use flatMap to create individual tasks for each CIF file
         ch_prodigy_input = BOLTZGEN_RUN.out.final_cifs
-            .view { meta, files -> "🔍 final_cifs from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
-            .filter { meta, files ->
-                // Only keep emissions with files
-                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
-                if (!has_files) {
-                    log.warn "⚠️  No final CIF files found for ${meta.id}"
-                }
-                return has_files
-            }
-            .transpose()  // Split list of files into individual items
-            .view { meta, file -> "  ↳ Transposed: ${meta.id} → ${file.name}" }
-            .map { meta, cif_file ->
-                def base_name = cif_file.baseName
-                def design_meta = [:]
-                design_meta.id = "${meta.id}_${base_name}"
-                design_meta.parent_id = meta.id
+            .flatMap { meta, cif_files ->
+                // Convert to list if single file
+                def cif_list = cif_files instanceof List ? cif_files : [cif_files]
                 
-                [design_meta, cif_file]
+                // Create a separate entry for each CIF file
+                cif_list.collect { cif_file ->
+                    def base_name = cif_file.baseName
+                    def design_meta = [:]
+                    design_meta.id = "${meta.id}_${base_name}"
+                    design_meta.parent_id = meta.id
+                    
+                    [design_meta, cif_file]
+                }
             }
-            .view { meta, file -> "  → PRODIGY input: ${meta.id}" }
         
-        // Run PRODIGY binding affinity prediction
+        // Run PRODIGY binding affinity prediction for each CIF file
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
     }
     
