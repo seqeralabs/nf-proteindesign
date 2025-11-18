@@ -17,6 +17,9 @@ process BOLTZGEN_RUN {
     tuple val(meta), path("${meta.id}_output/final_ranked_designs"), optional: true, emit: final_designs
     tuple val(meta), path("${meta.id}_output/intermediate_designs"), optional: true, emit: intermediate_designs
     tuple val(meta), path("${meta.id}_output/intermediate_designs_inverse_folded"), optional: true, emit: inverse_folded
+    tuple val(meta), path("${meta.id}_output/final_ranked_designs/*.cif"), optional: true, emit: final_cifs
+    tuple val(meta), path("${meta.id}_output/intermediate_designs/*.cif"), optional: true, emit: intermediate_cifs
+    tuple val(meta), path("${meta.id}_output/intermediate_designs/*.npz"), optional: true, emit: intermediate_npz
     path "versions.yml", emit: versions
 
     script:

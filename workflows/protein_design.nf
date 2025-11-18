@@ -19,8 +19,6 @@ include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_vari
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
-include { COLLECT_DESIGN_FILES } from '../modules/local/collect_design_files'
-include { COLLECT_IPSAE_PAIRS } from '../modules/local/collect_design_files'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
 include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
@@ -147,32 +145,31 @@ workflow PROTEIN_DESIGN {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
-        // Step 1: Collect CIF/NPZ pairs from Boltzgen results
-        // Pass the results directory directly - collector will find intermediate_designs
-        COLLECT_IPSAE_PAIRS(BOLTZGEN_RUN.out.results)
+        // Join CIF and NPZ files by matching filenames
+        ch_intermediate_cifs = BOLTZGEN_RUN.out.intermediate_cifs
+            .transpose()  // Split list of files into individual items
+            .map { meta, cif_file ->
+                def base_name = cif_file.baseName
+                [meta.id, base_name, meta, cif_file]
+            }
         
-        // Step 2: Parse the pairs file and create input channel for IPSAE
-        ch_ipsae_input = COLLECT_IPSAE_PAIRS.out.pairs
-            .flatMap { meta, pairs_file ->
-                def pairs = []
-                pairs_file.text.split('\n').each { line ->
-                    if (line.trim()) {
-                        def parts = line.split(',')
-                        if (parts.size() == 3) {
-                            def cif_path = parts[0]
-                            def npz_path = parts[1]
-                            def design_id = parts[2]
-                            
-                            def model_meta = [:]
-                            model_meta.id = design_id
-                            model_meta.parent_id = meta.id
-                            model_meta.model_id = design_id
-                            
-                            pairs.add([model_meta, file(npz_path), file(cif_path)])
-                        }
-                    }
-                }
-                return pairs
+        ch_intermediate_npz = BOLTZGEN_RUN.out.intermediate_npz
+            .transpose()  // Split list of files into individual items
+            .map { meta, npz_file ->
+                def base_name = npz_file.baseName
+                [meta.id, base_name, npz_file]
+            }
+        
+        // Join on parent_id and base_name to create CIF/NPZ pairs
+        ch_ipsae_input = ch_intermediate_cifs
+            .join(ch_intermediate_npz, by: [0, 1])  // Join on [parent_id, base_name]
+            .map { parent_id, base_name, meta, cif_file, npz_file ->
+                def model_meta = [:]
+                model_meta.id = "${parent_id}_${base_name}"
+                model_meta.parent_id = parent_id
+                model_meta.model_id = "${parent_id}_${base_name}"
+                
+                [model_meta, npz_file, cif_file]
             }
         
         // Run IPSAE calculation
@@ -186,29 +183,16 @@ workflow PROTEIN_DESIGN {
         // Prepare PRODIGY parser script as a channel
         ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
         
-        // Create channel with structures
-        // Pass the results directory directly - collector will find final_ranked_designs
-        COLLECT_DESIGN_FILES(BOLTZGEN_RUN.out.results, "*.cif")
-        
-        // Parse the file list and create input channel for PRODIGY
-        ch_prodigy_input = COLLECT_DESIGN_FILES.out.file_list
-            .flatMap { meta, file_list ->
-                def structures = []
-                file_list.text.split('\n').each { line ->
-                    def structure_path = line.trim()
-                    if (structure_path && structure_path != '') {
-                        def structure_file = file(structure_path)
-                        def structure_name = structure_file.getName()
-                        def base_name = structure_name.take(structure_name.lastIndexOf('.'))
-                        
-                        def design_meta = [:]
-                        design_meta.id = "${meta.id}_${base_name}"
-                        design_meta.parent_id = meta.id
-                        
-                        structures.add([design_meta, structure_file])
-                    }
-                }
-                return structures
+        // Use final CIF files directly from Boltzgen
+        ch_prodigy_input = BOLTZGEN_RUN.out.final_cifs
+            .transpose()  // Split list of files into individual items
+            .map { meta, cif_file ->
+                def base_name = cif_file.baseName
+                def design_meta = [:]
+                design_meta.id = "${meta.id}_${base_name}"
+                design_meta.parent_id = meta.id
+                
+                [design_meta, cif_file]
             }
         
         // Run PRODIGY binding affinity prediction
