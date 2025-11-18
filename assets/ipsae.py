@@ -445,6 +445,8 @@ if boltz1:
     
     # First check if pLDDT data is in the same NPZ file (Boltz2/Boltzgen style)
     data_pae = np.load(pae_file_path)
+    print(f"Boltz PAE file keys: {list(data_pae.keys())}")
+    
     if 'plddt' in data_pae.keys():
         # Boltz2/Boltzgen format: plddt in same file as pae
         plddt_boltz1=np.array(100.0*data_pae['plddt']) if data_pae['plddt'].max() <= 1.0 else np.array(data_pae['plddt'])
@@ -455,9 +457,23 @@ if boltz1:
         plddt_file_path=pae_file_path.replace("pae","plddt")
         if os.path.exists(plddt_file_path):
             data_plddt=np.load(plddt_file_path)
-            plddt_boltz1=np.array(100.0*data_plddt['plddt'])
-            plddt =    plddt_boltz1[np.ix_(token_array.astype(bool))]
-            cb_plddt = plddt_boltz1[np.ix_(token_array.astype(bool))]
+            # Check what keys are available in the plddt file
+            if 'plddt' in data_plddt.keys():
+                plddt_boltz1=np.array(100.0*data_plddt['plddt'])
+                plddt =    plddt_boltz1[np.ix_(token_array.astype(bool))]
+                cb_plddt = plddt_boltz1[np.ix_(token_array.astype(bool))]
+            else:
+                print(f"Warning: plddt file {plddt_file_path} does not contain 'plddt' key.")
+                print(f"Available keys: {list(data_plddt.keys())}")
+                # Try alternative key names that might contain confidence scores
+                if 'confidence' in data_plddt.keys():
+                    plddt_boltz1=np.array(100.0*data_plddt['confidence']) if data_plddt['confidence'].max() <= 1.0 else np.array(data_plddt['confidence'])
+                    plddt =    plddt_boltz1[np.ix_(token_array.astype(bool))]
+                    cb_plddt = plddt_boltz1[np.ix_(token_array.astype(bool))]
+                else:
+                    print("Warning: No confidence scores found, using zeros")
+                    plddt = np.zeros(ntokens)
+                    cb_plddt = np.zeros(ntokens)
         else:
             plddt = np.zeros(ntokens)
             cb_plddt = np.zeros(ntokens)
