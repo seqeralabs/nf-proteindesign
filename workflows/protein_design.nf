@@ -147,13 +147,31 @@ workflow PROTEIN_DESIGN {
         
         // Join CIF and NPZ files by matching filenames
         ch_intermediate_cifs = BOLTZGEN_RUN.out.intermediate_cifs
+            .view { meta, files -> "🔍 intermediate_cifs from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
+            .filter { meta, files -> 
+                // Only keep emissions with files
+                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
+                if (!has_files) {
+                    log.warn "⚠️  No intermediate CIF files found for ${meta.id}"
+                }
+                return has_files
+            }
             .transpose()  // Split list of files into individual items
+            .view { meta, file -> "  ↳ Transposed: ${meta.id} → ${file.name}" }
             .map { meta, cif_file ->
                 def base_name = cif_file.baseName
                 [meta.id, base_name, meta, cif_file]
             }
         
         ch_intermediate_npz = BOLTZGEN_RUN.out.intermediate_npz
+            .filter { meta, files ->
+                // Only keep emissions with files  
+                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
+                if (!has_files) {
+                    log.warn "No intermediate NPZ files found for ${meta.id}"
+                }
+                return has_files
+            }
             .transpose()  // Split list of files into individual items
             .map { meta, npz_file ->
                 def base_name = npz_file.baseName
@@ -185,7 +203,17 @@ workflow PROTEIN_DESIGN {
         
         // Use final CIF files directly from Boltzgen
         ch_prodigy_input = BOLTZGEN_RUN.out.final_cifs
+            .view { meta, files -> "🔍 final_cifs from ${meta.id}: ${files instanceof List ? files.size() + ' files' : '1 file'}" }
+            .filter { meta, files ->
+                // Only keep emissions with files
+                def has_files = files && (files instanceof List ? !files.isEmpty() : true)
+                if (!has_files) {
+                    log.warn "⚠️  No final CIF files found for ${meta.id}"
+                }
+                return has_files
+            }
             .transpose()  // Split list of files into individual items
+            .view { meta, file -> "  ↳ Transposed: ${meta.id} → ${file.name}" }
             .map { meta, cif_file ->
                 def base_name = cif_file.baseName
                 def design_meta = [:]
