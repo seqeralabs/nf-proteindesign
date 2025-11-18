@@ -150,26 +150,50 @@ workflow PROTEIN_DESIGN {
         ch_ipsae_input = BOLTZGEN_RUN.out.results
             .flatMap { meta, results_dir ->
                 // Find all model CIF files and corresponding PAE files
-                def cif_files = file("${results_dir}/predictions/**/*_model_*.cif")
+                // Use fileTree() for proper recursive directory traversal
+                def cif_pattern = "${results_dir}/predictions/**/*_model_*.cif"
+                def cif_files_found = file(cif_pattern)
+                
+                // Ensure cif_files is always a list (file() returns single object if only one match)
+                def cif_files = cif_files_found instanceof List ? cif_files_found : [cif_files_found]
+                
                 def pairs = []
                 
+                // Debug logging
+                if (cif_files.size() == 0) {
+                    println "WARNING: No CIF files found matching pattern: ${cif_pattern}"
+                } else {
+                    println "Found ${cif_files.size()} CIF files for IPSAE analysis"
+                }
+                
                 cif_files.each { cif ->
-                    def cif_name = cif.getName()
-                    def matcher = cif_name =~ /(.+)_model_(\\d+)\\.cif$/
-                    
-                    if (matcher.matches()) {
-                        def input_name = matcher[0][1]
-                        def model_num = matcher[0][2]
+                    if (cif.exists() && cif.isFile()) {
+                        def cif_name = cif.getName()
+                        def matcher = cif_name =~ /(.+)_model_(\\d+)\\.cif$/
                         
-                        def pae_file = file("${results_dir}/predictions/${input_name}/pae_${input_name}_model_${model_num}.npz")
-                        
-                        if (pae_file.exists()) {
-                            def model_meta = meta.clone()
-                            model_meta.model_id = "${meta.id}_model_${model_num}"
-                            pairs.add([model_meta, pae_file, cif])
+                        if (matcher.matches()) {
+                            def input_name = matcher[0][1]
+                            def model_num = matcher[0][2]
+                            
+                            // Construct PAE file path - try multiple possible locations
+                            def pae_file = file("${results_dir}/predictions/${input_name}/pae_${input_name}_model_${model_num}.npz")
+                            
+                            if (pae_file.exists()) {
+                                def model_meta = meta.clone()
+                                model_meta.model_id = "${meta.id}_model_${model_num}"
+                                pairs.add([model_meta, pae_file, cif])
+                                println "Added IPSAE pair: ${model_meta.model_id}"
+                            } else {
+                                println "WARNING: PAE file not found for ${cif_name}: ${pae_file}"
+                            }
                         }
                     }
                 }
+                
+                if (pairs.size() == 0) {
+                    println "WARNING: No valid CIF/PAE pairs found for sample ${meta.id}"
+                }
+                
                 return pairs
             }
         
@@ -190,37 +214,76 @@ workflow PROTEIN_DESIGN {
             ch_prodigy_input = PROTEINMPNN_OPTIMIZE.out.optimized_designs
                 .flatMap { meta, mpnn_dir ->
                     // Find all structure files in ProteinMPNN structures directory
-                    def structure_files = file("${mpnn_dir}/structures/*")
+                    def structure_pattern = "${mpnn_dir}/structures/*"
+                    def structure_files_found = file(structure_pattern)
+                    
+                    // Ensure structure_files is always a list
+                    def structure_files = structure_files_found instanceof List ? structure_files_found : [structure_files_found]
+                    
                     def structures = []
                     
+                    // Debug logging
+                    if (structure_files.size() == 0) {
+                        println "WARNING: No structure files found matching pattern: ${structure_pattern}"
+                    } else {
+                        println "Found ${structure_files.size()} structure files for PRODIGY analysis from ProteinMPNN"
+                    }
+                    
                     structure_files.each { structure ->
-                        if (structure.getName().endsWith('.cif') || structure.getName().endsWith('.pdb')) {
+                        if (structure.exists() && structure.isFile() && 
+                            (structure.getName().endsWith('.cif') || structure.getName().endsWith('.pdb'))) {
                             def structure_name = structure.getName()
                             def design_meta = meta.clone()
                             design_meta.id = structure_name.replaceAll(/\\.(cif|pdb)$/, '').replaceAll(/_input$/, '')
                             design_meta.parent_id = meta.id
                             
                             structures.add([design_meta, structure])
+                            println "Added PRODIGY structure: ${design_meta.id}"
                         }
                     }
+                    
+                    if (structures.size() == 0) {
+                        println "WARNING: No valid structures found for PRODIGY from sample ${meta.id}"
+                    }
+                    
                     return structures
                 }
         } else {
             ch_prodigy_input = BOLTZGEN_RUN.out.final_designs
                 .flatMap { meta, designs_dir ->
                     // Find all CIF files in final_ranked_designs directory
-                    def cif_files = file("${designs_dir}/*.cif")
+                    def cif_pattern = "${designs_dir}/*.cif"
+                    def cif_files_found = file(cif_pattern)
+                    
+                    // Ensure cif_files is always a list
+                    def cif_files = cif_files_found instanceof List ? cif_files_found : [cif_files_found]
+                    
                     def structures = []
                     
-                    cif_files.each { cif ->
-                        def cif_name = cif.getName()
-                        // Extract design ID from filename
-                        def design_meta = meta.clone()
-                        design_meta.id = cif_name.replaceAll(/\\.cif$/, '')
-                        design_meta.parent_id = meta.id
-                        
-                        structures.add([design_meta, cif])
+                    // Debug logging
+                    if (cif_files.size() == 0) {
+                        println "WARNING: No CIF files found matching pattern: ${cif_pattern}"
+                    } else {
+                        println "Found ${cif_files.size()} CIF files for PRODIGY analysis from Boltzgen"
                     }
+                    
+                    cif_files.each { cif ->
+                        if (cif.exists() && cif.isFile()) {
+                            def cif_name = cif.getName()
+                            // Extract design ID from filename
+                            def design_meta = meta.clone()
+                            design_meta.id = cif_name.replaceAll(/\\.cif$/, '')
+                            design_meta.parent_id = meta.id
+                            
+                            structures.add([design_meta, cif])
+                            println "Added PRODIGY structure: ${design_meta.id}"
+                        }
+                    }
+                    
+                    if (structures.size() == 0) {
+                        println "WARNING: No valid CIF files found for PRODIGY from sample ${meta.id}"
+                    }
+                    
                     return structures
                 }
         }
