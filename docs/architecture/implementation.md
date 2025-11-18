@@ -42,9 +42,7 @@ nf-proteindesign-2025/
 │   ├── test.config                     # Test profile configuration
 │   └── test_full.config                # Full test profile
 ├── workflows/
-│   ├── protein_design.nf               # Unified workflow (design mode)
-│   ├── target_to_designs.nf            # Target mode preprocessing
-│   └── p2rank_to_designs.nf            # P2Rank mode preprocessing
+│   └── protein_design.nf               # Unified workflow handling all modes
 ├── modules/local/
 │   ├── p2rank_predict.nf
 │   ├── format_binding_sites.nf

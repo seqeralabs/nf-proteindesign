@@ -139,9 +139,7 @@ process {
 ```
 main.nf                           # Main entry point with mode detection
 workflows/
-├── protein_design.nf             # Unified workflow (handles design mode)
-├── target_to_designs.nf          # Target mode preprocessing
-└── p2rank_to_designs.nf          # P2Rank mode preprocessing
+└── protein_design.nf             # Unified workflow handling all three modes
 
 modules/local/
 ├── p2rank_predict.nf             # P2Rank binding site prediction
