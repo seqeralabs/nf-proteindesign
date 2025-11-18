@@ -1,0 +1,7 @@
+Nextflow 25.10.0 is available - Please consider updating your version to it
+
+ N E X T F L O W   ~  version 25.04.7
+
+Launching `./main.nf` [grave_volta] DSL2 - revision: c97276c39a
+
+ERROR: Please provide a samplesheet with --input
