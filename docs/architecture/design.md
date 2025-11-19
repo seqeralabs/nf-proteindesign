@@ -161,11 +161,6 @@ profiles {
         docker.runOptions = '--gpus all'
     }
     
-    singularity {
-        singularity.enabled = true
-        singularity.autoMounts = true
-    }
-    
     test {
         includeConfig 'conf/test.config'
     }

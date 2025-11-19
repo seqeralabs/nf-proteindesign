@@ -5,7 +5,6 @@ process PROTEINMPNN_OPTIMIZE {
     // Publish results
     publishDir "${params.outdir}/${meta.id}/proteinmpnn", mode: params.publish_dir_mode
 
-    conda "bioconda::proteinmpnn=1.0.1"
     container 'cr.seqera.io/scidev/proteinmpnn:1.0.1'
 
     input:

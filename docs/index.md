@@ -6,7 +6,6 @@
 <div style="text-align: center; margin: 2rem 0;">
   <img src="https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg" alt="Nextflow">
   <img src="https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker" alt="Docker">
-  <img src="https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000" alt="Singularity">
 </div>
 
 ## :material-test-tube: Overview
@@ -40,7 +39,7 @@
 - **:material-parallel: Parallel Processing**: Run multiple design specifications simultaneously
 - **:material-tune-variant: Flexible Modes**: two operational modes with automatic detection
 - **:material-chart-line: Comprehensive Analysis**: Optional IPSAE scoring and PRODIGY binding affinity prediction
-- **:material-docker: Container Support**: Full Docker and Singularity compatibility
+- **:material-docker: Container Support**: Full Docker compatibility
 - **:material-gpu: GPU Acceleration**: Optimized for NVIDIA GPU execution
 - **:material-file-tree: Organized Outputs**: Structured results with intermediate files and metrics
 

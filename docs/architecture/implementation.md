@@ -257,11 +257,6 @@ profiles {
         docker.enabled = true
         docker.runOptions = '--gpus all'
     }
-    
-    singularity {
-        includeConfig 'conf/base.config'
-        singularity.enabled = true
-    }
 }
 ```
 
