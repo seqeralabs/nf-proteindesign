@@ -58,12 +58,23 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 Comprehensive tests using EGFR (PDB: 1IVO):
 
 ```bash
-# Test Design Mode (15-20 minutes)
+# Test Design Mode - Quick validation (15-20 minutes)
 nextflow run FloWuenne/nf-proteindesign-2025 -profile test_design,docker
 
-# Test Target Mode (30-45 minutes) 
+# Test Target Mode - Auto-generation (30-45 minutes) 
 nextflow run FloWuenne/nf-proteindesign-2025 -profile test_target,docker
+
+# Test Production Scale - Full production run (4-8 hours)
+nextflow run FloWuenne/nf-proteindesign-2025 -profile test_production,docker
 ```
+
+### Test Profile Comparison
+
+| Profile | Mode | Designs | Budget | Runtime | Purpose |
+|---------|------|---------|--------|---------|---------|
+| `test_design` | Design | 10 | 2 | ~20 min | Quick validation of design mode |
+| `test_target` | Target | 10 | 2 | ~45 min | Test auto-generation features |
+| `test_production` | Design | 10,000 | 10 | ~6 hrs | Validate production-scale workflow |
 
 ## Example Commands
 
