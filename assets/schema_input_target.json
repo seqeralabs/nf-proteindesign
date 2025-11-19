@@ -14,8 +14,8 @@
       },
       "target_structure": {
         "type": "string",
-        "pattern": "^\\S+\\.(pdb|cif|PDB|CIF)$",
-        "errorMessage": "Target structure must be a valid file path ending in .pdb or .cif"
+        "pattern": "^(https?://\\S+\\.(pdb|cif|PDB|CIF)|\\S+\\.(pdb|cif|PDB|CIF))$",
+        "errorMessage": "Target structure must be a local file path or URL ending in .pdb or .cif"
       },
       "target_chain_ids": {
         "type": "string",
