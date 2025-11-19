@@ -4,7 +4,7 @@
 ========================================================================================
     nf-proteindesign: Nextflow pipeline for Boltzgen protein design
 ========================================================================================
-    Github : https://github.com/FloWuenne/nf-proteindesign-2025
+    Github : https://github.com/seqeralabs/nf-proteindesign
 ----------------------------------------------------------------------------------------
 */
 

@@ -359,4 +359,4 @@ git push origin v1.0.0
 ---
 
 !!! tip "Contributing"
-    See the [GitHub repository](https://github.com/FloWuenne/nf-proteindesign-2025) for contribution guidelines.
+    See the [GitHub repository](https://github.com/seqeralabs/nf-proteindesign) for contribution guidelines.

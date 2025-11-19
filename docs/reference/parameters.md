@@ -137,7 +137,7 @@ The pipeline automatically detects the mode based on samplesheet columns, but yo
 ### Basic Usage
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --outdir results
 ```
@@ -145,7 +145,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Custom Design Parameters
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --outdir results \
     --n_samples 50 \
@@ -156,7 +156,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Target Mode Configuration
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --mode target \
     --min_design_length 60 \
@@ -169,7 +169,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### With All Analysis Tools
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --outdir results \
     --run_ipsae \
@@ -180,7 +180,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Resource Optimization
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --outdir results \
     --max_cpus 32 \
@@ -216,7 +216,7 @@ params {
 Use with:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 -c params.config
+nextflow run seqeralabs/nf-proteindesign -c params.config
 ```
 
 ## :material-arrow-right: See Also

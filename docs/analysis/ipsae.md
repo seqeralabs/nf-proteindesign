@@ -12,7 +12,7 @@ ipSAE (Interface Protein Structure Analysis and Evaluation) provides quantitativ
 Add the `--run_ipsae` flag to your pipeline command:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --run_ipsae \

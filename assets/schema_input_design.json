@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/assets/schema_input_design.json",
-  "title": "FloWuenne/nf-proteindesign-2025 - Design mode samplesheet schema",
+  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_design.json",
+  "title": "seqeralabs/nf-proteindesign - Design mode samplesheet schema",
   "description": "Schema for validating samplesheets in design mode where pre-made design YAML files are provided",
   "type": "array",
   "items": {

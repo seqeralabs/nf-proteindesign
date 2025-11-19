@@ -33,7 +33,7 @@ EOF
 ### Run
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input antibody_samples.csv \
     --outdir egfr_antibodies \
@@ -69,7 +69,7 @@ EOF
 ### Run
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input peptide_targets.csv \
@@ -110,7 +110,7 @@ EOF
 ### Run
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input discovery.csv \
     --n_samples 20 \
@@ -143,7 +143,7 @@ EOF
 ### Run
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input hts_campaign.csv \
@@ -191,7 +191,7 @@ Iterative refinement of designs.
 
 ```bash
 # Wide screen
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input targets.csv \
@@ -208,7 +208,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ```bash
 # Analyze round 1, identify optimal range (e.g., 80-110)
 
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input targets.csv \
@@ -226,7 +226,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 # Create custom YAML from best hits
 # Use design mode for final optimization
 
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode design \
     --input optimized_designs.csv \
@@ -265,7 +265,7 @@ singularity {
 ### Run
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile singularity \
     -c hpc.config \
     --input samplesheet.csv \
@@ -278,7 +278,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ```bash
 # Use explicit versions and seeds
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -r v1.0.0 \
     -profile docker \
     --input samplesheet.csv \
@@ -291,7 +291,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ```bash
 # Add -resume flag
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -302,7 +302,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ```bash
 # Generate detailed reports
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \

@@ -85,7 +85,7 @@ Choose the appropriate profile for your system:
 
 === "Docker"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --input samplesheet.csv \
         --outdir results
@@ -93,7 +93,7 @@ Choose the appropriate profile for your system:
 
 === "Singularity"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile singularity \
         --input samplesheet.csv \
         --outdir results
@@ -101,7 +101,7 @@ Choose the appropriate profile for your system:
 
 === "Local (with Docker)"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker,local \
         --input samplesheet.csv \
         --outdir results
@@ -113,7 +113,7 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
 
 === "Design Mode"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode design \
         --input samplesheet_designs.csv \
@@ -122,7 +122,7 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
 
 === "Target Mode"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode target \
         --input samplesheet_targets.csv \
@@ -132,7 +132,7 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
 
 === ""
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --outdir results \
     ```
@@ -144,7 +144,7 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
 Enable optional analysis steps:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -157,7 +157,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 Customize design generation:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -171,7 +171,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 Adjust compute resources:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -238,7 +238,7 @@ spike_nb1,designs/antibody_target.yaml
 ### 3. Run Pipeline
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input spike_designs.csv \
     --outdir covid_binders \
@@ -299,6 +299,6 @@ Now that you're up and running:
 ---
 
 !!! question "Need Help?"
-    - Check the [GitHub Issues](https://github.com/FloWuenne/nf-proteindesign-2025/issues)
+    - Check the [GitHub Issues](https://github.com/seqeralabs/nf-proteindesign/issues)
     - Review [example workflows](reference/examples.md)
     - See the [Quick Reference](getting-started/quick-reference.md)

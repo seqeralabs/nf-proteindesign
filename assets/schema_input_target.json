@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/assets/schema_input_target.json",
-  "title": "FloWuenne/nf-proteindesign-2025 - Target mode samplesheet schema",
+  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_target.json",
+  "title": "seqeralabs/nf-proteindesign - Target mode samplesheet schema",
   "description": "Schema for validating samplesheets in target mode where target structures are provided for design generation",
   "type": "array",
   "items": {

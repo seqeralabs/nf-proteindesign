@@ -64,7 +64,7 @@ The pipeline can be run directly from GitHub without manual installation:
 
 ```bash
 # Run directly (Nextflow will handle download)
-nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet.csv --outdir results
+nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results
 ```
 
 ### Alternative: Clone Repository
@@ -73,7 +73,7 @@ For development or offline use:
 
 ```bash
 # Clone repository
-git clone https://github.com/FloWuenne/nf-proteindesign-2025.git
+git clone https://github.com/seqeralabs/nf-proteindesign.git
 cd nf-proteindesign-2025
 
 # Run from local directory
@@ -90,7 +90,7 @@ echo "sample,design_yaml" > test.csv
 echo "test,test_data/test_design.yaml" >> test.csv
 
 # Run test
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker,test \
     --input test.csv \
     --outdir test_results
@@ -130,7 +130,7 @@ process {
 Set appropriate resource limits for your system:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -167,7 +167,7 @@ singularity {
 Run with custom config:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile singularity \
     -c hpc.config \
     --input samplesheet.csv \
@@ -232,7 +232,7 @@ singularity pull docker://ghcr.io/flouwuenne/boltzgen:latest
 
 ```bash
 # Pull latest version
-nextflow pull FloWuenne/nf-proteindesign-2025
+nextflow pull seqeralabs/nf-proteindesign
 
 # Or update local clone
 cd nf-proteindesign-2025
@@ -261,5 +261,5 @@ Once installed, check out:
 ---
 
 !!! question "Need Help?"
-    - Check [GitHub Issues](https://github.com/FloWuenne/nf-proteindesign-2025/issues)
+    - Check [GitHub Issues](https://github.com/seqeralabs/nf-proteindesign/issues)
     - Review [Troubleshooting](../quick-start.md#troubleshooting)

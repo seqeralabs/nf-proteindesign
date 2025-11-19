@@ -66,7 +66,7 @@ il6,data/il6.pdb,"20,21,22",peptide,15,30
 
 === "Basic Run"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode target \
         --input samplesheet.csv \
@@ -75,7 +75,7 @@ il6,data/il6.pdb,"20,21,22",peptide,15,30
 
 === "Custom Parameters"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode target \
         --input samplesheet.csv \
@@ -88,7 +88,7 @@ il6,data/il6.pdb,"20,21,22",peptide,15,30
 
 === "With Analysis"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode target \
         --input samplesheet.csv \
@@ -133,7 +133,7 @@ her2,data/her2.pdb,"25,26,27,28,90,91",protein
 EOF
 
 # Run with systematic length screening
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input protein_targets.csv \
@@ -158,7 +158,7 @@ target2,data/target2.pdb,"45,46,47",peptide
 EOF
 
 # Run peptide design
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input peptide_targets.csv \
@@ -184,7 +184,7 @@ influenza_ha,data/ha_head.pdb,"145,156,193"
 EOF
 
 # Run nanobody design
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input nanobody_targets.csv \

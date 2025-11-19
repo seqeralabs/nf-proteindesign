@@ -25,7 +25,7 @@ PRODIGY analyzes several interface properties:
 Add the `--run_prodigy` flag to enable analysis:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --run_prodigy \
@@ -231,7 +231,7 @@ Complete pipeline run with PRODIGY:
 
 ```bash
 # Run full design workflow with affinity prediction
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir protein_designs \

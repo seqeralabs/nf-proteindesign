@@ -8,21 +8,21 @@ Fast reference for common commands and configurations.
 
 ```bash
 # Simplest possible run (auto-detects mode)
-nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet.csv --outdir results
+nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results
 ```
 
 ### With Analysis
 
 ```bash
 # Include affinity prediction and scoring
-nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet.csv --outdir results --run_prodigy --run_ipsae
+nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results --run_prodigy --run_ipsae
 ```
 
 ### Resume Failed Run
 
 ```bash
 # Resume from where it stopped
-nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet.csv --outdir results -resume
+nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results -resume
 ```
 
 ## :material-file-table: Samplesheet Templates
@@ -107,7 +107,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet
 ### Quick Test (2 minutes)
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input test.csv \
     --mode target \
@@ -122,7 +122,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Standard Run (30-60 minutes)
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --n_samples 20 \
@@ -133,7 +133,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Production Run (several hours)
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --mode target \
@@ -150,7 +150,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Peptide Design
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input peptides.csv \
     --mode target \
@@ -165,7 +165,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 ### Nanobody Discovery
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input targets.csv \
     --chain_type nanobody \
@@ -224,7 +224,7 @@ nextflow run ... --max_memory 64.GB
 
 ```bash
 # Resume from last checkpoint
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -315,7 +315,7 @@ grep "Succeeded" results/pipeline_info/execution_trace.txt | wc -l
 - [Pipeline Modes](../modes/overview.md)
 - [Parameter Reference](../reference/parameters.md)
 - [Example Workflows](../reference/examples.md)
-- [GitHub Repository](https://github.com/FloWuenne/nf-proteindesign-2025)
+- [GitHub Repository](https://github.com/seqeralabs/nf-proteindesign)
 
 ---
 

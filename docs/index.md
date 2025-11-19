@@ -1,5 +1,8 @@
 # nf-proteindesign
 
+!!! warning "Proof of Principle Pipeline"
+    This pipeline was developed by Seqera as a proof of principle using Seqera AI. It demonstrates the capabilities of AI-assisted bioinformatics pipeline development but should be thoroughly validated before use in production environments.
+
 <div style="text-align: center; margin: 2rem 0;">
   <img src="https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg" alt="Nextflow">
   <img src="https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker" alt="Docker">
@@ -83,7 +86,7 @@ Get started with nf-proteindesign in minutes:
 curl -s https://get.nextflow.io | bash
 
 # 2. Run the pipeline
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results
@@ -144,7 +147,7 @@ We welcome contributions! The pipeline is designed with modularity and extensibi
 
 ## :material-license: License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/FloWuenne/nf-proteindesign-2025/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/seqeralabs/nf-proteindesign/blob/main/LICENSE) file for details.
 
 ---
 
