@@ -65,17 +65,6 @@ workflow PROTEIN_DESIGN {
             }
     }
     
-
-                    def design_id = yaml_file.baseName
-                    design_meta.id = design_id
-                    design_meta.parent_id = meta.id  // Keep reference to original target
-                    
-                    // Return meta, yaml file, and structure file
-                    [design_meta, yaml_file, structure]
-                }
-            }
-    }
-    
     // ========================================================================
     // CONVERGENCE POINT: All modes run Boltzgen on design YAMLs
     // ========================================================================
