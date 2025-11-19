@@ -5,7 +5,6 @@ process PRODIGY_PREDICT {
     // Publish results
     publishDir "${params.outdir}/${meta.parent_id ?: meta.id}/prodigy", mode: params.publish_dir_mode
 
-    conda "bioconda::prodigy-prot=2.3.0"
     container 'community.wave.seqera.io/library/gcc_linux-64_pip_prodigy-prot:2e23eabd18cdbd0a'
 
     input:

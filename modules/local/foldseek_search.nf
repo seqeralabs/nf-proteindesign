@@ -5,7 +5,6 @@ process FOLDSEEK_SEARCH {
     // Publish results
     publishDir "${params.outdir}/${meta.parent_id ?: meta.id}/foldseek", mode: params.publish_dir_mode
 
-    conda "bioconda::foldseek=9.427df8a"
     container 'quay.io/biocontainers/foldseek:9.427df8a--pl5321hf1761c0_0'
 
     input:

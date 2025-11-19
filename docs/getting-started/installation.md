@@ -21,22 +21,14 @@ nextflow -version
 
 #### 2. Container Engine
 
-You need either Docker or Singularity:
+Docker is required to run this pipeline:
 
-=== "Docker (Recommended for Local)"
-    ```bash
-    # Install Docker: https://docs.docker.com/get-docker/
-    # Verify installation
-    docker --version
-    docker run hello-world
-    ```
-
-=== "Singularity (Recommended for HPC)"
-    ```bash
-    # Install Singularity: https://sylabs.io/guides/latest/user-guide/
-    # Verify installation
-    singularity --version
-    ```
+```bash
+# Install Docker: https://docs.docker.com/get-docker/
+# Verify installation
+docker --version
+docker run hello-world
+```
 
 ### GPU Requirements
 
@@ -157,10 +149,9 @@ process {
     }
 }
 
-singularity {
+docker {
     enabled = true
-    autoMounts = true
-    cacheDir = '/path/to/singularity/cache'
+    runOptions = '--gpus all'
 }
 ```
 
@@ -168,7 +159,7 @@ Run with custom config:
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
-    -profile singularity \
+    -profile docker \
     -c hpc.config \
     --input samplesheet.csv \
     --outdir results
@@ -187,10 +178,6 @@ The pipeline uses pre-built containers from GitHub Container Registry:
 # Docker
 docker pull ghcr.io/flouwuenne/boltzgen:latest
 docker pull ghcr.io/flouwuenne/prodigy:latest
-
-# Singularity
-export NXF_SINGULARITY_CACHEDIR="/path/to/cache"
-singularity pull docker://ghcr.io/flouwuenne/boltzgen:latest
 ```
 
 ## :material-help-circle: Troubleshooting
@@ -244,10 +231,6 @@ git pull origin main
 ```bash
 # Docker
 docker pull ghcr.io/flouwuenne/boltzgen:latest
-
-# Singularity
-rm -rf $NXF_SINGULARITY_CACHEDIR/boltzgen*
-# Will re-download on next run
 ```
 
 ## :material-arrow-right: Next Steps

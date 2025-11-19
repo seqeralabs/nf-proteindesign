@@ -239,7 +239,7 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## :material-cloud: Example 6: HPC Cluster
 
-Running on SLURM cluster with Singularity.
+Running on SLURM cluster with Docker.
 
 ### Configuration
 
@@ -255,10 +255,9 @@ process {
     }
 }
 
-singularity {
+docker {
     enabled = true
-    autoMounts = true
-    cacheDir = '/scratch/singularity'
+    runOptions = '--gpus all'
 }
 ```
 
@@ -266,7 +265,7 @@ singularity {
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
-    -profile singularity \
+    -profile docker \
     -c hpc.config \
     --input samplesheet.csv \
     --outdir results

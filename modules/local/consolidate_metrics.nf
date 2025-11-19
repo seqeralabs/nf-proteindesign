@@ -4,10 +4,7 @@ process CONSOLIDATE_METRICS {
     // Publish reports to top-level output directory
     publishDir "${params.outdir}", mode: params.publish_dir_mode
 
-    conda "conda-forge::python=3.11"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'docker://python:3.11' :
-        'python:3.11' }"
+    container 'python:3.11'
 
     input:
     val output_dir  // Path to the complete output directory with all results (as string)

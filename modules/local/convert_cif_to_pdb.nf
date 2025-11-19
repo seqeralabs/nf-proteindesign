@@ -2,7 +2,6 @@ process CONVERT_CIF_TO_PDB {
     tag "${meta.id}"
     label 'process_low'
     
-    conda "bioconda::biopython=1.83"
     container 'biopython/biopython:latest'
 
     input:

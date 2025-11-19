@@ -5,7 +5,6 @@ process BOLTZGEN_RUN {
     // Publish results
     publishDir "${params.outdir}/${meta.id}", mode: params.publish_dir_mode, saveAs: { filename -> filename }
 
-    conda "boltzgen::boltzgen"
     container 'wuennemannflorian/boltzgen:latest'
 
     input:

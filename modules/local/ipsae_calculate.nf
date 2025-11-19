@@ -5,7 +5,6 @@ process IPSAE_CALCULATE {
     // Publish results
     publishDir "${params.outdir}/${meta.id}/ipsae_scores", mode: params.publish_dir_mode, saveAs: { filename -> filename }
 
-    conda "conda-forge::python=3.11 conda-forge::numpy=1.24"
     container 'community.wave.seqera.io/library/numpy:2.3.5--f8d2712d76b3e3ce'
 
     input:

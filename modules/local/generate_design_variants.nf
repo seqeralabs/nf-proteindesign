@@ -4,7 +4,6 @@ process GENERATE_DESIGN_VARIANTS {
     
     publishDir "${params.outdir}/${meta.id}/design_variants", mode: params.publish_dir_mode
 
-    conda "conda-forge::python=3.11 conda-forge::pyyaml=6.0"
     container "community.wave.seqera.io/library/python_pyyaml:7d7b918a5ce0fc0d"
 
     input:

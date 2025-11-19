@@ -14,7 +14,7 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Components
 
-- **`-profile`**: Execution profile (`docker`, `singularity`, `test`)
+- **`-profile`**: Execution profile (`docker`, `test`)
 - **`--input`**: Path to samplesheet CSV file
 - **`--outdir`**: Output directory path
 - **`[OPTIONS]`**: Additional pipeline parameters
@@ -296,8 +296,8 @@ Combine multiple profiles:
 # Docker with test data
 nextflow run ... -profile docker,test
 
-# Singularity with custom settings
-nextflow run ... -profile singularity,custom
+# Docker with custom settings
+nextflow run ... -profile docker,custom
 ```
 
 ## :material-bug: Common Issues

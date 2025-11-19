@@ -14,16 +14,11 @@ Before running the pipeline, ensure you have:
    sudo mv nextflow /usr/local/bin/
    ```
 
-2. **Container Engine** (one of):
-   - **Docker** (recommended for local execution)
+2. **Container Engine**:
+   - **Docker** (required)
      ```bash
      # Install Docker: https://docs.docker.com/get-docker/
      docker --version
-     ```
-   - **Singularity** (recommended for HPC)
-     ```bash
-     # Install Singularity: https://sylabs.io/guides/latest/user-guide/
-     singularity --version
      ```
 
 ### Hardware Requirements
@@ -87,14 +82,6 @@ Choose the appropriate profile for your system:
     ```bash
     nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
-        --input samplesheet.csv \
-        --outdir results
-    ```
-
-=== "Singularity"
-    ```bash
-    nextflow run seqeralabs/nf-proteindesign \
-        -profile singularity \
         --input samplesheet.csv \
         --outdir results
     ```
