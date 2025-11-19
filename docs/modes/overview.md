@@ -4,10 +4,10 @@ The nf-proteindesign pipeline features a **unified workflow architecture** with 
 
 ## :material-compare: Mode Comparison
 
-| Feature | Design Mode 📄 | Target Mode 🎯  Mode 🔬 |
+| Feature | Design Mode 📄 | Target Mode 🎯 | Binder Mode 🔬 |
 |---------|---------------|---------------|----------------|
 | **Input Required** | Design YAML files | Target structure + parameters | Target structure only |
-| **Binding Site** | Manually specified | Manually specified | Auto-predicted by 
+| **Binding Site** | Manually specified | Manually specified | Auto-predicted |
 | **Design Control** | Full control | High control | Automated |
 | **Use Case** | Precise designs | Systematic exploration | Unknown binding sites |
 | **Designs Generated** | One per YAML | Multiple variants | Multiple per predicted site |
@@ -21,7 +21,7 @@ All two modes share the same core workflow but with different entry points:
 flowchart LR
     A[Design Mode 📄] --> D[Unified Workflow Entry]
     B[Target Mode 🎯] --> D
-    C[ 🔬] --> D
+    C[Binder Mode 🔬] --> D
     
     D --> E[Parallel Boltzgen Execution]
     E --> F{Optional Analysis}
@@ -52,8 +52,10 @@ The pipeline can automatically detect which mode to use based on your sampleshee
 if 'design_yaml' in columns:
     mode = 'design'
 elif 'target_structure' in columns:
-    else:
+    if 'target_residues' in columns:
         mode = 'target'
+    else:
+        mode = 'binder'
 ```
 
 !!! tip "Explicit vs Automatic"
@@ -83,12 +85,14 @@ elif 'target_structure' in columns:
 
 [Learn more about Target Mode →](target-mode.md)
 
-### Use  When:
+### Use Binder Mode When:
 
 - ✅ **Binding site is unknown**
 - ✅ You want **ML-predicted pockets**
 - ✅ You're in the **discovery phase**
 - ✅ You want to explore **multiple potential sites**
+
+[Learn more about Binder Mode →](binder-mode.md)
 
 ## :material-file-table: Samplesheet Examples
 
@@ -107,11 +111,11 @@ elif 'target_structure' in columns:
     spike,data/spike.pdb,"417,484,501",nanobody,110,130
     ```
 
-=== ""
+=== "Binder Mode"
     ```csv
     sample,target_structure,chain_type,min_length,max_length
-    unknown_target1,data/target1.pdb,protein,50,100
-    unknown_target2,data/target2.pdb,nanobody,110,130
+    binder1,data/target1.pdb,protein,50,100
+    binder2,data/target2.pdb,nanobody,110,130
     ```
 
 ## :material-cog: Mode-Specific Parameters
@@ -145,9 +149,16 @@ elif 'target_structure' in columns:
 --chain_type                # Default: protein
 ```
 
-###  Parameters
+### Binder Mode Parameters
 
 ```bash
+--mode binder               # Explicit mode specification
+--min_design_length         # Minimum binder length
+--max_design_length         # Maximum binder length
+--length_step               # Length increment
+--n_variants_per_length     # Variants per length
+--chain_type                # Default: protein
+# Binding sites are auto-predicted
 ```
 
 ## :material-file-tree: Output Structure Comparison
@@ -158,8 +169,8 @@ All modes produce similarly structured outputs:
 results/
 ├── {sample_id}/
 │   ├── boltzgen/                    # Mode-specific preprocessing
-│   │   ├── design_variants/         # (Target/s)
-│   │   ├── predicted_pockets/       # ( only)
+│   │   ├── design_variants/         # (Target/Binder modes)
+│   │   ├── predicted_pockets/       # (Binder mode only)
 │   │   ├── final_ranked_designs/    # Final outputs (all modes)
 │   │   └── intermediate_designs/
 │   ├── ipsae/
@@ -173,7 +184,7 @@ results/
 
 ## :material-speedometer: Performance Characteristics
 
-| Metric | Design Mode | Target Mode  Mode |
+| Metric | Design Mode | Target Mode | Binder Mode |
 |--------|-------------|-------------|-------------|
 | **Setup Time** | Fast | Medium | Slow (ML prediction) |
 | **Designs per Sample** | 1 | 10-50+ | 5-20 per pocket |
@@ -205,8 +216,10 @@ results/
     - Use wider length steps initially (`--length_step 30`)
     - Review generated YAMLs in output
 
-=== ""
+=== "Binder Mode"
     - Check predicted pockets make biological sense
+    - Validate pocket predictions before large-scale runs
+    - Consider multiple predicted sites for comprehensive coverage
 
 ## :material-arrow-right: Next Steps
 
@@ -226,6 +239,8 @@ Choose your mode and dive deeper:
   </div>
   
   <div class="feature-card">
-    <h3>🔬 </h3>
+    <h3>🔬 Binder Mode</h3>
+    <p>Discover binders with auto-predicted binding sites</p>
+    <a href="binder-mode.md">Read more →</a>
   </div>
 </div>

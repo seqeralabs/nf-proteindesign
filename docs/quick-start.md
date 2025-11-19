@@ -68,8 +68,10 @@ Create a CSV file with your design specifications:
     target2,/path/to/target2.pdb,"5,6,7,8,9,10",peptide,10,20
     ```
 
-=== ""
+=== "Binder Mode"
+    ```csv title="samplesheet_binder.csv"
     sample,target_structure,chain_type,min_length,max_length
+    binder1,/path/to/target.pdb,protein,30,50
     ```
 
 ## :material-run: Running the Pipeline
@@ -117,11 +119,14 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
         --n_samples 20
     ```
 
-=== ""
+=== "Binder Mode"
     ```bash
     nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
+        --mode binder \
+        --input samplesheet_binders.csv \
         --outdir results \
+        --n_samples 20
     ```
 
 ## :material-tune: Common Options

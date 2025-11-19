@@ -48,11 +48,11 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
     spike,data/spike.cif,"417,484,501",nanobody,110,130
     ```
 
-=== ""
+=== "Binder Mode"
     ```csv
     sample,target_structure,chain_type,min_length,max_length
-    unknown1,data/target1.pdb,protein,50,100
-    unknown2,data/target2.pdb,nanobody,110,130
+    binder1,data/target1.pdb,protein,50,100
+    binder2,data/target2.pdb,nanobody,110,130
     ```
 
 ## :material-cog: Common Parameters
@@ -63,7 +63,7 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 |-----------|-------------|---------|---------|
 | `--input` | Samplesheet path | Required | `samplesheet.csv` |
 | `--outdir` | Output directory | Required | `results/` |
-| `--mode` | Pipeline mode | Auto-detect | `design`, `target`,  |
+| `--mode` | Pipeline mode | Auto-detect | `design`, `target`, `binder` |
 
 ### Design Parameters
 
@@ -82,9 +82,6 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 | `--length_step` | Length increment | 20 | `10` |
 | `--n_variants_per_length` | Variants per length | 3 | `5` |
 | `--chain_type` | Designed chain type | protein | `peptide`, `nanobody` |
-
-| Parameter | Description | Default | Example |
-|-----------|-------------|---------|---------|
 
 ### Analysis Parameters
 
