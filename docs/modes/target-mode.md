@@ -334,7 +334,6 @@ For production:
 ## :material-arrow-right: Next Steps
 
 - Compare with [Design Mode](design-mode.md) for precise control
-- See [P2Rank Mode](p2rank-mode.md) for binding site discovery
 - Learn about [PRODIGY analysis](../analysis/prodigy.md)
 
 ---

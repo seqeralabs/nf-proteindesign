@@ -81,12 +81,7 @@ design_id,interface_area,shape_comp,contact_density,h_bonds,salt_bridges,hydroph
 design_1,1543.2,0.68,0.045,12,3,28
 ```
 
-## :material-brain: P2Rank Outputs (P2Rank Mode)
-
-### Pocket Predictions
-
 ```
-results/{sample}/p2rank/
 ├── pockets/
 │   ├── {sample}_pocket1.pdb
 │   ├── {sample}_pocket2.pdb

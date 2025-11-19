@@ -270,7 +270,7 @@ results/
 
 ## :material-compare: Comparison with Other Modes
 
-| Feature | Design Mode | Target Mode | P2Rank Mode |
+| Feature | Design Mode | Target Mode  Mode |
 |---------|-------------|-------------|-------------|
 | Control | Maximum | High | Automated |
 | Setup time | Medium | Low | Low |
@@ -281,7 +281,6 @@ results/
 ## :material-arrow-right: Next Steps
 
 - Learn about [Target Mode](target-mode.md) for systematic exploration
-- See [P2Rank Mode](p2rank-mode.md) for binding site discovery
 - Check [PRODIGY](../analysis/prodigy.md) for affinity prediction
 
 ---

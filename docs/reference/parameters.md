@@ -8,7 +8,7 @@ Complete reference for all pipeline parameters.
 |-----------|------|-------------|---------|
 | `--input` | file | Samplesheet CSV file | *Required* |
 | `--outdir` | path | Output directory | `./results` |
-| `--mode` | string | Pipeline mode (`design`, `target`, `p2rank`) | Auto-detect |
+| `--mode` | string | Pipeline mode (`design`, `target`, ) | Auto-detect |
 | `--publish_dir_mode` | string | How to publish output files | `copy` |
 
 ## :material-robot: Mode Selection
@@ -19,8 +19,6 @@ The pipeline automatically detects the mode based on samplesheet columns, but yo
 |------|-------------|----------------------|
 | `design` | Use pre-made design YAMLs | `design_yaml` |
 | `target` | Generate designs from target structure | `target_structure` |
-| `p2rank` | Predict binding sites + generate designs | `target_structure` + `use_p2rank=true` |
-
 ## :material-dna: Boltzgen Design Parameters
 
 | Parameter | Type | Description | Default |
@@ -55,16 +53,11 @@ The pipeline automatically detects the mode based on samplesheet columns, but yo
 - `peptide`: Short peptide binders (typically <50 residues)
 - `nanobody`: Single-domain antibodies (~110-130 residues)
 
-## :material-brain: P2Rank Binding Site Prediction
-
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--use_p2rank` | boolean | Enable P2Rank pocket prediction | `false` |
 | `--top_n_pockets` | integer | Number of top-scoring pockets | 3 |
-| `--min_pocket_score` | float | Minimum P2Rank score threshold | 0.5 |
 | `--binding_region_mode` | string | How to specify binding region | `residues` |
 | `--expand_region` | integer | Expand region by N residues | 5 |
-| `--p2rank_design_type` | string | Design type for P2Rank mode | `nanobody` |
 
 ### Binding Region Mode Options
 

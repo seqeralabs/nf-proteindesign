@@ -122,7 +122,6 @@ nav:
     - Overview: modes/overview.md
     - Design Mode: modes/design-mode.md
     - Target Mode: modes/target-mode.md
-    - P2Rank Mode: modes/p2rank-mode.md
   
   - Analysis Tools:
     - PRODIGY Binding Affinity: analysis/prodigy.md

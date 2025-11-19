@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/FloWuenne/nf-proteindesign-2025/main/nextflow_schema.json",
     "title": "nf-proteindesign pipeline parameters",
-    "description": "Nextflow pipeline for Boltzgen protein design with three execution modes: Design (pre-made YAMLs), Target (auto-generate variants), and P2Rank (binding site prediction)",
+    "description": "Nextflow pipeline for Boltzgen protein design with two execution modes: Design (pre-made YAMLs) and Target (auto-generate variants)",
     "type": "object",
     "definitions": {
         "input_output_options": {
@@ -10,7 +10,10 @@
             "type": "object",
             "fa_icon": "fas fa-terminal",
             "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["input", "outdir"],
+            "required": [
+                "input",
+                "outdir"
+            ],
             "properties": {
                 "input": {
                     "type": "string",
@@ -19,7 +22,7 @@
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
                     "description": "Path to comma-separated samplesheet file.",
-                    "help_text": "The samplesheet must contain sample information and mode-specific columns:\n- **Design mode**: `sample`, `design_yaml`, optional: `structure_files`, `protocol`, `num_designs`, `budget`\n- **Target mode**: `sample`, `target_structure`, optional: `target_chain_ids`, `min_length`, `max_length`, `design_type`, `protocol`, `num_designs`, `budget`\n- **P2Rank mode**: `sample`, `target_structure`, optional: `use_p2rank`, `top_n_pockets`, `min_pocket_score`, `design_type`, `protocol`, `num_designs`, `budget`\n\nSee schema files in assets/ for detailed column specifications.",
+                    "help_text": "The samplesheet must contain sample information and mode-specific columns:\n- **Design mode**: `sample`, `design_yaml`, optional: `structure_files`, `protocol`, `num_designs`, `budget`\n- **Target mode**: `sample`, `target_structure`, optional: `target_chain_ids`, `min_length`, `max_length`, `design_type`, `protocol`, `num_designs`, `budget`\n\nSee schema files in assets/ for detailed column specifications.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "outdir": {
@@ -32,8 +35,11 @@
                 "mode": {
                     "type": "string",
                     "description": "Workflow execution mode (auto-detected from samplesheet if not specified).",
-                    "help_text": "Three modes are available:\n- **design**: Use pre-made design YAML files\n- **target**: Generate design variants from target structures\n- **p2rank**: Use P2Rank to predict binding sites, then design binders\n\nIf not specified, the mode is automatically detected from samplesheet column headers.",
-                    "enum": ["design", "target", "p2rank"],
+                    "help_text": "Two modes are available:\n- **design**: Use pre-made design YAML files\n- **target**: Generate design variants from target structures\n\nIf not specified, the mode is automatically detected from samplesheet column headers.",
+                    "enum": [
+                        "design",
+                        "target"
+                    ],
                     "fa_icon": "fas fa-route"
                 }
             }
@@ -41,7 +47,7 @@
         "design_generation_options": {
             "title": "Design generation options",
             "type": "object",
-            "description": "Parameters for generating design variants in target and P2Rank modes.",
+            "description": "Parameters for generating design variants in target mode.",
             "default": "",
             "fa_icon": "fas fa-drafting-compass",
             "properties": {
@@ -81,62 +87,12 @@
                     "type": "string",
                     "default": "protein",
                     "description": "Type of molecule to design in target mode.",
-                    "enum": ["protein", "peptide", "nanobody"],
+                    "enum": [
+                        "protein",
+                        "peptide",
+                        "nanobody"
+                    ],
                     "fa_icon": "fas fa-dna"
-                },
-                "p2rank_design_type": {
-                    "type": "string",
-                    "default": "nanobody",
-                    "description": "Type of molecule to design in P2Rank mode (nanobody optimal for binding pockets).",
-                    "enum": ["protein", "peptide", "nanobody"],
-                    "fa_icon": "fas fa-bullseye"
-                }
-            }
-        },
-        "p2rank_options": {
-            "title": "P2Rank binding site prediction",
-            "type": "object",
-            "description": "Options for P2Rank binding site prediction (P2Rank mode only).",
-            "default": "",
-            "fa_icon": "fas fa-crosshairs",
-            "properties": {
-                "use_p2rank": {
-                    "type": "boolean",
-                    "default": false,
-                    "description": "Use P2Rank to identify binding sites for design.",
-                    "help_text": "When enabled, P2Rank will predict binding pockets in the target structure, and designs will be generated to target these pockets.",
-                    "fa_icon": "fas fa-toggle-on"
-                },
-                "top_n_pockets": {
-                    "type": "integer",
-                    "default": 3,
-                    "description": "Number of top-scoring pockets to target.",
-                    "fa_icon": "fas fa-award",
-                    "minimum": 1,
-                    "maximum": 20
-                },
-                "min_pocket_score": {
-                    "type": "number",
-                    "default": 0.5,
-                    "description": "Minimum P2Rank score for pocket selection (0-1 scale).",
-                    "fa_icon": "fas fa-filter",
-                    "minimum": 0,
-                    "maximum": 1
-                },
-                "binding_region_mode": {
-                    "type": "string",
-                    "default": "residues",
-                    "description": "How to specify binding regions in design YAML.",
-                    "enum": ["residues", "bounding_box"],
-                    "fa_icon": "fas fa-map-marker-alt"
-                },
-                "expand_region": {
-                    "type": "integer",
-                    "default": 5,
-                    "description": "Expand binding region by N residues around predicted pocket.",
-                    "fa_icon": "fas fa-expand",
-                    "minimum": 0,
-                    "maximum": 20
                 }
             }
         },
@@ -152,7 +108,12 @@
                     "default": "protein-anything",
                     "description": "Boltzgen design protocol.",
                     "help_text": "Available protocols:\n- **protein-anything**: General protein design\n- **peptide-anything**: Peptide binder design\n- **protein-small_molecule**: Protein-small molecule interaction\n- **nanobody-anything**: Nanobody design",
-                    "enum": ["protein-anything", "peptide-anything", "protein-small_molecule", "nanobody-anything"],
+                    "enum": [
+                        "protein-anything",
+                        "peptide-anything",
+                        "protein-small_molecule",
+                        "nanobody-anything"
+                    ],
                     "fa_icon": "fas fa-flask"
                 },
                 "num_designs": {
@@ -301,7 +262,7 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Enable PRODIGY binding affinity prediction on final designs.",
-                    "help_text": "PRODIGY predicts binding free energy (ΔG) based on interface properties.",
+                    "help_text": "PRODIGY predicts binding free energy (\u0394G) based on interface properties.",
                     "fa_icon": "fas fa-toggle-on"
                 },
                 "prodigy_selection": {
@@ -357,7 +318,11 @@
                     "type": "integer",
                     "default": 2,
                     "description": "Alignment type: 0=3Di only, 1=TMalign (global), 2=3Di+AA (local, default).",
-                    "enum": [0, 1, 2],
+                    "enum": [
+                        0,
+                        1,
+                        2
+                    ],
                     "fa_icon": "fas fa-align-center"
                 },
                 "run_consolidation": {
@@ -425,7 +390,11 @@
                     "default": "copy",
                     "description": "Method for publishing outputs.",
                     "help_text": "Determines how output files are published:\n- **copy**: Copy files to output directory\n- **symlink**: Create symbolic links\n- **move**: Move files (use with caution)",
-                    "enum": ["copy", "symlink", "move"],
+                    "enum": [
+                        "copy",
+                        "symlink",
+                        "move"
+                    ],
                     "fa_icon": "fas fa-copy"
                 },
                 "tracedir": {
@@ -467,9 +436,6 @@
         },
         {
             "$ref": "#/definitions/design_generation_options"
-        },
-        {
-            "$ref": "#/definitions/p2rank_options"
         },
         {
             "$ref": "#/definitions/boltzgen_options"

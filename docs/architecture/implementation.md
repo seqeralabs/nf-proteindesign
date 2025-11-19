@@ -16,7 +16,6 @@ Containers:
   proteinmpnn: "ghcr.io/flouwuenne/proteinmpnn:latest"
   ipsae: "ghcr.io/flouwuenne/ipsae:latest"
   prodigy: "ghcr.io/flouwuenne/prodigy:latest"  
-  p2rank: "davidhoksza/p2rank:2.4.2"
 ```
 
 ### GPU Support
@@ -44,7 +43,6 @@ nf-proteindesign-2025/
 ├── workflows/
 │   └── protein_design.nf               # Unified workflow handling all modes
 ├── modules/local/
-│   ├── p2rank_predict.nf
 │   ├── format_binding_sites.nf
 │   ├── generate_design_variants.nf
 │   ├── create_design_samplesheet.nf
@@ -63,7 +61,6 @@ nf-proteindesign-2025/
 └── assets/
     ├── schema_input_design.json        # Design mode samplesheet schema
     ├── schema_input_target.json        # Target mode samplesheet schema
-    ├── schema_input_p2rank.json        # P2Rank mode samplesheet schema
     └── test_data/                       # Test datasets
         ├── designs/                     # Pre-made design YAMLs
         ├── structures/                  # Test structures
@@ -91,7 +88,6 @@ def validate_samplesheet(file_path):
     mode_columns = {
         'design': ['design_yaml'],
         'target': ['target_structure'],
-        'p2rank': ['target_structure']
     }
     
     with open(file_path) as f:

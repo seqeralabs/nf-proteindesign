@@ -98,8 +98,6 @@ cat peptide_library/il6/prodigy/*_summary.csv | \
 
 ## :material-brain: Example 3: Binding Site Discovery
 
-Use P2Rank to find binding sites on unknown target.
-
 ### Setup
 
 ```bash
@@ -114,10 +112,7 @@ EOF
 ```bash
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
-    --mode p2rank \
     --input discovery.csv \
-    --p2rank_top_n 3 \
-    --p2rank_min_score 0.7 \
     --n_samples 20 \
     --run_prodigy \
     --outdir discovery_results
@@ -127,7 +122,6 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ```bash
 # Load in PyMOL
-pymol discovery_results/novel_target/p2rank/visualizations/novel_target_pockets.pml
 ```
 
 ## :material-robot: Example 4: High-Throughput Campaign

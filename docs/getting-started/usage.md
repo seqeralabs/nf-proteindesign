@@ -31,8 +31,6 @@ The pipeline automatically detects the mode based on column headers:
 |----------------|------|-------------|
 | `design_yaml` | Design | Use pre-made YAML files |
 | `target_structure` | Target | Generate design variants |
-| `target_structure` + P2Rank | P2Rank | Predict binding sites |
-
 ### Required Columns by Mode
 
 === "Design Mode"
@@ -51,7 +49,7 @@ The pipeline automatically detects the mode based on column headers:
     | `min_length` | Optional | Minimum binder length |
     | `max_length` | Optional | Maximum binder length |
 
-=== "P2Rank Mode"
+=== ""
     | Column | Required | Description |
     |--------|----------|-------------|
     | `sample` | ✅ | Unique sample identifier |
@@ -86,7 +84,7 @@ global:
 ```bash
 --input            # Path to samplesheet CSV (required)
 --outdir           # Output directory (required)
---mode             # Explicit mode: design, target, p2rank (optional, auto-detected)
+--mode             # Explicit mode: design, target (optional, auto-detected)
 ```
 
 ### Design Parameters
@@ -200,8 +198,6 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
     --run_prodigy
 ```
 
-### Example 3: P2Rank Discovery
-
 ```bash
 # 1. Create samplesheet
 cat > unknown_targets.csv << EOF
@@ -210,13 +206,10 @@ unknown1,data/target1.pdb,protein,50,100
 unknown2,data/target2.pdb,nanobody,110,130
 EOF
 
-# 2. Run with P2Rank
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
-    --mode p2rank \
     --input unknown_targets.csv \
     --outdir results \
-    --p2rank_top_n 3 \
     --n_samples 20
 ```
 

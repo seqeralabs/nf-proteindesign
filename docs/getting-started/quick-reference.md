@@ -48,7 +48,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet
     spike,data/spike.cif,"417,484,501",nanobody,110,130
     ```
 
-=== "P2Rank Mode"
+=== ""
     ```csv
     sample,target_structure,chain_type,min_length,max_length
     unknown1,data/target1.pdb,protein,50,100
@@ -63,7 +63,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet
 |-----------|-------------|---------|---------|
 | `--input` | Samplesheet path | Required | `samplesheet.csv` |
 | `--outdir` | Output directory | Required | `results/` |
-| `--mode` | Pipeline mode | Auto-detect | `design`, `target`, `p2rank` |
+| `--mode` | Pipeline mode | Auto-detect | `design`, `target`,  |
 
 ### Design Parameters
 
@@ -83,13 +83,8 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile docker --input samplesheet
 | `--n_variants_per_length` | Variants per length | 3 | `5` |
 | `--chain_type` | Designed chain type | protein | `peptide`, `nanobody` |
 
-### P2Rank Parameters
-
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--p2rank_top_n` | Top pockets to use | 5 | `3` |
-| `--p2rank_min_score` | Minimum pocket score | 0.5 | `0.7` |
-| `--p2rank_conservation` | Use conservation | false | `true` |
 
 ### Analysis Parameters
 
@@ -173,11 +168,9 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 nextflow run FloWuenne/nf-proteindesign-2025 \
     -profile docker \
     --input targets.csv \
-    --mode p2rank \
     --chain_type nanobody \
     --min_design_length 110 \
     --max_design_length 130 \
-    --p2rank_top_n 3 \
     --n_samples 30 \
     --outdir nanobody_designs
 ```
@@ -244,7 +237,6 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 # Pre-pull containers
 docker pull ghcr.io/flouwuenne/boltzgen:latest
 docker pull ghcr.io/flouwuenne/prodigy:latest
-docker pull biocontainers/p2rank:2.4.1--hdfd78af_0
 ```
 
 ## :material-file-code: Design YAML Template

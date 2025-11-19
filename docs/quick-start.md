@@ -73,11 +73,8 @@ Create a CSV file with your design specifications:
     target2,/path/to/target2.pdb,"5,6,7,8,9,10",peptide,10,20
     ```
 
-=== "P2Rank Mode"
-    ```csv title="samplesheet_p2rank.csv"
+=== ""
     sample,target_structure,chain_type,min_length,max_length
-    p2rank1,/path/to/target1.pdb,protein,50,80
-    p2rank2,/path/to/target2.pdb,nanobody,100,120
     ```
 
 ## :material-run: Running the Pipeline
@@ -133,14 +130,11 @@ While the pipeline auto-detects mode from samplesheet, you can specify explicitl
         --n_samples 20
     ```
 
-=== "P2Rank Mode"
+=== ""
     ```bash
     nextflow run FloWuenne/nf-proteindesign-2025 \
         -profile docker \
-        --mode p2rank \
-        --input samplesheet_p2rank.csv \
         --outdir results \
-        --p2rank_top_n 3
     ```
 
 ## :material-tune: Common Options

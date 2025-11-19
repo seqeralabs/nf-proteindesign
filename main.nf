@@ -38,26 +38,20 @@ if (!workflow_mode) {
     def samplesheet_headers = file(params.input).readLines()[0].split(',').collect { it.trim() }
     def has_design_yaml = samplesheet_headers.contains('design_yaml')
     def has_target_structure = samplesheet_headers.contains('target_structure')
-    def has_use_p2rank = samplesheet_headers.contains('use_p2rank')
     
     if (has_design_yaml) {
         workflow_mode = 'design'
     } else if (has_target_structure) {
-        // Check if using P2Rank mode via parameter or samplesheet
-        if (params.use_p2rank) {
-            workflow_mode = 'p2rank'
-        } else {
-            workflow_mode = 'target'
-        }
+        workflow_mode = 'target'
     } else {
         error """
         ERROR: Cannot determine workflow mode!
         
         Please either:
-        1. Specify mode explicitly with --mode (design|target|p2rank)
+        1. Specify mode explicitly with --mode (design|target)
         2. Use a samplesheet with proper column headers:
            - 'design_yaml' for design mode
-           - 'target_structure' for target/p2rank mode
+           - 'target_structure' for target mode
         
         Found headers: ${samplesheet_headers.join(', ')}
         """
@@ -66,7 +60,7 @@ if (!workflow_mode) {
     log.info "Auto-detected workflow mode: ${workflow_mode}"
 } else {
     // Validate explicit mode parameter
-    def valid_modes = ['design', 'target', 'p2rank']
+    def valid_modes = ['design', 'target']
     if (!valid_modes.contains(workflow_mode)) {
         error "ERROR: Invalid --mode '${workflow_mode}'. Must be one of: ${valid_modes.join(', ')}"
     }
@@ -89,8 +83,7 @@ workflow NFPROTEINDESIGN {
     def mode_name = workflow_mode.toUpperCase()
     def mode_description = [
         'design': 'Using pre-made design YAML files',
-        'target': 'Auto-generating design specs from target structures',
-        'p2rank': 'Predicting binding sites and generating designs'
+        'target': 'Auto-generating design specs from target structures'
     ][workflow_mode]
     
     // Build list of enabled analysis modules
@@ -213,12 +206,9 @@ workflow NFPROTEINDESIGN {
                 [meta, design_yaml, structure_files]
             }
     } 
-    else if (workflow_mode == 'target' || workflow_mode == 'p2rank') {
-        // TARGET or P2RANK MODE: Use target structures
-        // Select appropriate schema based on mode
-        def schema_path = workflow_mode == 'p2rank' ? 
-            "${projectDir}/assets/schema_input_p2rank.json" : 
-            "${projectDir}/assets/schema_input_target.json"
+    else if (workflow_mode == 'target') {
+        // TARGET MODE: Use target structures
+        def schema_path = "${projectDir}/assets/schema_input_target.json"
         
         // Validate and parse samplesheet using nf-schema
         def target_samplesheet = samplesheetToList(params.input, schema_path)
@@ -250,44 +240,17 @@ workflow NFPROTEINDESIGN {
                 def meta = [:]
                 meta.id = sample_id
                 
-                if (workflow_mode == 'p2rank') {
-                    // P2Rank mode field order: sample_id, target_structure, use_p2rank, top_n_pockets, 
-                    // min_pocket_score, binding_region_mode, expand_region, min_length, max_length, 
-                    // length_step, n_variants_per_length, design_type, protocol, num_designs, budget
-                    meta.use_p2rank = tuple[2] ?: params.use_p2rank
-                    meta.top_n_pockets = tuple[3] ?: params.top_n_pockets
-                    meta.min_pocket_score = tuple[4] ?: params.min_pocket_score
-                    meta.binding_region_mode = tuple[5] ?: params.binding_region_mode
-                    meta.expand_region = tuple[6] ?: params.expand_region
-                    meta.min_length = tuple[7] ?: params.min_design_length
-                    meta.max_length = tuple[8] ?: params.max_design_length
-                    meta.length_step = tuple[9] ?: params.length_step
-                    meta.n_variants_per_length = tuple[10] ?: params.n_variants_per_length
-                    // P2Rank identifies binding pockets suitable for small molecule binders like nanobodies
-                    meta.design_type = tuple[11] ?: params.p2rank_design_type
-                    meta.protocol = tuple[12] ?: params.protocol
-                    meta.num_designs = tuple[13] ?: params.num_designs
-                    meta.budget = tuple[14] ?: params.budget
-                    meta.target_chain_ids = 'A'  // Default for p2rank mode
-                } else {
-                    // Target mode field order: sample_id, target_structure, target_chain_ids, min_length, 
-                    // max_length, length_step, n_variants_per_length, design_type, protocol, num_designs, budget
-                    meta.target_chain_ids = tuple[2] ?: 'A'
-                    meta.min_length = tuple[3] ?: params.min_design_length
-                    meta.max_length = tuple[4] ?: params.max_design_length
-                    meta.length_step = tuple[5] ?: params.length_step
-                    meta.n_variants_per_length = tuple[6] ?: params.n_variants_per_length
-                    meta.design_type = tuple[7] ?: params.design_type
-                    meta.protocol = tuple[8] ?: params.protocol
-                    meta.num_designs = tuple[9] ?: params.num_designs
-                    meta.budget = tuple[10] ?: params.budget
-                    // Set p2rank defaults for target mode
-                    meta.use_p2rank = params.use_p2rank
-                    meta.top_n_pockets = params.top_n_pockets
-                    meta.min_pocket_score = params.min_pocket_score
-                    meta.binding_region_mode = params.binding_region_mode
-                    meta.expand_region = params.expand_region
-                }
+                // Target mode field order: sample_id, target_structure, target_chain_ids, min_length, 
+                // max_length, length_step, n_variants_per_length, design_type, protocol, num_designs, budget
+                meta.target_chain_ids = tuple[2] ?: 'A'
+                meta.min_length = tuple[3] ?: params.min_design_length
+                meta.max_length = tuple[4] ?: params.max_design_length
+                meta.length_step = tuple[5] ?: params.length_step
+                meta.n_variants_per_length = tuple[6] ?: params.n_variants_per_length
+                meta.design_type = tuple[7] ?: params.design_type
+                meta.protocol = tuple[8] ?: params.protocol
+                meta.num_designs = tuple[9] ?: params.num_designs
+                meta.budget = tuple[10] ?: params.budget
                 
                 [meta, target_structure]
             }

@@ -11,15 +11,14 @@
 
 **nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model that designs proteins, peptides, and nanobodies to bind various biomolecular targets.
 
-### Three Operational Modes
+### Two Operational Modes
 
-The pipeline features a **unified workflow architecture** with three entry points:
+The pipeline features a **unified workflow architecture** with two entry points:
 
 1. **🎯 Design Mode**: Use pre-made design YAML specifications
-2. **📐 Target Mode**: Auto-generate design variants from target structures  
-3. **🔬 P2Rank Mode**: ML-based binding site prediction + automatic design generation
+2. **📐 Target Mode**: Auto-generate design variants from target structures
 
-All modes converge to the same core workflow for consistent, parallel execution.
+Both modes converge to the same core workflow for consistent, parallel execution.
 
 ## Quick Start
 
@@ -44,7 +43,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ### Core Capabilities
 - ✅ **Parallel Design Processing**: Run multiple designs simultaneously
-- ✅ **Three Flexible Modes**: Pre-made configs, auto-generated variants, or ML-predicted binding sites
+- ✅ **Two Flexible Modes**: Pre-made configs or auto-generated variants
 - ✅ **Automatic Mode Detection**: Pipeline auto-detects mode from samplesheet headers
 - ✅ **GPU-Accelerated**: Optimized for NVIDIA GPUs with CUDA
 
@@ -64,9 +63,6 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile test_design,docker
 
 # Test Target Mode (30-45 minutes) 
 nextflow run FloWuenne/nf-proteindesign-2025 -profile test_target,docker
-
-# Test P2Rank Mode (30-45 minutes)
-nextflow run FloWuenne/nf-proteindesign-2025 -profile test_p2rank,docker
 ```
 
 ## Example Commands
@@ -94,17 +90,6 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
     --outdir results
 ```
 
-### P2Rank Mode (Binding Site Prediction)
-```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
-    -profile docker \
-    --mode p2rank \
-    --input samplesheet_targets.csv \
-    --top_n_pockets 3 \
-    --min_pocket_score 0.5 \
-    --outdir results
-```
-
 ### With Optional Analysis Modules
 ```bash
 nextflow run FloWuenne/nf-proteindesign-2025 \
@@ -126,7 +111,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 - **[Quick Start Guide](https://flouwuenne.github.io/nf-proteindesign-2025/quick-start/)** - Get started in minutes
 - **[Installation](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/installation/)** - Setup and requirements
 - **[Usage Guide](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/usage/)** - Detailed usage instructions
-- **[Pipeline Modes](https://flouwuenne.github.io/nf-proteindesign-2025/modes/overview/)** - Design, Target, and P2Rank modes
+- **[Pipeline Modes](https://flouwuenne.github.io/nf-proteindesign-2025/modes/overview/)** - Design, Target modes
 - **[Analysis Tools](https://flouwuenne.github.io/nf-proteindesign-2025/analysis/ipsae/)** - Optional analysis modules
 - **[Parameters Reference](https://flouwuenne.github.io/nf-proteindesign-2025/reference/parameters/)** - Complete parameter list
 - **[Output Files](https://flouwuenne.github.io/nf-proteindesign-2025/reference/outputs/)** - Understanding results
@@ -146,12 +131,6 @@ sample_id,target_structure,target_chain_ids,design_type
 protein1,structures/target1.pdb,A,protein
 ```
 
-**P2Rank Mode** - requires `target_structure` column:
-```csv
-sample_id,target_structure,top_n_pockets,min_pocket_score
-target1,structures/protein.pdb,3,0.5
-```
-
 See [samplesheet documentation](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/usage/#samplesheet-format) for complete specifications.
 
 ## Key Parameters
@@ -160,7 +139,7 @@ See [samplesheet documentation](https://flouwuenne.github.io/nf-proteindesign-20
 |-----------|---------|-------------|
 | `--input` | - | Path to samplesheet CSV (required) |
 | `--outdir` | `./results` | Output directory |
-| `--mode` | auto-detect | Mode: `design`, `target`, or `p2rank` |
+| `--mode` | auto-detect | Mode: `design` or `target` |
 | `--num_designs` | `100` | Number of intermediate designs (use 10,000-60,000 for production) |
 | `--budget` | `10` | Number of final diversity-optimized designs |
 | `--protocol` | `protein-anything` | Design protocol |
