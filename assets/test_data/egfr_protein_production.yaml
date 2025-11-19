@@ -32,14 +32,3 @@ entities:
       include: 
         - chain:
             id: A
-
-# Design constraints and preferences (optional)
-# These help guide the design toward more drug-like properties
-constraints:
-  # Encourage compact, well-folded structures
-  - type: geometry
-    weight: 1.0
-  
-  # Prefer designs with good predicted stability
-  - type: stability
-    weight: 0.8
