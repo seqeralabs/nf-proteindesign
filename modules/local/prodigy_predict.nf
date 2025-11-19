@@ -27,6 +27,10 @@ process PRODIGY_PREDICT {
     // If no selection specified, PRODIGY will auto-detect chains
     
     """
+    echo "🔬 Running PRODIGY for design: ${meta.id}"
+    echo "   - Structure: ${structure}"
+    echo "   - Selection: ${selection_arg ?: 'auto-detect'}"
+    
     # Run PRODIGY on the structure
     # If no selection specified, PRODIGY auto-detects chains (usually A,B for binary complexes)
     prodigy ${structure} ${selection_arg} > ${meta.id}_prodigy_results.txt 2>&1 || true
@@ -39,6 +43,8 @@ process PRODIGY_PREDICT {
         --input ${meta.id}_prodigy_results.txt \\
         --output ${meta.id}_prodigy_summary.csv \\
         --structure_id ${meta.id}
+    
+    echo "✅ PRODIGY prediction completed for ${meta.id}"
     
     # Generate version information
     cat <<-END_VERSIONS > versions.yml

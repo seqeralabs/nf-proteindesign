@@ -51,6 +51,12 @@ process BOLTZGEN_RUN {
         ${steps_arg} \\
         ${reuse_flag}
     
+    # Log output file counts for verification
+    echo "📊 Boltzgen Output Summary for ${meta.id}:"
+    echo "  - Intermediate CIF files: \$(find ${meta.id}_output/intermediate_designs -name '*.cif' 2>/dev/null | wc -l)"
+    echo "  - Intermediate NPZ files: \$(find ${meta.id}_output/intermediate_designs -name '*.npz' 2>/dev/null | wc -l)"
+    echo "  - Final CIF files: \$(find ${meta.id}_output/final_ranked_designs -name '*.cif' 2>/dev/null | wc -l)"
+    
     # Generate version information
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

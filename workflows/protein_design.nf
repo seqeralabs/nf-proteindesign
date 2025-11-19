@@ -105,12 +105,15 @@ workflow PROTEIN_DESIGN {
         
         // Process intermediate CIF and NPZ files
         // Strategy: Use flatMap to pair CIF and NPZ files with matching basenames
+        // This creates individual IPSAE tasks for EACH Boltzgen intermediate design
         ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_cifs
             .join(BOLTZGEN_RUN.out.intermediate_npz, by: 0)
             .flatMap { meta, cif_files, npz_files ->
                 // Convert to list if single file
                 def cif_list = cif_files instanceof List ? cif_files : [cif_files]
                 def npz_list = npz_files instanceof List ? npz_files : [npz_files]
+                
+                log.info "🔍 IPSAE: Processing ${cif_list.size()} intermediate designs from ${meta.id}"
                 
                 // Create a map of basenames to files for quick lookup
                 def npz_map = [:]
@@ -119,7 +122,7 @@ workflow PROTEIN_DESIGN {
                 }
                 
                 // Match CIF files with corresponding NPZ files
-                cif_list.collect { cif_file ->
+                def matched_pairs = cif_list.collect { cif_file ->
                     def base_name = cif_file.baseName
                     def npz_file = npz_map[base_name]
                     
@@ -135,6 +138,9 @@ workflow PROTEIN_DESIGN {
                         null
                     }
                 }.findAll { it != null }  // Remove null entries where no match was found
+                
+                log.info "✅ IPSAE: Created ${matched_pairs.size()} IPSAE tasks for ${meta.id}"
+                return matched_pairs
             }
         
         // Run IPSAE calculation for each CIF/NPZ pair
@@ -150,13 +156,16 @@ workflow PROTEIN_DESIGN {
         
         // Use final CIF files directly from Boltzgen
         // Strategy: Use flatMap to create individual tasks for each CIF file
+        // This creates individual PRODIGY tasks for EACH Boltzgen final design
         ch_prodigy_input = BOLTZGEN_RUN.out.final_cifs
             .flatMap { meta, cif_files ->
                 // Convert to list if single file
                 def cif_list = cif_files instanceof List ? cif_files : [cif_files]
                 
+                log.info "🔍 PRODIGY: Processing ${cif_list.size()} final designs from ${meta.id}"
+                
                 // Create a separate entry for each CIF file
-                cif_list.collect { cif_file ->
+                def tasks = cif_list.collect { cif_file ->
                     def base_name = cif_file.baseName
                     def design_meta = [:]
                     design_meta.id = "${meta.id}_${base_name}"
@@ -164,6 +173,9 @@ workflow PROTEIN_DESIGN {
                     
                     [design_meta, cif_file]
                 }
+                
+                log.info "✅ PRODIGY: Created ${tasks.size()} PRODIGY tasks for ${meta.id}"
+                return tasks
             }
         
         // Run PRODIGY binding affinity prediction for each CIF file

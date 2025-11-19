@@ -22,6 +22,10 @@ process IPSAE_CALCULATE {
     def dist_cutoff = params.ipsae_dist_cutoff ?: 10
     
     """
+    echo "🔬 Running IPSAE for design: ${meta.id}"
+    echo "   - Structure: ${structure_file}"
+    echo "   - PAE file: ${pae_file}"
+    
     # Install numpy if not available
     pip install --no-cache-dir numpy 2>&1 | grep -v "Requirement already satisfied" || true
     
@@ -31,6 +35,8 @@ process IPSAE_CALCULATE {
         ${structure_file} \\
         ${pae_cutoff} \\
         ${dist_cutoff}
+    
+    echo "✅ IPSAE calculation completed for ${meta.id}"
     
     # Generate version information
     cat <<-END_VERSIONS > versions.yml
