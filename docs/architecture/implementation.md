@@ -32,7 +32,7 @@ RUN pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 ### Directory Structure
 
 ```
-nf-proteindesign-2025/
+nf-proteindesign/
 ├── main.nf                              # Main entry point with mode detection
 ├── nextflow.config                      # Pipeline configuration
 ├── conf/

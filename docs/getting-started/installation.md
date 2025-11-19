@@ -66,7 +66,7 @@ For development or offline use:
 ```bash
 # Clone repository
 git clone https://github.com/seqeralabs/nf-proteindesign.git
-cd nf-proteindesign-2025
+cd nf-proteindesign
 
 # Run from local directory
 nextflow run main.nf -profile docker --input samplesheet.csv --outdir results
@@ -222,7 +222,7 @@ docker pull ghcr.io/flouwuenne/prodigy:latest
 nextflow pull seqeralabs/nf-proteindesign
 
 # Or update local clone
-cd nf-proteindesign-2025
+cd nf-proteindesign
 git pull origin main
 ```
 
