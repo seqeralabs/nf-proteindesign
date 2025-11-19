@@ -30,7 +30,7 @@ The pipeline automatically detects the mode based on column headers:
 | Column Present | Mode | Description |
 |----------------|------|-------------|
 | `design_yaml` | Design | Use pre-made YAML files |
-| `target_structure` | Target | Generate design variants |
+| `target_structure` | Target/Binder | Generate design variants |
 ### Required Columns by Mode
 
 === "Design Mode"
@@ -49,7 +49,7 @@ The pipeline automatically detects the mode based on column headers:
     | `min_length` | Optional | Minimum binder length |
     | `max_length` | Optional | Maximum binder length |
 
-=== ""
+=== "Binder Mode"
     | Column | Required | Description |
     |--------|----------|-------------|
     | `sample` | ✅ | Unique sample identifier |
@@ -84,7 +84,7 @@ global:
 ```bash
 --input            # Path to samplesheet CSV (required)
 --outdir           # Output directory (required)
---mode             # Explicit mode: design, target (optional, auto-detected)
+--mode             # Explicit mode: design, target, binder (optional, auto-detected)
 ```
 
 ### Design Parameters
@@ -198,17 +198,21 @@ nextflow run seqeralabs/nf-proteindesign \
     --run_prodigy
 ```
 
+### Example 3: Binder Mode (No Binding Site)
+
 ```bash
 # 1. Create samplesheet
-cat > unknown_targets.csv << EOF
+cat > binders.csv << EOF
 sample,target_structure,chain_type,min_length,max_length
-unknown1,data/target1.pdb,protein,50,100
-unknown2,data/target2.pdb,nanobody,110,130
+binder1,data/target1.pdb,protein,50,100
+binder2,data/target2.pdb,nanobody,110,130
 EOF
 
+# 2. Run pipeline
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --input unknown_targets.csv \
+    --mode binder \
+    --input binders.csv \
     --outdir results \
     --n_samples 20
 ```
