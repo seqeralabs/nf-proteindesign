@@ -37,15 +37,15 @@ A new test profile `test_production` that simulates a realistic production-scale
 
 ```bash
 # Run the production test
-nextflow run FloWuenne/nf-proteindesign-2025 -profile test_production,docker
+nextflow run seqeralabs/nf-proteindesign -profile test_production,docker
 
 # With custom output
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_production,docker \
     --outdir my_production_test
 
 # Resume from checkpoint
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_production,docker \
     -resume
 ```

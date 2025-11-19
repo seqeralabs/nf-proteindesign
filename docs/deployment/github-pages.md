@@ -6,7 +6,7 @@ This documentation site is automatically deployed to GitHub Pages using GitHub A
 
 After merging the PR that adds the deployment workflow, a repository administrator needs to enable GitHub Pages:
 
-1. Go to the repository on GitHub: [FloWuenne/nf-proteindesign-2025](https://github.com/FloWuenne/nf-proteindesign-2025)
+1. Go to the repository on GitHub: [seqeralabs/nf-proteindesign](https://github.com/seqeralabs/nf-proteindesign)
 2. Click on **Settings** (top navigation)
 3. Click on **Pages** (left sidebar under "Code and automation")
 4. Under **Build and deployment**:
@@ -20,7 +20,7 @@ Once GitHub Pages is enabled, the documentation will be automatically deployed:
 - **On every push to `main` branch**: The workflow builds and deploys the latest docs
 - **Manual trigger**: You can manually trigger deployment from the Actions tab
 
-The site will be available at: **https://flouwuenne.github.io/nf-proteindesign-2025/**
+The site will be available at: **https://seqeralabs.github.io/nf-proteindesign/**
 
 ## Workflow Details
 
@@ -84,7 +84,7 @@ Common issues:
 
 - Ensure Pages source is set to "GitHub Actions"
 - Check that the workflow completed successfully
-- Verify the site URL matches: https://flouwuenne.github.io/nf-proteindesign-2025/
+- Verify the site URL matches: https://seqeralabs.github.io/nf-proteindesign/
 
 ## Configuration
 

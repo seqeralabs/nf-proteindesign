@@ -1,8 +1,8 @@
 site_name: nf-proteindesign
 site_description: Nextflow pipeline for parallel Boltzgen protein design with automated binding site prediction
 site_author: nf-proteindesign contributors
-repo_name: FloWuenne/nf-proteindesign-2025
-repo_url: https://github.com/FloWuenne/nf-proteindesign-2025
+repo_name: seqeralabs/nf-proteindesign
+repo_url: https://github.com/seqeralabs/nf-proteindesign
 
 theme:
   name: material
@@ -59,7 +59,7 @@ extra_css:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/FloWuenne/nf-proteindesign-2025
+      link: https://github.com/seqeralabs/nf-proteindesign
   version:
     provider: mike
   

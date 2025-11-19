@@ -39,20 +39,20 @@ Realistic production-level resources:
 
 ### Basic Run
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_production,docker
 ```
 
 ### With Custom Output Directory
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_production,docker \
     --outdir my_production_test
 ```
 
 ### Resume from Checkpoint
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_production,docker \
     -resume
 ```

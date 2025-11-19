@@ -63,7 +63,7 @@ peptide1,designs/peptide_binder.yaml
 
 === "Explicit Mode"
     ```bash
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --mode design \
         --input samplesheet_design.csv \
@@ -73,7 +73,7 @@ peptide1,designs/peptide_binder.yaml
 === "Auto-Detection"
     ```bash
     # Mode automatically detected from 'design_yaml' column
-    nextflow run FloWuenne/nf-proteindesign-2025 \
+    nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
         --input samplesheet_design.csv \
         --outdir results
@@ -108,7 +108,7 @@ egfr_vh1,designs/antibody_egfr.yaml
 ### 3. Run Pipeline
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input antibody_designs.csv \
     --outdir egfr_antibodies \

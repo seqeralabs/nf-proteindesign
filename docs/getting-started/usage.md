@@ -5,7 +5,7 @@ This guide covers the fundamental concepts for using nf-proteindesign.
 ## :material-play: Basic Command Structure
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile <PROFILE> \
     --input <SAMPLESHEET> \
     --outdir <OUTPUT_DIR> \
@@ -172,7 +172,7 @@ design1,my_design.yaml
 EOF
 
 # 3. Run pipeline
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samples.csv \
     --outdir results
@@ -189,7 +189,7 @@ spike,data/spike.cif,"417,484,501",nanobody,110,130
 EOF
 
 # 2. Run with affinity prediction
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input targets.csv \
@@ -206,7 +206,7 @@ unknown1,data/target1.pdb,protein,50,100
 unknown2,data/target2.pdb,nanobody,110,130
 EOF
 
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input unknown_targets.csv \
     --outdir results \
@@ -218,7 +218,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 Nextflow can resume from the last successful step:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
@@ -281,7 +281,7 @@ params {
 Use with:
 
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     -c my_config.config \
     --input samplesheet.csv \
@@ -352,4 +352,4 @@ nextflow run ... --n_samples 10  # Reduce batch size
 
 !!! question "Need Help?"
     - See [Quick Reference](quick-reference.md) for command templates
-    - Check [GitHub Issues](https://github.com/FloWuenne/nf-proteindesign-2025/issues)
+    - Check [GitHub Issues](https://github.com/seqeralabs/nf-proteindesign/issues)

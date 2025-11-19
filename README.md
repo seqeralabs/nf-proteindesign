@@ -1,11 +1,16 @@
 # nf-proteindesign
 
+> [!WARNING]
+> **Proof of Principle Pipeline**
+> 
+> This pipeline was developed by Seqera as a proof of principle using Seqera AI. It demonstrates the capabilities of AI-assisted bioinformatics pipeline development but should be thoroughly validated before use in production environments.
+
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
 [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://flouwuenne.github.io/nf-proteindesign-2025/)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://seqeralabs.github.io/nf-proteindesign/)
 
-> **📚 [Full Documentation](https://flouwuenne.github.io/nf-proteindesign-2025/)** | **🚀 [Quick Start Guide](https://flouwuenne.github.io/nf-proteindesign-2025/quick-start/)** | **📖 [User Guide](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/usage/)**
+> **📚 [Full Documentation](https://seqeralabs.github.io/nf-proteindesign/)** | **🚀 [Quick Start Guide](https://seqeralabs.github.io/nf-proteindesign/quick-start/)** | **📖 [User Guide](https://seqeralabs.github.io/nf-proteindesign/getting-started/usage/)**
 
 ## Introduction
 
@@ -27,17 +32,17 @@ Both modes converge to the same core workflow for consistent, parallel execution
 curl -s https://get.nextflow.io | bash
 
 # 2. Test the pipeline (minimal resources)
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile test_design,docker
 
 # 3. Run with your data
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results
 ```
 
-> ⚠️ **GPU Required**: Boltzgen requires NVIDIA GPU with CUDA support. See [Installation Guide](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/installation/) for setup details.
+> ⚠️ **GPU Required**: Boltzgen requires NVIDIA GPU with CUDA support. See [Installation Guide](https://seqeralabs.github.io/nf-proteindesign/getting-started/installation/) for setup details.
 
 ## Pipeline Features
 
@@ -59,13 +64,13 @@ Comprehensive tests using EGFR (PDB: 1IVO):
 
 ```bash
 # Test Design Mode - Quick validation (15-20 minutes)
-nextflow run FloWuenne/nf-proteindesign-2025 -profile test_design,docker
+nextflow run seqeralabs/nf-proteindesign -profile test_design,docker
 
 # Test Target Mode - Auto-generation (30-45 minutes) 
-nextflow run FloWuenne/nf-proteindesign-2025 -profile test_target,docker
+nextflow run seqeralabs/nf-proteindesign -profile test_target,docker
 
 # Test Production Scale - Full production run (4-8 hours)
-nextflow run FloWuenne/nf-proteindesign-2025 -profile test_production,docker
+nextflow run seqeralabs/nf-proteindesign -profile test_production,docker
 ```
 
 ### Test Profile Comparison
@@ -80,7 +85,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 -profile test_production,docker
 
 ### Design Mode (Pre-made YAMLs)
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode design \
     --input samplesheet_designs.csv \
@@ -91,7 +96,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ### Target Mode (Auto-generate Variants)
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --mode target \
     --input samplesheet_targets.csv \
@@ -103,7 +108,7 @@ nextflow run FloWuenne/nf-proteindesign-2025 \
 
 ### With Optional Analysis Modules
 ```bash
-nextflow run FloWuenne/nf-proteindesign-2025 \
+nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --run_proteinmpnn \
@@ -222,6 +227,6 @@ This pipeline is released under the MIT License. See [LICENSE](LICENSE) for deta
 
 ## Support
 
-- 📖 [Documentation](https://flouwuenne.github.io/nf-proteindesign-2025/)
-- 🐛 [Report Issues](https://github.com/FloWuenne/nf-proteindesign-2025/issues)
-- 💬 [Discussions](https://github.com/FloWuenne/nf-proteindesign-2025/discussions)
+- 📖 [Documentation](https://seqeralabs.github.io/nf-proteindesign/)
+- 🐛 [Report Issues](https://github.com/seqeralabs/nf-proteindesign/issues)
+- 💬 [Discussions](https://github.com/seqeralabs/nf-proteindesign/discussions)
