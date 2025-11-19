@@ -4,10 +4,10 @@ The nf-proteindesign pipeline features a **unified workflow architecture** with 
 
 ## :material-compare: Mode Comparison
 
-| Feature | Design Mode 📄 | Target Mode 🎯 | P2Rank Mode 🔬 |
+| Feature | Design Mode 📄 | Target Mode 🎯  Mode 🔬 |
 |---------|---------------|---------------|----------------|
 | **Input Required** | Design YAML files | Target structure + parameters | Target structure only |
-| **Binding Site** | Manually specified | Manually specified | Auto-predicted by P2Rank |
+| **Binding Site** | Manually specified | Manually specified | Auto-predicted by 
 | **Design Control** | Full control | High control | Automated |
 | **Use Case** | Precise designs | Systematic exploration | Unknown binding sites |
 | **Designs Generated** | One per YAML | Multiple variants | Multiple per predicted site |
@@ -15,13 +15,13 @@ The nf-proteindesign pipeline features a **unified workflow architecture** with 
 
 ## :octicons-workflow-24: Unified Architecture
 
-All three modes share the same core workflow but with different entry points:
+All two modes share the same core workflow but with different entry points:
 
 ```mermaid
 flowchart LR
     A[Design Mode 📄] --> D[Unified Workflow Entry]
     B[Target Mode 🎯] --> D
-    C[P2Rank Mode 🔬] --> D
+    C[ 🔬] --> D
     
     D --> E[Parallel Boltzgen Execution]
     E --> F{Optional Analysis}
@@ -52,8 +52,6 @@ The pipeline can automatically detect which mode to use based on your sampleshee
 if 'design_yaml' in columns:
     mode = 'design'
 elif 'target_structure' in columns:
-    if use_p2rank:
-        mode = 'p2rank'
     else:
         mode = 'target'
 ```
@@ -85,14 +83,12 @@ elif 'target_structure' in columns:
 
 [Learn more about Target Mode →](target-mode.md)
 
-### Use P2Rank Mode When:
+### Use  When:
 
 - ✅ **Binding site is unknown**
 - ✅ You want **ML-predicted pockets**
 - ✅ You're in the **discovery phase**
 - ✅ You want to explore **multiple potential sites**
-
-[Learn more about P2Rank Mode →](p2rank-mode.md)
 
 ## :material-file-table: Samplesheet Examples
 
@@ -111,7 +107,7 @@ elif 'target_structure' in columns:
     spike,data/spike.pdb,"417,484,501",nanobody,110,130
     ```
 
-=== "P2Rank Mode"
+=== ""
     ```csv
     sample,target_structure,chain_type,min_length,max_length
     unknown_target1,data/target1.pdb,protein,50,100
@@ -149,13 +145,9 @@ elif 'target_structure' in columns:
 --chain_type                # Default: protein
 ```
 
-### P2Rank Mode Parameters
+###  Parameters
 
 ```bash
---mode p2rank               # Explicit mode specification
---p2rank_top_n             # Number of top pockets (default: 5)
---p2rank_min_score         # Minimum pocket score (default: 0.5)
---p2rank_conservation      # Enable conservation analysis
 ```
 
 ## :material-file-tree: Output Structure Comparison
@@ -166,8 +158,8 @@ All modes produce similarly structured outputs:
 results/
 ├── {sample_id}/
 │   ├── boltzgen/                    # Mode-specific preprocessing
-│   │   ├── design_variants/         # (Target/P2Rank modes)
-│   │   ├── predicted_pockets/       # (P2Rank mode only)
+│   │   ├── design_variants/         # (Target/s)
+│   │   ├── predicted_pockets/       # ( only)
 │   │   ├── final_ranked_designs/    # Final outputs (all modes)
 │   │   └── intermediate_designs/
 │   ├── ipsae/
@@ -181,7 +173,7 @@ results/
 
 ## :material-speedometer: Performance Characteristics
 
-| Metric | Design Mode | Target Mode | P2Rank Mode |
+| Metric | Design Mode | Target Mode  Mode |
 |--------|-------------|-------------|-------------|
 | **Setup Time** | Fast | Medium | Slow (ML prediction) |
 | **Designs per Sample** | 1 | 10-50+ | 5-20 per pocket |
@@ -213,10 +205,8 @@ results/
     - Use wider length steps initially (`--length_step 30`)
     - Review generated YAMLs in output
 
-=== "P2Rank Mode"
+=== ""
     - Check predicted pockets make biological sense
-    - Adjust `--p2rank_top_n` based on target complexity
-    - Use `--p2rank_conservation` for known protein families
 
 ## :material-arrow-right: Next Steps
 
@@ -236,8 +226,6 @@ Choose your mode and dive deeper:
   </div>
   
   <div class="feature-card">
-    <h3>🔬 P2Rank Mode</h3>
-    <p>Discover ML-driven binding site prediction</p>
-    <a href="p2rank-mode.md">Read more →</a>
+    <h3>🔬 </h3>
   </div>
 </div>

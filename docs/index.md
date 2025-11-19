@@ -11,8 +11,6 @@
 **nf-proteindesign** is a powerful Nextflow pipeline for running [Boltzgen](https://github.com/HannesStark/boltzgen) protein design workflows in parallel across multiple design specifications. Boltzgen is an all-atom generative diffusion model that can design proteins, peptides, and nanobodies to bind various biomolecular targets including proteins, nucleic acids, and small molecules.
 
 !!! tip "Unified Workflow Architecture"
-    The pipeline features a **unified workflow architecture** with three operational modes accessible through a single entry point, enabling high-throughput parallel protein design campaigns with automatic binding site prediction.
-
 ## :octicons-workflow-24: Pipeline Modes
 
 <div class="feature-grid">
@@ -29,17 +27,15 @@
   </div>
   
   <div class="feature-card">
-    <h3>🔬 P2Rank Mode</h3>
+    <h3>🔬 </h3>
     <p>Use machine learning to identify binding sites and automatically design binders.</p>
-    <code>--mode p2rank</code>
   </div>
 </div>
 
 ## :material-lightning-bolt: Key Features
 
 - **:material-parallel: Parallel Processing**: Run multiple design specifications simultaneously
-- **:material-brain: ML Binding Site Prediction**: Integrated P2Rank for automated binding site identification
-- **:material-tune-variant: Flexible Modes**: Three operational modes with automatic detection
+- **:material-tune-variant: Flexible Modes**: two operational modes with automatic detection
 - **:material-chart-line: Comprehensive Analysis**: Optional IPSAE scoring and PRODIGY binding affinity prediction
 - **:material-docker: Container Support**: Full Docker and Singularity compatibility
 - **:material-gpu: GPU Acceleration**: Optimized for NVIDIA GPU execution
@@ -52,11 +48,10 @@ flowchart TD
     A[📋 Input Samplesheet CSV] --> B{Mode Selection}
     B -->|--mode design| C1[📄 Design Mode]
     B -->|--mode target| C2[🎯 Target Mode]
-    B -->|--mode p2rank| C3[🔬 P2Rank Mode]
+    B -->|--mode  C3[🔬 ]
     
     C1 --> D1[Use Pre-made<br/>Design YAMLs]
     C2 --> D2[Generate Design<br/>Variants from Target]
-    C3 --> D3[P2Rank Predict<br/>Binding Sites]
     
     D1 --> E[🔀 Unified Workflow Entry]
     D2 --> E

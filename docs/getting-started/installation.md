@@ -180,7 +180,6 @@ The pipeline uses pre-built containers from GitHub Container Registry:
 
 - **Boltzgen**: `ghcr.io/flouwuenne/boltzgen:latest`
 - **PRODIGY**: `ghcr.io/flouwuenne/prodigy:latest`
-- **P2Rank**: `biocontainers/p2rank:2.4.1--hdfd78af_0`
 
 ### Pre-pull Containers
 
@@ -188,7 +187,6 @@ The pipeline uses pre-built containers from GitHub Container Registry:
 # Docker
 docker pull ghcr.io/flouwuenne/boltzgen:latest
 docker pull ghcr.io/flouwuenne/prodigy:latest
-docker pull biocontainers/p2rank:2.4.1--hdfd78af_0
 
 # Singularity
 export NXF_SINGULARITY_CACHEDIR="/path/to/cache"

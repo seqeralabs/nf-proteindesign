@@ -12,7 +12,7 @@ flowchart TD
     
     B -->|Design Mode| C1[Validate YAMLs]
     B -->|Target Mode| C2[Generate Variants]
-    B -->|P2Rank Mode| C3[Predict Pockets]
+    B --> Mode| C3[Predict Pockets]
     
     C1 --> D[Unified Workflow Entry]
     C2 --> D
@@ -45,8 +45,6 @@ workflow {
         DESIGN_MODE()
     } else if (params.mode == 'target' || target_structure_column_present) {
         TARGET_MODE()
-    } else if (params.mode == 'p2rank') {
-        P2RANK_MODE()
     }
 }
 ```
@@ -106,7 +104,6 @@ process BOLTZGEN_RUN {
 
 | Process | Purpose | Label |
 |---------|---------|-------|
-| `P2RANK_PREDICT` | Find binding sites (P2Rank mode) | `cpu` |
 | `FORMAT_BINDING_SITES` | Convert pockets to design specs | `cpu` |
 | `GENERATE_DESIGN_VARIANTS` | Create design YAMLs (Target mode) | `cpu` |
 | `BOLTZGEN_RUN` | Design proteins with Boltzgen | `gpu` |
@@ -139,11 +136,9 @@ process {
 ```
 main.nf                           # Main entry point with mode detection
 workflows/
-└── protein_design.nf             # Unified workflow handling all three modes
+└── protein_design.nf             # Unified workflow handling all two modes
 
 modules/local/
-├── p2rank_predict.nf             # P2Rank binding site prediction
-├── format_binding_sites.nf       # Convert P2Rank output to design specs
 ├── generate_design_variants.nf   # Generate design YAMLs for target mode
 ├── create_design_samplesheet.nf  # Create samplesheet for unified workflow
 ├── boltzgen_run.nf               # Execute Boltzgen design
@@ -199,7 +194,7 @@ params {
 
 - **Design mode**: Validate YAMLs
 - **Target mode**: Generate variants
-- **P2Rank mode**: Predict pockets + generate YAMLs
+- ****: Predict pockets + generate YAMLs
 
 ### 3. Execution
 

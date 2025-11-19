@@ -7,14 +7,10 @@
     
     - design: Use pre-made design YAML files
     - target: Generate design variants from target structures
-    - p2rank: Use P2Rank to identify binding sites, then design binders
     
-    All modes converge on running Boltzgen and optional IPSAE scoring.
+    All modes converge on running Boltzgen and optional analysis modules.
 ----------------------------------------------------------------------------------------
 */
-
-include { P2RANK_PREDICT } from '../modules/local/p2rank_predict'
-include { FORMAT_BINDING_SITES } from '../modules/local/format_binding_sites'
 include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_variants'
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
@@ -29,7 +25,7 @@ workflow PROTEIN_DESIGN {
     take:
     ch_input    // channel: [meta, file] or [meta, file, files] - can be design YAML or target structure depending on mode
     ch_cache    // channel: path to cache directory or EMPTY_CACHE placeholder
-    mode        // string: 'design', 'target', or 'p2rank'
+    mode        // string: 'design' or 'target'
 
     main:
     
@@ -69,35 +65,7 @@ workflow PROTEIN_DESIGN {
             }
     }
     
-    // ========================================================================
-    // BRANCH 3: P2RANK MODE - Predict binding sites then design binders
-    // ========================================================================
-    else if (mode == 'p2rank') {
-        // Step 1: Run P2Rank to identify binding sites
-        // Input is [meta, target_structure]
-        P2RANK_PREDICT(ch_input)
-        
-        // Step 2: Combine P2Rank outputs for formatting
-        ch_p2rank_results = P2RANK_PREDICT.out.predictions
-            .join(P2RANK_PREDICT.out.residues, by: [0, 1])
-            .map { meta, structure, predictions_csv, residues_csv ->
-                [meta, structure, predictions_csv, residues_csv]
-            }
-        
-        // Step 3: Format P2Rank predictions into Boltz2 YAML files
-        FORMAT_BINDING_SITES(ch_p2rank_results)
-        
-        // Step 4: Flatten to get individual design YAMLs and keep structure file
-        ch_designs_for_boltzgen = ch_p2rank_results
-            .join(FORMAT_BINDING_SITES.out.design_yamls, by: 0)
-            .flatMap { meta, structure, predictions_csv, residues_csv, yaml_files ->
-                // Handle both single file and list of files
-                def yaml_list = yaml_files instanceof List ? yaml_files : [yaml_files]
-                
-                // Create a tuple for each YAML file
-                yaml_list.collect { yaml_file ->
-                    def design_meta = meta.clone()
-                    // Extract design_id from filename
+
                     def design_id = yaml_file.baseName
                     design_meta.id = design_id
                     design_meta.parent_id = meta.id  // Keep reference to original target
@@ -302,10 +270,6 @@ workflow PROTEIN_DESIGN {
     // Mode-specific outputs (will be empty for modes that don't generate them)
     design_variants = mode == 'target' ? GENERATE_DESIGN_VARIANTS.out.design_yamls : Channel.empty()
     design_info = mode == 'target' ? GENERATE_DESIGN_VARIANTS.out.info : Channel.empty()
-    p2rank_predictions = mode == 'p2rank' ? P2RANK_PREDICT.out.predictions : Channel.empty()
-    p2rank_residues = mode == 'p2rank' ? P2RANK_PREDICT.out.residues : Channel.empty()
-    design_yamls = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.design_yamls : Channel.empty()
-    pocket_summary = mode == 'p2rank' ? FORMAT_BINDING_SITES.out.pocket_summary : Channel.empty()
     
     // Optional analysis outputs (will be empty if not run)
     foldseek_results = params.run_foldseek ? FOLDSEEK_SEARCH.out.results : Channel.empty()
