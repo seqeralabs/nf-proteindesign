@@ -32,7 +32,7 @@ curl -s https://get.nextflow.io | bash
 
 # 2. Test the pipeline (minimal resources)
 nextflow run seqeralabs/nf-proteindesign \
-    -profile test_design,docker
+    -profile test_design_protein,docker
 
 # 3. Run with your data
 nextflow run seqeralabs/nf-proteindesign \
@@ -59,26 +59,38 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## Test Profiles
 
-Comprehensive tests using EGFR (PDB: 1IVO):
+Comprehensive tests using EGFR (PDB: 1IVO) with 6 specific test profiles:
 
 ```bash
-# Test Design Mode - Quick validation (15-20 minutes)
-nextflow run seqeralabs/nf-proteindesign -profile test_design,docker
+# Test Design Mode - Protein binder (single design)
+nextflow run seqeralabs/nf-proteindesign -profile test_design_protein,docker
 
-# Test Target Mode - Auto-generation (30-45 minutes) 
-nextflow run seqeralabs/nf-proteindesign -profile test_target,docker
+# Test Design Mode - Peptide binder (single design)
+nextflow run seqeralabs/nf-proteindesign -profile test_design_peptide,docker
 
-# Test Production Scale - Full production run (4-8 hours)
-nextflow run seqeralabs/nf-proteindesign -profile test_production,docker
+# Test Design Mode - Nanobody binder (single design)
+nextflow run seqeralabs/nf-proteindesign -profile test_design_nanobody,docker
+
+# Test Target Mode - Auto-generated protein design
+nextflow run seqeralabs/nf-proteindesign -profile test_target_protein,docker
+
+# Test Target Mode - Auto-generated peptide design
+nextflow run seqeralabs/nf-proteindesign -profile test_target_peptide,docker
+
+# Test Target Mode - Auto-generated nanobody design
+nextflow run seqeralabs/nf-proteindesign -profile test_target_nanobody,docker
 ```
 
 ### Test Profile Comparison
 
-| Profile | Mode | Designs | Budget | Runtime | Purpose |
-|---------|------|---------|--------|---------|---------|
-| `test_design` | Design | 10 | 2 | ~20 min | Quick validation of design mode |
-| `test_target` | Target | 10 | 2 | ~45 min | Test auto-generation features |
-| `test_production` | Design | 10,000 | 10 | ~6 hrs | Validate production-scale workflow |
+| Profile | Mode | Type | Designs | Budget | Runtime | Purpose |
+|---------|------|------|---------|--------|---------|---------|
+| `test_design_protein` | Design | Protein | 5 | 2 | ~15 min | Test protein binder design |
+| `test_design_peptide` | Design | Peptide | 5 | 2 | ~15 min | Test peptide binder design |
+| `test_design_nanobody` | Design | Nanobody | 5 | 2 | ~15 min | Test nanobody design |
+| `test_target_protein` | Target | Protein | 5 | 2 | ~20 min | Test auto-generated protein design |
+| `test_target_peptide` | Target | Peptide | 5 | 2 | ~20 min | Test auto-generated peptide design |
+| `test_target_nanobody` | Target | Nanobody | 5 | 2 | ~20 min | Test auto-generated nanobody design |
 
 ## Example Commands
 

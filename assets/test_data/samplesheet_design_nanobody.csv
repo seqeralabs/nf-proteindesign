@@ -1,0 +1,2 @@
+sample_id,design_yaml,structure_files,protocol,num_designs,budget
+egfr_nanobody_binder,assets/test_data/egfr_nanobody_design.yaml,assets/test_data/1IVO.cif,nanobody-anything,5,2

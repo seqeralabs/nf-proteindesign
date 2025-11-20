@@ -1,4 +1,0 @@
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-egfr_protein_binder,assets/test_data/egfr_protein_design.yaml,assets/test_data/1IVO.cif,protein-anything,10,2
-egfr_peptide_binder,assets/test_data/egfr_peptide_design.yaml,assets/test_data/1IVO.cif,peptide-anything,10,2
-egfr_nanobody_binder,assets/test_data/egfr_nanobody_design.yaml,assets/test_data/1IVO.cif,nanobody-anything,10,2
