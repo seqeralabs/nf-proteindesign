@@ -16,10 +16,28 @@ process BOLTZGEN_RUN {
     tuple val(meta), path("${meta.id}_output/final_ranked_designs"), optional: true, emit: final_designs
     tuple val(meta), path("${meta.id}_output/intermediate_designs"), optional: true, emit: intermediate_designs
     tuple val(meta), path("${meta.id}_output/intermediate_designs_inverse_folded"), optional: true, emit: inverse_folded
-    // Final designs are in subdirectories like final_[budget]_designs/ and intermediate_ranked_[N]_designs/
+    
+    // Final ranked designs (filtered results)
     tuple val(meta), path("${meta.id}_output/final_ranked_designs/**/*.cif"), optional: true, emit: final_cifs
+    
+    // Intermediate designs before filtering (unfiltered results from generation)
     tuple val(meta), path("${meta.id}_output/intermediate_designs/*.cif"), optional: true, emit: intermediate_cifs
     tuple val(meta), path("${meta.id}_output/intermediate_designs/*.npz"), optional: true, emit: intermediate_npz
+    
+    // Intermediate inverse folded designs (all budget designs - this is what we want for IPSAE/PRODIGY)
+    tuple val(meta), path("${meta.id}_output/intermediate_designs_inverse_folded/*.cif"), optional: true, emit: budget_design_cifs
+    tuple val(meta), path("${meta.id}_output/intermediate_designs_inverse_folded/*.npz"), optional: true, emit: budget_design_npz
+    
+    // Specific intermediate outputs: binder by itself and refolded complex
+    tuple val(meta), path("${meta.id}_output/refold_design_cif"), optional: true, emit: refold_design_dir
+    tuple val(meta), path("${meta.id}_output/refold_design_cif/*.cif"), optional: true, emit: refold_design_cifs
+    tuple val(meta), path("${meta.id}_output/refold_cif"), optional: true, emit: refold_complex_dir
+    tuple val(meta), path("${meta.id}_output/refold_cif/*.cif"), optional: true, emit: refold_complex_cifs
+    
+    // CSV metrics files
+    tuple val(meta), path("${meta.id}_output/aggregate_metrics_analyze.csv"), optional: true, emit: aggregate_metrics
+    tuple val(meta), path("${meta.id}_output/per_target_metrics_analyze.csv"), optional: true, emit: per_target_metrics
+    
     path "versions.yml", emit: versions
 
     script:

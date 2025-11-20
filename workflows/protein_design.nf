@@ -103,10 +103,11 @@ workflow PROTEIN_DESIGN {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
-        // Process intermediate CIF and NPZ files
+        // Process ALL budget design CIF and NPZ files from intermediate_designs_inverse_folded
+        // This ensures we run IPSAE on ALL designs before filtering (e.g., if budget=10, run 10 times)
         // Strategy: Use flatMap to pair CIF and NPZ files with matching basenames
-        ch_ipsae_input = BOLTZGEN_RUN.out.intermediate_cifs
-            .join(BOLTZGEN_RUN.out.intermediate_npz, by: 0)
+        ch_ipsae_input = BOLTZGEN_RUN.out.budget_design_cifs
+            .join(BOLTZGEN_RUN.out.budget_design_npz, by: 0)
             .flatMap { meta, cif_files, npz_files ->
                 // Convert to list if single file
                 def cif_list = cif_files instanceof List ? cif_files : [cif_files]
@@ -137,7 +138,7 @@ workflow PROTEIN_DESIGN {
                 }.findAll { it != null }  // Remove null entries where no match was found
             }
         
-        // Run IPSAE calculation for each CIF/NPZ pair
+        // Run IPSAE calculation for each CIF/NPZ pair from budget designs
         IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
     }
     
@@ -148,9 +149,10 @@ workflow PROTEIN_DESIGN {
         // Prepare PRODIGY parser script as a channel
         ch_prodigy_script = Channel.fromPath("${projectDir}/assets/parse_prodigy_output.py", checkIfExists: true)
         
-        // Use final CIF files directly from Boltzgen
+        // Use ALL budget design CIF files from intermediate_designs_inverse_folded
+        // This ensures we run PRODIGY on ALL designs before filtering (e.g., if budget=10, run 10 times)
         // Strategy: Use flatMap to create individual tasks for each CIF file
-        ch_prodigy_input = BOLTZGEN_RUN.out.final_cifs
+        ch_prodigy_input = BOLTZGEN_RUN.out.budget_design_cifs
             .flatMap { meta, cif_files ->
                 // Convert to list if single file
                 def cif_list = cif_files instanceof List ? cif_files : [cif_files]
@@ -166,7 +168,7 @@ workflow PROTEIN_DESIGN {
                 }
             }
         
-        // Run PRODIGY binding affinity prediction for each CIF file
+        // Run PRODIGY binding affinity prediction for each budget design CIF file
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
     }
     

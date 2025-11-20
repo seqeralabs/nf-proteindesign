@@ -3,10 +3,15 @@
 Consolidate protein design metrics from multiple sources and generate a ranked report.
 
 This script aggregates metrics from:
-- Boltzgen outputs (structure quality, confidence scores)
+- Boltzgen outputs (structure quality, confidence scores, aggregate & per-target metrics CSVs)
+  * aggregate_metrics_analyze.csv - Overall design metrics
+  * per_target_metrics_analyze.csv - Target-specific metrics
+  * intermediate_designs_inverse_folded - All budget designs (before filtering)
+  * refold_design_cif - Binder structures by themselves
+  * refold_cif - Refolded complex structures
 - ProteinMPNN (sequence optimization scores)
-- IPSAE (interface scores)
-- PRODIGY (binding affinity predictions)
+- IPSAE (interface scores) - runs on ALL budget designs
+- PRODIGY (binding affinity predictions) - runs on ALL budget designs
 - Foldseek (structural similarity search results)
 
 The output is a comprehensive ranked report showing which designs performed best
@@ -158,6 +163,81 @@ def parse_boltzgen_predictions(predictions_dir):
                     
         except Exception as e:
             print(f"Warning: Could not parse JSON file {json_file}: {e}", file=sys.stderr)
+    
+    return metrics
+
+
+def parse_aggregate_metrics_csv(csv_file):
+    """
+    Parse Boltzgen aggregate_metrics_analyze.csv file.
+    
+    Returns:
+        dict with aggregate metrics
+    """
+    metrics = {}
+    
+    if not os.path.exists(csv_file):
+        return metrics
+    
+    try:
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f)
+            # Read first row (assuming single design or aggregate stats)
+            for row in reader:
+                # Extract any numeric columns
+                for key, value in row.items():
+                    try:
+                        # Try to convert to float
+                        metrics[f'aggregate_{key}'] = float(value)
+                    except (ValueError, TypeError):
+                        # Keep as string if not numeric
+                        metrics[f'aggregate_{key}'] = value
+                break  # Only first row
+    except Exception as e:
+        print(f"Warning: Could not parse aggregate metrics CSV {csv_file}: {e}", file=sys.stderr)
+    
+    return metrics
+
+
+def parse_per_target_metrics_csv(csv_file):
+    """
+    Parse Boltzgen per_target_metrics_analyze.csv file.
+    
+    Returns:
+        dict with per-target metrics (averages if multiple targets)
+    """
+    metrics = {}
+    
+    if not os.path.exists(csv_file):
+        return metrics
+    
+    try:
+        with open(csv_file, 'r') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            
+            if not rows:
+                return metrics
+            
+            # If multiple rows, calculate averages for numeric columns
+            numeric_cols = defaultdict(list)
+            
+            for row in rows:
+                for key, value in row.items():
+                    try:
+                        numeric_cols[key].append(float(value))
+                    except (ValueError, TypeError):
+                        pass
+            
+            # Calculate averages
+            for key, values in numeric_cols.items():
+                if values:
+                    metrics[f'per_target_{key}_avg'] = sum(values) / len(values)
+                    metrics[f'per_target_{key}_min'] = min(values)
+                    metrics[f'per_target_{key}_max'] = max(values)
+                    
+    except Exception as e:
+        print(f"Warning: Could not parse per-target metrics CSV {csv_file}: {e}", file=sys.stderr)
     
     return metrics
 
@@ -338,6 +418,42 @@ def aggregate_metrics_from_directories(
         
         scores_dir = os.path.join(mpnn_dir, 'scores')
         metrics = parse_proteinmpnn_scores(scores_dir)
+        all_metrics[design_id].update(metrics)
+    
+    # Find and parse Boltzgen aggregate metrics CSV files
+    print(f"\nSearching for aggregate_metrics_analyze.csv files")
+    aggregate_search_path = os.path.join(output_dir, '*/aggregate_metrics_analyze.csv')
+    print(f"Full search path: {aggregate_search_path}")
+    aggregate_files = glob.glob(aggregate_search_path, recursive=True)
+    print(f"Found {len(aggregate_files)} aggregate metrics files")
+    if aggregate_files:
+        for f in aggregate_files[:5]:  # Show first 5
+            print(f"  - {f}")
+    
+    for aggregate_file in aggregate_files:
+        # Extract design ID from parent directory
+        parent_dir = Path(aggregate_file).parent.name
+        design_id = parent_dir.replace('_output', '')
+        
+        metrics = parse_aggregate_metrics_csv(aggregate_file)
+        all_metrics[design_id].update(metrics)
+    
+    # Find and parse Boltzgen per-target metrics CSV files
+    print(f"\nSearching for per_target_metrics_analyze.csv files")
+    per_target_search_path = os.path.join(output_dir, '*/per_target_metrics_analyze.csv')
+    print(f"Full search path: {per_target_search_path}")
+    per_target_files = glob.glob(per_target_search_path, recursive=True)
+    print(f"Found {len(per_target_files)} per-target metrics files")
+    if per_target_files:
+        for f in per_target_files[:5]:  # Show first 5
+            print(f"  - {f}")
+    
+    for per_target_file in per_target_files:
+        # Extract design ID from parent directory
+        parent_dir = Path(per_target_file).parent.name
+        design_id = parent_dir.replace('_output', '')
+        
+        metrics = parse_per_target_metrics_csv(per_target_file)
         all_metrics[design_id].update(metrics)
     
     return dict(all_metrics)
