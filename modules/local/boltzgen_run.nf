@@ -5,7 +5,7 @@ process BOLTZGEN_RUN {
     // Publish results
     publishDir "${params.outdir}/${meta.id}", mode: params.publish_dir_mode, saveAs: { filename -> filename }
 
-    container 'wuennemannflorian/boltzgen:latest'
+    container 'cr.seqera.io/scidev/boltzgen:0.1.5'
 
     input:
     tuple val(meta), path(design_yaml), path(structure_files)
