@@ -1,5 +1,5 @@
-# Boltzgen design specification for peptide binder to EGFR (1IVO)
-# Designs a peptide to bind specific residues on EGFR kinase domain
+# Boltzgen design specification for peptide binder to 2VSM
+# Designs a peptide to bind specific residues on 2VSM structure
 
 entities:
   # Specify a designed peptide chain
@@ -8,10 +8,10 @@ entities:
       id: P
       sequence: 12..25
 
-  # Specification of the EGFR target from 1IVO structure
+  # Specification of the 2VSM target structure
   - file:
-      path: 1IVO.cif
-      # Use chain A (EGFR kinase domain)
+      path: 2VSM.cif
+      # Use chain A
       include:
         - chain:
             id: A

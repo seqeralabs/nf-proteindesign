@@ -1,2 +1,2 @@
 sample_id,target_structure,target_chain_ids,min_length,max_length,length_step,n_variants_per_length,design_type,protocol,num_designs,budget
-egfr_target_protein,assets/test_data/1IVO.cif,A,100,100,1,1,protein,protein-anything,5,2
+2vsm_target_protein,assets/test_data/2VSM.cif,A,100,100,1,1,protein,protein-anything,5,2

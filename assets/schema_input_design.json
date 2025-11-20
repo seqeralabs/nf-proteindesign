@@ -19,7 +19,7 @@
       },
       "structure_files": {
         "type": "string",
-        "errorMessage": "Structure files must be a comma-separated list of PDB/CIF file paths (e.g., '1IVO.cif' or 'protein1.pdb,protein2.cif')"
+        "errorMessage": "Structure files must be a comma-separated list of PDB/CIF file paths (e.g., '2VSM.cif' or 'protein1.pdb,protein2.cif')"
       },
       "protocol": {
         "type": "string",

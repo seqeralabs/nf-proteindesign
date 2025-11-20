@@ -1,2 +1,2 @@
 sample_id,design_yaml,structure_files,protocol,num_designs,budget
-egfr_protein_binder,assets/test_data/egfr_protein_design.yaml,assets/test_data/1IVO.cif,protein-anything,5,2
+2vsm_protein_binder,assets/test_data/egfr_protein_design.yaml,assets/test_data/2VSM.cif,protein-anything,5,2
