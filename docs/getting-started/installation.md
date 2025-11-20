@@ -77,14 +77,9 @@ nextflow run main.nf -profile docker --input samplesheet.csv --outdir results
 ### Quick Test
 
 ```bash
-# Create test samplesheet
-echo "sample,design_yaml" > test.csv
-echo "test,test_data/test_design.yaml" >> test.csv
-
-# Run test
+# Run test with built-in test profile
 nextflow run seqeralabs/nf-proteindesign \
-    -profile docker,test \
-    --input test.csv \
+    -profile test_design_protein,docker \
     --outdir test_results
 ```
 

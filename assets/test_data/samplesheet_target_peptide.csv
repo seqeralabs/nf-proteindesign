@@ -1,0 +1,2 @@
+sample_id,target_structure,target_chain_ids,min_length,max_length,length_step,n_variants_per_length,design_type,protocol,num_designs,budget
+egfr_target_peptide,assets/test_data/1IVO.cif,A,15,15,1,1,peptide,peptide-anything,5,2
