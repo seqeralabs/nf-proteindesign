@@ -1,5 +1,5 @@
-# Boltzgen design specification for nanobody against EGFR (1IVO)
-# Designs a nanobody to bind the EGFR kinase domain
+# Boltzgen design specification for nanobody against 2VSM
+# Designs a nanobody to bind the 2VSM structure
 
 entities:
   # Specify a designed nanobody
@@ -9,10 +9,10 @@ entities:
       id: N
       sequence: 110..130  # Typical nanobody length range
 
-  # Specification of the EGFR target from 1IVO structure
+  # Specification of the 2VSM target structure
   - file:
-      path: 1IVO.cif
-      # Use chain A (EGFR kinase domain)
+      path: 2VSM.cif
+      # Use chain A
       include:
         - chain:
             id: A
