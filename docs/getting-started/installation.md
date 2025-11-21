@@ -234,7 +234,7 @@ Once installed, check out:
 
 - [Quick Start Guide](../quick-start.md)
 - [Basic Usage](usage.md)
-- [Pipeline Modes](../modes/overview.md)
+- [Analysis Modules](../analysis/proteinmpnn-protenix.md)
 
 ---
 

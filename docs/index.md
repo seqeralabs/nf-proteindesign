@@ -67,34 +67,34 @@
 ## :material-pipeline: Pipeline Workflow
 
 ```mermaid
-flowchart LR
-    A[Samplesheet] --> B[Boltzgen]
+graph LR
+    A[Samplesheet] --> B[Boltzgen Design]
     B --> C[Budget Designs]
     
     C --> D{ProteinMPNN?}
-    D -->|Yes| E[Optimize]
+    D -->|Yes| E[Sequence Optimization]
     E --> F{Protenix?}
-    F -->|Yes| G[Refold]
+    F -->|Yes| G[Structure Refold]
     
-    C --> H[Analysis]
+    C --> H[Analysis Modules]
     G --> H
     
-    H --> I[ipSAE]
-    H --> J[PRODIGY]
-    H --> K[Foldseek]
+    H --> I[ipSAE Scoring]
+    H --> J[PRODIGY Affinity]
+    H --> K[Foldseek Search]
     
     I --> L{Consolidate?}
     J --> L
     K --> L
-    L -->|Yes| M[Report]
+    L -->|Yes| M[Unified Report]
     
-    M --> N[Results]
+    M --> N[Final Results]
     C --> N
     
-    style B fill:#9C27B0,color:#fff
-    style E fill:#8E24AA,color:#fff
-    style G fill:#7B1FA2,color:#fff
-    style M fill:#6A1B9A,color:#fff
+    style B fill:#9C27B0,stroke:#9C27B0,color:#fff
+    style E fill:#8E24AA,stroke:#8E24AA,color:#fff
+    style G fill:#7B1FA2,stroke:#7B1FA2,color:#fff
+    style M fill:#6A1B9A,stroke:#6A1B9A,color:#fff
 ```
 
 ## :material-rocket-launch: Quick Start

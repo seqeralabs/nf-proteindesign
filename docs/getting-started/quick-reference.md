@@ -309,9 +309,10 @@ grep "Succeeded" results/pipeline_info/execution_trace.txt | wc -l
 ## :material-link: Quick Links
 
 - [Full Documentation](../index.md)
-- [Pipeline Modes](../modes/overview.md)
+- [Basic Usage](usage.md)
 - [Parameter Reference](../reference/parameters.md)
 - [Example Workflows](../reference/examples.md)
+- [Analysis Modules](../analysis/proteinmpnn-protenix.md)
 - [GitHub Repository](https://github.com/seqeralabs/nf-proteindesign)
 
 ---

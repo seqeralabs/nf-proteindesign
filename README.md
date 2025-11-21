@@ -105,14 +105,13 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Key Documentation Pages
 
-- **[Quick Start Guide](https://flouwuenne.github.io/nf-proteindesign-2025/quick-start/)** - Get started in minutes
-- **[Installation](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/installation/)** - Setup and requirements
-- **[Usage Guide](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/usage/)** - Detailed usage instructions
-- **[Pipeline Modes](https://flouwuenne.github.io/nf-proteindesign-2025/modes/overview/)** - Design, Target modes
-- **[Analysis Tools](https://flouwuenne.github.io/nf-proteindesign-2025/analysis/ipsae/)** - Optional analysis modules
-- **[Parameters Reference](https://flouwuenne.github.io/nf-proteindesign-2025/reference/parameters/)** - Complete parameter list
-- **[Output Files](https://flouwuenne.github.io/nf-proteindesign-2025/reference/outputs/)** - Understanding results
-- **[Examples](https://flouwuenne.github.io/nf-proteindesign-2025/reference/examples/)** - Real-world use cases
+- **[Quick Start Guide](https://seqeralabs.github.io/nf-proteindesign/quick-start/)** - Get started in minutes
+- **[Installation](https://seqeralabs.github.io/nf-proteindesign/getting-started/installation/)** - Setup and requirements
+- **[Usage Guide](https://seqeralabs.github.io/nf-proteindesign/getting-started/usage/)** - Detailed usage instructions
+- **[Analysis Modules](https://seqeralabs.github.io/nf-proteindesign/analysis/proteinmpnn-protenix/)** - Optional analysis tools (ProteinMPNN, Protenix, ipSAE, PRODIGY, Foldseek)
+- **[Parameters Reference](https://seqeralabs.github.io/nf-proteindesign/reference/parameters/)** - Complete parameter list
+- **[Output Files](https://seqeralabs.github.io/nf-proteindesign/reference/outputs/)** - Understanding results
+- **[Examples](https://seqeralabs.github.io/nf-proteindesign/reference/examples/)** - Real-world use cases
 
 ## Samplesheet Format
 
