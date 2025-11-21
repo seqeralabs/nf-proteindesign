@@ -6,6 +6,9 @@ process BOLTZGEN_RUN {
     publishDir "${params.outdir}/${meta.id}", mode: params.publish_dir_mode, saveAs: { filename -> filename }
 
     container 'cr.seqera.io/scidev/boltzgen:0.1.5'
+    
+    // GPU acceleration - Boltzgen requires GPU for efficient inference
+    accelerator 1, type: 'nvidia-gpu'
 
     input:
     tuple val(meta), path(design_yaml), path(structure_files)

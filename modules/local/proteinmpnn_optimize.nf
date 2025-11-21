@@ -6,6 +6,9 @@ process PROTEINMPNN_OPTIMIZE {
     publishDir "${params.outdir}/${meta.id}/proteinmpnn", mode: params.publish_dir_mode
 
     container 'cr.seqera.io/scidev/proteinmpnn:1.0.1'
+    
+    // GPU acceleration - ProteinMPNN is PyTorch-based and benefits from CUDA
+    accelerator 1, type: 'nvidia-gpu'
 
     input:
     tuple val(meta), path(pdb_structures)
@@ -40,6 +43,17 @@ process PROTEINMPNN_OPTIMIZE {
     """
     #!/bin/bash
     set -euo pipefail
+    
+    # Check for GPU availability and set device
+    if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+        echo "GPU detected - ProteinMPNN will use CUDA acceleration"
+        export CUDA_VISIBLE_DEVICES=\${CUDA_VISIBLE_DEVICES:-0}
+        GPU_FLAG=""
+    else
+        echo "No GPU detected - ProteinMPNN will run on CPU"
+        export CUDA_VISIBLE_DEVICES=""
+        GPU_FLAG=""
+    fi
     
     # Create output directories
     mkdir -p ${meta.id}_mpnn_optimized/sequences
