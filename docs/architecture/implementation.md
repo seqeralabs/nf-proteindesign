@@ -43,9 +43,6 @@ nf-proteindesign/
 ├── workflows/
 │   └── protein_design.nf               # Unified workflow handling all modes
 ├── modules/local/
-│   ├── format_binding_sites.nf
-│   ├── generate_design_variants.nf
-│   ├── create_design_samplesheet.nf
 │   ├── boltzgen_run.nf
 │   ├── convert_cif_to_pdb.nf
 │   ├── collect_design_files.nf
@@ -60,11 +57,10 @@ nf-proteindesign/
 │   └── create_design_yaml.py          # Generate design YAML files
 └── assets/
     ├── schema_input_design.json        # Design mode samplesheet schema
-    ├── schema_input_target.json        # Target mode samplesheet schema
     └── test_data/                       # Test datasets
-        ├── designs/                     # Pre-made design YAMLs
-        ├── structures/                  # Test structures
-        └── samplesheets/                # Test samplesheets
+        ├── egfr_*_design.yaml          # Pre-made design YAMLs
+        ├── 2VSM.cif                     # Test structure
+        └── samplesheet_design_*.csv     # Test samplesheets
 ```
 
 ## :material-language-python: Helper Scripts
@@ -84,11 +80,7 @@ from pathlib import Path
 def validate_samplesheet(file_path):
     """Validate samplesheet CSV format."""
     
-    required_columns = ['sample']
-    mode_columns = {
-        'design': ['design_yaml'],
-        'target': ['target_structure'],
-    }
+    required_columns = ['sample_id', 'design_yaml']
     
     with open(file_path) as f:
         reader = csv.DictReader(f)
@@ -99,9 +91,7 @@ def validate_samplesheet(file_path):
             if col not in headers:
                 sys.exit(f"Missing required column: {col}")
         
-        # Detect mode
-        mode = detect_mode(headers)
-        print(f"Detected mode: {mode}")
+        print(f"Valid design mode samplesheet")
         
         return True
 
@@ -231,11 +221,11 @@ params {
 }
 
 def validateParameters() {
-    if (params.n_samples < 1) {
-        error "n_samples must be >= 1"
+    if (params.num_designs < 1) {
+        error "num_designs must be >= 1"
     }
-    if (params.max_length < params.min_length) {
-        error "max_length must be >= min_length"
+    if (params.budget < 1) {
+        error "budget must be >= 1"
     }
 }
 

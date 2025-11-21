@@ -25,35 +25,23 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results -resume
 ```
 
-## :material-file-table: Samplesheet Templates
+## :material-file-table: Samplesheet Template
 
-=== "Design Mode"
-    ```csv
-    sample,design_yaml
-    design1,designs/my_design.yaml
-    design2,designs/another_design.yaml
-    ```
+```csv
+sample_id,design_yaml,structure_files,protocol,num_designs,budget
+design1,designs/my_design.yaml,data/target.pdb,protein-anything,100,10
+design2,designs/another_design.yaml,data/target.cif,peptide-anything,100,10
+```
 
-=== "Target Mode (Minimal)"
-    ```csv
-    sample,target_structure
-    target1,data/target1.pdb
-    target2,data/target2.cif
-    ```
+**Required columns:**
+- `sample_id`: Unique identifier for the design
+- `design_yaml`: Path to Boltzgen design YAML specification
 
-=== "Target Mode (Full)"
-    ```csv
-    sample,target_structure,target_residues,chain_type,min_length,max_length
-    egfr,data/egfr.pdb,"10,11,12,45,46",protein,60,120
-    spike,data/spike.cif,"417,484,501",nanobody,110,130
-    ```
-
-=== "Binder Mode"
-    ```csv
-    sample,target_structure,chain_type,min_length,max_length
-    binder1,data/target1.pdb,protein,50,100
-    binder2,data/target2.pdb,nanobody,110,130
-    ```
+**Optional columns:**
+- `structure_files`: Additional structure files (comma-separated if multiple)
+- `protocol`: Boltzgen protocol (protein-anything, peptide-anything, nanobody-anything, protein-small_molecule)
+- `num_designs`: Number of intermediate designs (default: 100)
+- `budget`: Number of final diversity-optimized designs (default: 10)
 
 ## :material-cog: Common Parameters
 
@@ -62,34 +50,25 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
 | `--input` | Samplesheet path | Required | `samplesheet.csv` |
-| `--outdir` | Output directory | Required | `results/` |
-| `--mode` | Pipeline mode | Auto-detect | `design`, `target`, `binder` |
+| `--outdir` | Output directory | `./results` | `results/` |
+| `--protocol` | Boltzgen protocol | `protein-anything` | `peptide-anything` |
 
 ### Design Parameters
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--n_samples` | Designs per specification | 10 | `50` |
-| `--timesteps` | Diffusion timesteps | 100 | `200` |
-| `--save_traj` | Save trajectories | false | `true` |
-
-### Target Mode Parameters
-
-| Parameter | Description | Default | Example |
-|-----------|-------------|---------|---------|
-| `--min_design_length` | Minimum binder length | 50 | `60` |
-| `--max_design_length` | Maximum binder length | 150 | `120` |
-| `--length_step` | Length increment | 20 | `10` |
-| `--n_variants_per_length` | Variants per length | 3 | `5` |
-| `--chain_type` | Designed chain type | protein | `peptide`, `nanobody` |
+| `--num_designs` | Intermediate designs | 100 | `50` |
+| `--budget` | Final optimized designs | 10 | `20` |
+| `--cache_dir` | Model cache directory | `null` | `/cache` |
 
 ### Analysis Parameters
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
+| `--run_proteinmpnn` | Enable ProteinMPNN | false | `true` |
 | `--run_ipsae` | Enable IPSAE scoring | false | `true` |
 | `--run_prodigy` | Enable PRODIGY | false | `true` |
-| `--prodigy_selection` | Chain selection | Auto | `'A,B'` |
+| `--run_consolidation` | Consolidated report | false | `true` |
 
 ### Resource Parameters
 
@@ -97,51 +76,38 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 |-----------|-------------|---------|---------|
 | `--max_cpus` | Maximum CPUs | 16 | `32` |
 | `--max_memory` | Maximum memory | 128.GB | `256.GB` |
-| `--max_time` | Maximum time | 48.h | `72.h` |
+| `--max_time` | Maximum time | 240.h | `72.h` |
 
 ## :material-play: Command Recipes
 
-### Quick Test (2 minutes)
+### Quick Test
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
-    -profile docker \
-    --input test.csv \
-    --mode target \
-    --n_samples 5 \
-    --min_design_length 60 \
-    --max_design_length 80 \
-    --length_step 20 \
-    --n_variants_per_length 1 \
+    -profile test_design_protein,docker \
     --outdir test_results
 ```
 
-### Standard Run (30-60 minutes)
+### Standard Run
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
-    --n_samples 20 \
-    --run_prodigy \
     --outdir results
 ```
 
-### Production Run (several hours)
+### With Analysis Tools
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
-    --mode target \
-    --min_design_length 50 \
-    --max_design_length 150 \
-    --length_step 10 \
-    --n_variants_per_length 5 \
-    --n_samples 100 \
-    --run_prodigy \
+    --outdir results \
+    --run_proteinmpnn \
     --run_ipsae \
-    --outdir production_results
+    --run_prodigy \
+    --run_consolidation
 ```
 
 ### Peptide Design
@@ -149,26 +115,18 @@ nextflow run seqeralabs/nf-proteindesign \
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --input peptides.csv \
-    --mode target \
-    --chain_type peptide \
-    --min_design_length 10 \
-    --max_design_length 30 \
-    --length_step 5 \
-    --n_samples 50 \
+    --input peptide_samplesheet.csv \
+    --protocol peptide-anything \
     --outdir peptide_designs
 ```
 
-### Nanobody Discovery
+### Nanobody Design
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --input targets.csv \
-    --chain_type nanobody \
-    --min_design_length 110 \
-    --max_design_length 130 \
-    --n_samples 30 \
+    --input nanobody_samplesheet.csv \
+    --protocol nanobody-anything \
     --outdir nanobody_designs
 ```
 
@@ -239,28 +197,31 @@ docker pull ghcr.io/flouwuenne/prodigy:latest
 ## :material-file-code: Design YAML Template
 
 ```yaml title="design_template.yaml"
-name: my_protein_design
-target:
-  structure: data/target_protein.pdb
-  residues: [10, 11, 12, 45, 46, 47]  # Binding site
-designed:
-  chain_type: protein  # or 'peptide', 'nanobody'
-  length: [50, 100]    # [min, max] length range
-global:
-  n_samples: 20
-  timesteps: 100
-  save_traj: false
-  seed: 42
+# Boltzgen design specification
+entities:
+  # Designed protein entity
+  - protein:
+      id: C
+      sequence: 80..120  # Length range for designed protein
+  
+  # Target structure entity
+  - file:
+      path: target_protein.cif
+      include:
+        - chain:
+            id: A  # Target chain to bind
 ```
+
+See the [Boltzgen documentation](https://github.com/generatebio/boltz#-design-specification) for complete YAML specification details.
 
 ## :material-chart-line: Performance Estimates
 
-| Configuration | Designs | Time (1 GPU) | GPU Memory |
-|---------------|---------|--------------|------------|
-| Quick test | 5 | 2-5 min | 8GB |
-| Standard | 20-50 | 20-60 min | 16GB |
-| Production | 100+ | 2-6 hours | 16-24GB |
-| Large campaign | 500+ | 12-24 hours | 24GB+ |
+| Configuration | num_designs | budget | Time (1 GPU) | GPU Memory |
+|---------------|-------------|--------|--------------|------------|
+| Quick test | 5-10 | 2-5 | 5-10 min | 8GB |
+| Standard | 50-100 | 10 | 30-60 min | 16GB |
+| Production | 100-200 | 20 | 1-3 hours | 16-24GB |
+| Large campaign | 200+ | 50+ | 4-12 hours | 24GB+ |
 
 ## :material-console: Useful Commands
 

@@ -1,3 +1,0 @@
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-protein_binder_example,assets/design_examples/protein_design.yaml,assets/test_data/2VSM.cif,protein-anything,100,10
-peptide_binder_example,assets/design_examples/peptide_design.yaml,assets/test_data/2VSM.cif,peptide-anything,100,10
