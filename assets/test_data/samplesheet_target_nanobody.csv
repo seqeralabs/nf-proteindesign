@@ -1,2 +1,0 @@
-sample_id,target_structure,target_chain_ids,min_length,max_length,length_step,n_variants_per_length,design_type,protocol,num_designs,budget
-2vsm_target_nanobody,assets/test_data/2VSM.cif,A,120,120,1,1,nanobody,nanobody-anything,5,2

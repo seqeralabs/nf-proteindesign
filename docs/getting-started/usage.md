@@ -53,18 +53,19 @@ peptide_binder,designs/il6_peptide.yaml,3000,10
 For Design mode, create YAML files following this structure:
 
 ```yaml
-name: my_design_name
-target:
-  structure: path/to/target.pdb
-  residues: [10, 11, 12, 45, 46, 47]  # Binding site residues
-designed:
-  chain_type: protein  # Options: protein, peptide, nanobody
-  length: [50, 100]    # [min_length, max_length]
-global:
-  n_samples: 20        # Number of designs to generate
-  timesteps: 100       # Diffusion timesteps
-  save_traj: false     # Save trajectory files
-  seed: 42            # Random seed for reproducibility
+# Boltzgen design specification
+entities:
+  # Designed protein entity
+  - protein:
+      id: C
+      sequence: 50..100  # Length range for designed protein
+  
+  # Target structure entity
+  - file:
+      path: target.cif
+      include:
+        - chain:
+            id: A  # Target chain to bind
 ```
 
 ## :material-cog: Common Parameters

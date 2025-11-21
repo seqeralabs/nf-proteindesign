@@ -8,17 +8,12 @@ Complete reference for all pipeline parameters.
 |-----------|------|-------------|---------|
 | `--input` | file | Samplesheet CSV file | *Required* |
 | `--outdir` | path | Output directory | `./results` |
-| `--mode` | string | Pipeline mode (`design`, `target`, ) | Auto-detect |
+| `--mode` | string | Pipeline mode (only `design` supported) | `design` |
 | `--publish_dir_mode` | string | How to publish output files | `copy` |
 
 ## :material-robot: Mode Selection
 
-The pipeline automatically detects the mode based on samplesheet columns, but you can override with `--mode`:
-
-| Mode | Description | Samplesheet Column(s) |
-|------|-------------|----------------------|
-| `design` | Use pre-made design YAMLs | `design_yaml` |
-| `target` | Generate designs from target structure | `target_structure` |
+The pipeline runs in **design mode**, using pre-made Boltzgen design YAML files specified in the samplesheet's `design_yaml` column.
 ## :material-dna: Boltzgen Design Parameters
 
 | Parameter | Type | Description | Default |
@@ -36,33 +31,6 @@ The pipeline automatically detects the mode based on samplesheet columns, but yo
 - `peptide-anything`: Design peptides to bind any biomolecule
 - `protein-small_molecule`: Design proteins to bind small molecules
 - `nanobody-anything`: Design nanobodies to bind any biomolecule
-
-## :material-target: Target Mode Parameters
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--min_design_length` | integer | Minimum binder length | 50 |
-| `--max_design_length` | integer | Maximum binder length | 150 |
-| `--length_step` | integer | Length increment between variants | 20 |
-| `--n_variants_per_length` | integer | Variants per length | 3 |
-| `--design_type` | string | Type of binder to design | `protein` |
-
-### Design Type Options
-
-- `protein`: Full-length protein binders
-- `peptide`: Short peptide binders (typically <50 residues)
-- `nanobody`: Single-domain antibodies (~110-130 residues)
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--top_n_pockets` | integer | Number of top-scoring pockets | 3 |
-| `--binding_region_mode` | string | How to specify binding region | `residues` |
-| `--expand_region` | integer | Expand region by N residues | 5 |
-
-### Binding Region Mode Options
-
-- `residues`: Use residue numbers for binding specification
-- `bounding_box`: Use 3D bounding box coordinates
 
 ## :material-chart-line: Analysis Modules
 
@@ -153,19 +121,6 @@ nextflow run seqeralabs/nf-proteindesign \
     --save_traj true
 ```
 
-### Target Mode Configuration
-
-```bash
-nextflow run seqeralabs/nf-proteindesign \
-    --input samplesheet.csv \
-    --mode target \
-    --min_design_length 60 \
-    --max_design_length 120 \
-    --length_step 10 \
-    --n_variants_per_length 5 \
-    --outdir results
-```
-
 ### With All Analysis Tools
 
 ```bash
@@ -199,13 +154,8 @@ params {
     outdir = 'results'
     
     // Design parameters
-    n_samples = 50
-    timesteps = 200
-    
-    // Target mode
-    min_design_length = 60
-    max_design_length = 120
-    length_step = 10
+    num_designs = 100
+    budget = 10
     
     // Analysis
     run_prodigy = true
