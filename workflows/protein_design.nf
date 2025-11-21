@@ -75,9 +75,12 @@ workflow PROTEIN_DESIGN {
         // Step 3: Protenix refolding if enabled
         // ====================================================================
         if (params.run_protenix_refold) {
+            // Prepare extraction script as a channel
+            ch_extract_script = Channel.fromPath("${projectDir}/assets/extract_target_sequence.py", checkIfExists: true)
+            
             // Extract target sequences from Boltzgen structures
             ch_boltzgen_structures = BOLTZGEN_RUN.out.final_cifs
-            EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures)
+            EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures, ch_extract_script)
             
             // Parallelize Protenix per FASTA file (one per ProteinMPNN sequence)
             // Each ProteinMPNN run generates multiple FASTA files (mpnn_num_seq_per_target)
