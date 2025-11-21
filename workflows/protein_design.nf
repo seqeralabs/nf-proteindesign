@@ -9,6 +9,8 @@
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
+include { EXTRACT_TARGET_SEQUENCES } from '../modules/local/extract_target_sequences'
+include { PROTENIX_REFOLD } from '../modules/local/protenix_refold'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
 include { FOLDSEEK_SEARCH } from '../modules/local/foldseek_search'
@@ -49,6 +51,33 @@ workflow PROTEIN_DESIGN {
         
         // Use ProteinMPNN optimized structures for downstream analyses
         ch_final_designs_for_analysis = PROTEINMPNN_OPTIMIZE.out.optimized_designs
+        
+        // ====================================================================
+        // Step 3: Protenix refolding if enabled
+        // ====================================================================
+        if (params.run_protenix_refold) {
+            // Extract target sequences from Boltzgen structures
+            ch_boltzgen_structures = BOLTZGEN_RUN.out.final_cifs
+            EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures)
+            
+            // Combine ProteinMPNN FASTA outputs with target sequence
+            // Join based on parent_id (meta.parent_id from MPNN matches meta.id from Boltzgen)
+            ch_protenix_input = PROTEINMPNN_OPTIMIZE.out.sequences
+                .map { meta, fasta -> 
+                    [meta.parent_id, meta, fasta]
+                }
+                .join(
+                    EXTRACT_TARGET_SEQUENCES.out.target_sequences.map { meta, seq -> 
+                        [meta.id, seq]
+                    }
+                )
+                .map { parent_id, meta, fasta, target_seq ->
+                    [meta, fasta, target_seq]
+                }
+            
+            // Run Protenix structure prediction on combined sequences
+            PROTENIX_REFOLD(ch_protenix_input)
+        }
     } else {
         // Use Boltzgen outputs directly if ProteinMPNN is disabled
         ch_final_designs_for_analysis = BOLTZGEN_RUN.out.results
@@ -57,6 +86,9 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     // OPTIONAL: IPSAE scoring if enabled
     // ========================================================================
+    // NOTE: IPSAE requires NPZ confidence files from Boltzgen.
+    // Protenix structures are not included here as they use CIF-embedded pLDDT
+    // which would require conversion to NPZ format.
     if (params.run_ipsae) {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
@@ -121,12 +153,37 @@ workflow PROTEIN_DESIGN {
                     def design_meta = [:]
                     design_meta.id = "${meta.id}_${base_name}"
                     design_meta.parent_id = meta.id
+                    design_meta.source = "boltzgen"
                     
                     [design_meta, cif_file]
                 }
             }
         
-        // Run PRODIGY binding affinity prediction for each budget design CIF file
+        // Add Protenix-refolded structures if available
+        if (params.run_proteinmpnn && params.run_protenix_refold) {
+            ch_prodigy_protenix = PROTENIX_REFOLD.out.structures
+                .flatMap { meta, cif_files ->
+                    // Convert to list if single file
+                    def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                    
+                    // Create a separate entry for each CIF file
+                    cif_list.collect { cif_file ->
+                        def base_name = cif_file.baseName
+                        def design_meta = [:]
+                        design_meta.id = "${meta.id}_${base_name}_protenix"
+                        design_meta.parent_id = meta.parent_id  // Maintain link to original Boltzgen design
+                        design_meta.mpnn_parent_id = meta.id     // Track which ProteinMPNN design this came from
+                        design_meta.source = "protenix"
+                        
+                        [design_meta, cif_file]
+                    }
+                }
+            
+            // Combine both sources
+            ch_prodigy_input = ch_prodigy_input.mix(ch_prodigy_protenix)
+        }
+        
+        // Run PRODIGY binding affinity prediction for all CIF files (Boltzgen + Protenix)
         PRODIGY_PREDICT(ch_prodigy_input, ch_prodigy_script)
     }
     
@@ -215,6 +272,10 @@ workflow PROTEIN_DESIGN {
     mpnn_optimized = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.optimized_designs : Channel.empty()
     mpnn_sequences = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.sequences : Channel.empty()
     mpnn_scores = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.scores : Channel.empty()
+    
+    // Protenix refolding outputs (will be empty if not run)
+    protenix_structures = (params.run_proteinmpnn && params.run_protenix_refold) ? PROTENIX_REFOLD.out.structures : Channel.empty()
+    protenix_confidence = (params.run_proteinmpnn && params.run_protenix_refold) ? PROTENIX_REFOLD.out.confidence : Channel.empty()
     
     // Optional analysis outputs (will be empty if not run)
     foldseek_results = params.run_foldseek ? FOLDSEEK_SEARCH.out.results : Channel.empty()
