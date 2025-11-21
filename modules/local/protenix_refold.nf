@@ -11,9 +11,7 @@ process PROTENIX_REFOLD {
     accelerator 1, type: 'nvidia-gpu'
 
     input:
-    tuple val(meta), path(mpnn_sequences)
-    tuple val(target_meta), path(target_sequence_file)
-    path extract_target_script
+    tuple val(meta), path(mpnn_sequences), path(target_sequence_file)
 
     output:
     tuple val(meta), path("${meta.id}_protenix_output"), emit: predictions
