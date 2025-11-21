@@ -168,6 +168,37 @@
                 }
             }
         },
+        "protenix_options": {
+            "title": "Protenix structure prediction",
+            "type": "object",
+            "description": "Options for Protenix multimer structure prediction of ProteinMPNN sequences.",
+            "default": "",
+            "fa_icon": "fas fa-cube",
+            "properties": {
+                "run_protenix_refold": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable Protenix structure prediction for ProteinMPNN sequences.",
+                    "help_text": "Protenix predicts multimer structures combining ProteinMPNN-designed binders with target proteins. Requires run_proteinmpnn to be enabled.",
+                    "fa_icon": "fas fa-toggle-on"
+                },
+                "protenix_diffusion_samples": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Number of diffusion samples per sequence (higher = more diversity).",
+                    "help_text": "Multiple samples can capture structural diversity but increase computation time.",
+                    "fa_icon": "fas fa-random",
+                    "minimum": 1,
+                    "maximum": 10
+                },
+                "protenix_seed": {
+                    "type": "integer",
+                    "default": 42,
+                    "description": "Random seed for reproducibility.",
+                    "fa_icon": "fas fa-random"
+                }
+            }
+        },
         "analysis_options": {
             "title": "Analysis and scoring options",
             "type": "object",
@@ -377,6 +408,9 @@
         },
         {
             "$ref": "#/definitions/proteinmpnn_options"
+        },
+        {
+            "$ref": "#/definitions/protenix_options"
         },
         {
             "$ref": "#/definitions/analysis_options"
