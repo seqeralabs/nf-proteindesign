@@ -45,8 +45,10 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Optional Analysis Modules
 - 🧬 **ProteinMPNN**: Sequence optimization for designed structures
-- 📊 **ipSAE Scoring**: Evaluate protein-protein interface quality
-- ⚡ **PRODIGY**: Predict binding affinity (ΔG and Kd)
+- 🔄 **Protenix**: Refold ProteinMPNN sequences for validation
+- 📊 **ipSAE Scoring**: Evaluate protein-protein interface quality (Boltzgen + Protenix)
+- ⚡ **PRODIGY**: Predict binding affinity (ΔG and Kd) for Boltzgen + Protenix structures
+- 🔍 **Foldseek**: Search for structural homologs in AlphaFold/Swiss-Model databases (GPU-accelerated)
 - 📈 **Consolidated Metrics**: Unified quality report across all analyses
 
 ## Test Profiles

@@ -242,14 +242,14 @@
                 "run_foldseek": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable Foldseek structural similarity search for final designs.",
-                    "help_text": "Foldseek searches for structurally similar proteins in databases to identify related structures.",
+                    "description": "Enable Foldseek structural similarity search for budget designs and Protenix structures.",
+                    "help_text": "Foldseek searches for structurally similar proteins in databases (e.g., AlphaFold, Swiss-Model) to identify related structures. Runs in parallel with ipSAE and PRODIGY. GPU-accelerated for 4-27x speedup.",
                     "fa_icon": "fas fa-toggle-on"
                 },
                 "foldseek_database": {
                     "type": "string",
                     "description": "Path to Foldseek database (required if run_foldseek is true).",
-                    "help_text": "Path to a pre-built Foldseek database. Common databases include PDB, AlphaFold, or custom databases created with 'foldseek createdb'.",
+                    "help_text": "Path to a pre-built Foldseek database. Common databases include AlphaFold, Swiss-Model, PDB, or custom databases created with 'foldseek createdb'. Use AlphaFold/UniProt50 for comprehensive structural searches.",
                     "fa_icon": "fas fa-database"
                 },
                 "foldseek_evalue": {
