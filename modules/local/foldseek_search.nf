@@ -6,6 +6,9 @@ process FOLDSEEK_SEARCH {
     publishDir "${params.outdir}/${meta.parent_id ?: meta.id}/foldseek", mode: params.publish_dir_mode
 
     container 'quay.io/biocontainers/foldseek:9.427df8a--pl5321hf1761c0_0'
+    
+    // GPU acceleration - Foldseek supports GPU for faster searches (4-27x speedup)
+    accelerator 1, type: 'nvidia-gpu'
 
     input:
     tuple val(meta), path(structure)
@@ -36,7 +39,21 @@ process FOLDSEEK_SEARCH {
     # Create temporary directory for Foldseek
     mkdir -p tmp_foldseek
     
-    # Run Foldseek easy-search
+    # Check for GPU availability and configure Foldseek accordingly
+    GPU_FLAG=""
+    if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+        echo "GPU detected - Foldseek will use GPU acceleration"
+        # Enable GPU mode (1 = use GPU)
+        GPU_FLAG="--gpu 1"
+        # Use prefilter mode 1 for optimal GPU utilization
+        PREFILTER_MODE="--prefilter-mode 1"
+    else
+        echo "No GPU detected - Foldseek will run on CPU only"
+        GPU_FLAG="--gpu 0"
+        PREFILTER_MODE=""
+    fi
+    
+    # Run Foldseek easy-search with GPU support if available
     foldseek easy-search \\
         ${structure} \\
         ${db_path} \\
@@ -47,7 +64,9 @@ process FOLDSEEK_SEARCH {
         -s ${sensitivity} \\
         -c ${coverage} \\
         --alignment-type ${alignment_type} \\
-        --threads ${task.cpus}
+        --threads ${task.cpus} \\
+        \${GPU_FLAG} \\
+        \${PREFILTER_MODE}
     
     # Create summary with top hits
     # Output format: query,target,evalue,bits,qstart,qend,tstart,tend,alnlen,qlen,tlen,qaln,taln
