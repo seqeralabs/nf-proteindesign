@@ -4,7 +4,7 @@ process CONSOLIDATE_METRICS {
     // Publish reports to top-level output directory
     publishDir "${params.outdir}", mode: params.publish_dir_mode
 
-    container 'python:3.11'
+    container 'community.wave.seqera.io/library/numpy:2.3.5--f8d2712d76b3e3ce'
 
     input:
     val output_dir  // Path to the complete output directory with all results (as string)
