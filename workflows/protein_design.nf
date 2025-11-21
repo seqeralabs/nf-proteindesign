@@ -34,11 +34,12 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     if (params.run_proteinmpnn) {
         // Step 1: Convert CIF structures to PDB format (ProteinMPNN requires PDB)
-        // Prepare input channel with structures from Boltzgen final_ranked_designs
+        // Prepare input channel with structures from Boltzgen budget designs (intermediate_designs_inverse_folded)
+        // These are the same structures that IPSAE and PRODIGY analyze
         ch_structures_for_conversion = BOLTZGEN_RUN.out.results
             .map { meta, results_dir ->
-                def final_designs_dir = file("${results_dir}/final_ranked_designs")
-                [meta, final_designs_dir]
+                def budget_designs_dir = file("${results_dir}/intermediate_designs_inverse_folded")
+                [meta, budget_designs_dir]
             }
         
         CONVERT_CIF_TO_PDB(ch_structures_for_conversion)
