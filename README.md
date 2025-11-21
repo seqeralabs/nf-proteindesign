@@ -15,14 +15,7 @@
 
 **nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model that designs proteins, peptides, and nanobodies to bind various biomolecular targets.
 
-### Two Operational Modes
-
-The pipeline features a **unified workflow architecture** with two entry points:
-
-1. **🎯 Design Mode**: Use pre-made design YAML specifications
-2. **📐 Target Mode**: Auto-generate design variants from target structures
-
-Both modes converge to the same core workflow for consistent, parallel execution.
+The pipeline uses pre-made design YAML specifications to generate protein designs in parallel, with optional downstream analysis modules for sequence optimization and quality assessment.
 
 ## Quick Start
 
@@ -47,8 +40,7 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Core Capabilities
 - ✅ **Parallel Design Processing**: Run multiple designs simultaneously
-- ✅ **Two Flexible Modes**: Pre-made configs or auto-generated variants
-- ✅ **Automatic Mode Detection**: Pipeline auto-detects mode from samplesheet headers
+- ✅ **YAML-Based Configuration**: Use custom design specifications for full control
 - ✅ **GPU-Accelerated**: Optimized for NVIDIA GPUs with CUDA
 
 ### Optional Analysis Modules
@@ -59,61 +51,34 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## Test Profiles
 
-Comprehensive tests using EGFR (PDB: 1IVO) with 6 specific test profiles:
+Comprehensive tests using EGFR (PDB: 1IVO) with 3 test profiles for different design types:
 
 ```bash
-# Test Design Mode - Protein binder (single design)
+# Test protein binder design
 nextflow run seqeralabs/nf-proteindesign -profile test_design_protein,docker
 
-# Test Design Mode - Peptide binder (single design)
+# Test peptide binder design
 nextflow run seqeralabs/nf-proteindesign -profile test_design_peptide,docker
 
-# Test Design Mode - Nanobody binder (single design)
+# Test nanobody design
 nextflow run seqeralabs/nf-proteindesign -profile test_design_nanobody,docker
-
-# Test Target Mode - Auto-generated protein design
-nextflow run seqeralabs/nf-proteindesign -profile test_target_protein,docker
-
-# Test Target Mode - Auto-generated peptide design
-nextflow run seqeralabs/nf-proteindesign -profile test_target_peptide,docker
-
-# Test Target Mode - Auto-generated nanobody design
-nextflow run seqeralabs/nf-proteindesign -profile test_target_nanobody,docker
 ```
 
 ### Test Profile Comparison
 
-| Profile | Mode | Type | Designs | Budget | Runtime | Purpose |
-|---------|------|------|---------|--------|---------|---------|
-| `test_design_protein` | Design | Protein | 5 | 2 | ~15 min | Test protein binder design |
-| `test_design_peptide` | Design | Peptide | 5 | 2 | ~15 min | Test peptide binder design |
-| `test_design_nanobody` | Design | Nanobody | 5 | 2 | ~15 min | Test nanobody design |
-| `test_target_protein` | Target | Protein | 5 | 2 | ~20 min | Test auto-generated protein design |
-| `test_target_peptide` | Target | Peptide | 5 | 2 | ~20 min | Test auto-generated peptide design |
-| `test_target_nanobody` | Target | Nanobody | 5 | 2 | ~20 min | Test auto-generated nanobody design |
+| Profile | Type | Designs | Budget | Runtime | Purpose |
+|---------|------|---------|--------|---------|---------|
+| `test_design_protein` | Protein | 5 | 2 | ~15 min | Test protein binder design |
+| `test_design_peptide` | Peptide | 5 | 2 | ~15 min | Test peptide binder design |
+| `test_design_nanobody` | Nanobody | 5 | 2 | ~15 min | Test nanobody design |
 
 ## Example Commands
 
-### Design Mode (Pre-made YAMLs)
+### Basic Usage
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --mode design \
     --input samplesheet_designs.csv \
-    --num_designs 10000 \
-    --budget 50 \
-    --outdir results
-```
-
-### Target Mode (Auto-generate Variants)
-```bash
-nextflow run seqeralabs/nf-proteindesign \
-    -profile docker \
-    --mode target \
-    --input samplesheet_targets.csv \
-    --min_design_length 50 \
-    --max_design_length 150 \
-    --design_type protein \
     --outdir results
 ```
 
@@ -146,16 +111,10 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## Samplesheet Format
 
-**Design Mode** - requires `design_yaml` column:
+The samplesheet must include `design_yaml` column with path to your custom design YAML file:
 ```csv
 sample_id,design_yaml,num_designs,budget
 protein_binder,designs/target1.yaml,10000,20
-```
-
-**Target Mode** - requires `target_structure` column:
-```csv
-sample_id,target_structure,target_chain_ids,design_type
-protein1,structures/target1.pdb,A,protein
 ```
 
 See [samplesheet documentation](https://flouwuenne.github.io/nf-proteindesign-2025/getting-started/usage/#samplesheet-format) for complete specifications.
@@ -166,7 +125,6 @@ See [samplesheet documentation](https://flouwuenne.github.io/nf-proteindesign-20
 |-----------|---------|-------------|
 | `--input` | - | Path to samplesheet CSV (required) |
 | `--outdir` | `./results` | Output directory |
-| `--mode` | auto-detect | Mode: `design` or `target` |
 | `--num_designs` | `100` | Number of intermediate designs (use 10,000-60,000 for production) |
 | `--budget` | `10` | Number of final diversity-optimized designs |
 | `--protocol` | `protein-anything` | Design protocol |
