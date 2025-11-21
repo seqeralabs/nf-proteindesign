@@ -15,7 +15,7 @@
 
 **nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model that designs proteins, peptides, and nanobodies to bind various biomolecular targets.
 
-The pipeline uses pre-made design YAML specifications to generate protein designs in parallel, with optional downstream analysis modules for sequence optimization and quality assessment.
+The pipeline uses pre-made design YAML specifications to generate protein designs in parallel, with a comprehensive suite of downstream analysis modules for sequence optimization, structure validation, and quality assessment.
 
 ## Quick Start
 
@@ -45,11 +45,11 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Optional Analysis Modules
 - 🧬 **ProteinMPNN**: Sequence optimization for designed structures
-- 🔄 **Protenix**: Refold ProteinMPNN sequences for validation
-- 📊 **ipSAE Scoring**: Evaluate protein-protein interface quality (Boltzgen + Protenix)
-- ⚡ **PRODIGY**: Predict binding affinity (ΔG and Kd) for Boltzgen + Protenix structures
-- 🔍 **Foldseek**: Search for structural homologs in AlphaFold/Swiss-Model databases (GPU-accelerated)
-- 📈 **Consolidated Metrics**: Unified quality report across all analyses
+- 🔄 **Protenix**: Refold ProteinMPNN sequences with structure prediction
+- 📊 **ipSAE Scoring**: Evaluate protein-protein interface quality (Boltzgen + Protenix structures)
+- ⚡ **PRODIGY**: Predict binding affinity (ΔG and Kd) for all structures
+- 🔍 **Foldseek**: Search for structural homologs in AlphaFold/Swiss-Model databases
+- 📈 **Metrics Consolidation**: Generate unified CSV reports with all analysis metrics
 
 ## Test Profiles
 
@@ -84,14 +84,17 @@ nextflow run seqeralabs/nf-proteindesign \
     --outdir results
 ```
 
-### With Optional Analysis Modules
+### With All Analysis Modules
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --run_proteinmpnn \
+    --run_protenix_refold \
     --run_ipsae \
     --run_prodigy \
+    --run_foldseek \
+    --foldseek_database /path/to/afdb \
     --run_consolidation \
     --outdir results
 ```
@@ -130,10 +133,12 @@ See [samplesheet documentation](https://flouwuenne.github.io/nf-proteindesign-20
 | `--num_designs` | `100` | Number of intermediate designs (use 10,000-60,000 for production) |
 | `--budget` | `10` | Number of final diversity-optimized designs |
 | `--protocol` | `protein-anything` | Design protocol |
-| `--run_proteinmpnn` | `false` | Enable sequence optimization |
-| `--run_ipsae` | `false` | Enable interface scoring |
-| `--run_prodigy` | `false` | Enable binding affinity prediction |
-| `--run_consolidation` | `false` | Generate unified metrics report |
+| `--run_proteinmpnn` | `false` | Enable ProteinMPNN sequence optimization |
+| `--run_protenix_refold` | `false` | Enable Protenix structure prediction (requires ProteinMPNN) |
+| `--run_ipsae` | `false` | Enable ipSAE interface scoring |
+| `--run_prodigy` | `false` | Enable PRODIGY binding affinity prediction |
+| `--run_foldseek` | `false` | Enable Foldseek structural search |
+| `--run_consolidation` | `false` | Generate consolidated metrics report |
 
 See [complete parameter reference](https://flouwuenne.github.io/nf-proteindesign-2025/reference/parameters/) for all options.
 
@@ -149,8 +154,10 @@ results/
     │   └── final_ranked_designs/              # Quality-filtered results
     │       └── final_<budget>_designs/        # Top designs
     ├── proteinmpnn/                           # ProteinMPNN outputs (if enabled)
+    ├── protenix/                              # Protenix structures (if enabled)
     ├── ipsae_scores/                          # ipSAE scores (if enabled)
     ├── prodigy/                               # PRODIGY predictions (if enabled)
+    ├── foldseek/                              # Foldseek search results (if enabled)
     └── consolidated_metrics/                  # Unified report (if enabled)
 ```
 

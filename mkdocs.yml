@@ -118,14 +118,12 @@ nav:
     - Basic Usage: getting-started/usage.md
     - Quick Reference: getting-started/quick-reference.md
   
-  - Pipeline Modes:
-    - Overview: modes/overview.md
-    - Design Mode: modes/design-mode.md
-    - Target Mode: modes/target-mode.md
-  
-  - Analysis Tools:
-    - PRODIGY Binding Affinity: analysis/prodigy.md
+  - Analysis Modules:
+    - ProteinMPNN & Protenix: analysis/proteinmpnn-protenix.md
     - ipSAE Scoring: analysis/ipsae.md
+    - PRODIGY Binding Affinity: analysis/prodigy.md
+    - Foldseek Structural Search: analysis/foldseek.md
+    - Metrics Consolidation: analysis/consolidation.md
   
   - Architecture:
     - Pipeline Design: architecture/design.md
