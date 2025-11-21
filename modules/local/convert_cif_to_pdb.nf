@@ -8,7 +8,8 @@ process CONVERT_CIF_TO_PDB {
     tuple val(meta), path(structures)
 
     output:
-    tuple val(meta), path("${meta.id}_pdb_structures/*.pdb"), emit: pdb_files
+    tuple val(meta), path("${meta.id}_pdb_structures/*.pdb"), emit: pdb_files_all
+    tuple val(meta), path("${meta.id}_pdb_structures"), emit: pdb_dir
     path "versions.yml", emit: versions
 
     script:
