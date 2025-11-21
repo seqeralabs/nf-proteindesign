@@ -261,6 +261,8 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     // OPTIONAL: Foldseek structural similarity search if enabled
     // ========================================================================
+    // Search for structural homologs of both Boltzgen and Protenix structures
+    // in the AlphaFold database (or other specified database)
     if (params.run_foldseek) {
         // Prepare database channel
         if (params.foldseek_database) {
@@ -270,9 +272,12 @@ workflow PROTEIN_DESIGN {
             ch_foldseek_database = Channel.value(file('NO_DATABASE'))
         }
         
-        // Use final CIF files directly from Boltzgen
-        // Strategy: Use flatMap to create individual tasks for each CIF file
-        ch_foldseek_input = BOLTZGEN_RUN.out.final_cifs
+        // ====================================================================
+        // Part 1: Process Boltzgen budget design CIF files
+        // ====================================================================
+        // Use ALL budget design CIF files from intermediate_designs_inverse_folded
+        // This searches for homologs of the original Boltzgen-designed structures
+        ch_foldseek_boltzgen = BOLTZGEN_RUN.out.budget_design_cifs
             .flatMap { meta, cif_files ->
                 // Convert to list if single file
                 def cif_list = cif_files instanceof List ? cif_files : [cif_files]
@@ -283,12 +288,44 @@ workflow PROTEIN_DESIGN {
                     def design_meta = [:]
                     design_meta.id = "${meta.id}_${base_name}"
                     design_meta.parent_id = meta.id
+                    design_meta.source = "boltzgen"
                     
                     [design_meta, cif_file]
                 }
             }
         
-        // Run Foldseek structural search for each CIF file
+        // ====================================================================
+        // Part 2: Add Protenix refolded structures (if enabled)
+        // ====================================================================
+        // Search for homologs of the Protenix refolded structures with MPNN sequences
+        if (params.run_proteinmpnn && params.run_protenix_refold) {
+            ch_foldseek_protenix = PROTENIX_REFOLD.out.structures
+                .flatMap { meta, cif_files ->
+                    // Convert to list if single file
+                    def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                    
+                    // Create a separate entry for each CIF file
+                    cif_list.collect { cif_file ->
+                        def base_name = cif_file.baseName
+                        def design_meta = [:]
+                        design_meta.id = "${meta.id}_${base_name}_protenix"
+                        design_meta.parent_id = meta.parent_id  // Link to original Boltzgen design
+                        design_meta.mpnn_parent_id = meta.id     // Track which ProteinMPNN design this came from
+                        design_meta.source = "protenix"
+                        
+                        [design_meta, cif_file]
+                    }
+                }
+            
+            // Combine both Boltzgen and Protenix structures
+            ch_foldseek_input = ch_foldseek_boltzgen.mix(ch_foldseek_protenix)
+        } else {
+            // Only Boltzgen structures
+            ch_foldseek_input = ch_foldseek_boltzgen
+        }
+        
+        // Run Foldseek structural search for all CIF files (Boltzgen + Protenix)
+        // This runs in parallel with IPSAE and PRODIGY analyses
         FOLDSEEK_SEARCH(ch_foldseek_input, ch_foldseek_database)
     }
     
