@@ -1,17 +1,11 @@
 /*
 ========================================================================================
-    PROTEIN_DESIGN: Unified workflow for all protein design modes
+    PROTEIN_DESIGN: Workflow for protein design using YAML specifications
 ========================================================================================
-    This workflow consolidates all design modes into a single execution path with
-    different entry points based on the mode parameter:
-    
-    - design: Use pre-made design YAML files
-    - target: Generate design variants from target structures
-    
-    All modes converge on running Boltzgen and optional analysis modules.
+    This workflow uses pre-made design YAML files for protein design with Boltzgen
+    and optional analysis modules.
 ----------------------------------------------------------------------------------------
 */
-include { GENERATE_DESIGN_VARIANTS } from '../modules/local/generate_design_variants'
 include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
@@ -23,54 +17,17 @@ include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
 workflow PROTEIN_DESIGN {
     
     take:
-    ch_input    // channel: [meta, file] or [meta, file, files] - can be design YAML or target structure depending on mode
+    ch_input    // channel: [meta, design_yaml, structure_files]
     ch_cache    // channel: path to cache directory or EMPTY_CACHE placeholder
-    mode        // string: 'design' or 'target'
 
     main:
     
     // ========================================================================
-    // BRANCH 1: DESIGN MODE - Use pre-made design YAML files
-    // ========================================================================
-    if (mode == 'design') {
-        // Input is [meta, design_yaml, structure_files], ready for Boltzgen
-        // Reformat to match BOLTZGEN_RUN input: [meta, yaml, structures]
-        ch_designs_for_boltzgen = ch_input
-    }
-    
-    // ========================================================================
-    // BRANCH 2: TARGET MODE - Generate design variants from target structure
-    // ========================================================================
-    else if (mode == 'target') {
-        // Step 1: Generate diversified design YAML files from target
-        // Input is [meta, target_structure]
-        GENERATE_DESIGN_VARIANTS(ch_input)
-        
-        // Step 2: Flatten to get individual design YAMLs and add structure file
-        ch_designs_for_boltzgen = GENERATE_DESIGN_VARIANTS.out.design_yamls
-            .join(ch_input, by: 0)  // Join with original input to get structure file
-            .flatMap { meta, yaml_files, structure_file ->
-                // Handle both single file and list of files
-                def yaml_list = yaml_files instanceof List ? yaml_files : [yaml_files]
-                
-                // Create a tuple for each YAML file
-                yaml_list.collect { yaml_file ->
-                    def design_meta = meta.clone()
-                    def design_id = yaml_file.baseName
-                    design_meta.id = design_id
-                    design_meta.parent_id = meta.id
-                    
-                    [design_meta, yaml_file, structure_file]
-                }
-            }
-    }
-    
-    // ========================================================================
-    // CONVERGENCE POINT: All modes run Boltzgen on design YAMLs
+    // Run Boltzgen on design YAMLs
     // ========================================================================
     
     // Run Boltzgen for each design in parallel
-    BOLTZGEN_RUN(ch_designs_for_boltzgen, ch_cache)
+    BOLTZGEN_RUN(ch_input, ch_cache)
     
     // ========================================================================
     // ProteinMPNN: Optimize sequences for designed structures
@@ -249,7 +206,7 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Common outputs for all modes
+    // Boltzgen outputs
     boltzgen_results = BOLTZGEN_RUN.out.results
     final_designs = BOLTZGEN_RUN.out.final_designs
     
@@ -257,10 +214,6 @@ workflow PROTEIN_DESIGN {
     mpnn_optimized = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.optimized_designs : Channel.empty()
     mpnn_sequences = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.sequences : Channel.empty()
     mpnn_scores = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.scores : Channel.empty()
-    
-    // Mode-specific outputs (will be empty for modes that don't generate them)
-    design_variants = mode == 'target' ? GENERATE_DESIGN_VARIANTS.out.design_yamls : Channel.empty()
-    design_info = mode == 'target' ? GENERATE_DESIGN_VARIANTS.out.info : Channel.empty()
     
     // Optional analysis outputs (will be empty if not run)
     foldseek_results = params.run_foldseek ? FOLDSEEK_SEARCH.out.results : Channel.empty()
