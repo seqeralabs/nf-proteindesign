@@ -10,70 +10,91 @@
 
 ## :material-test-tube: Overview
 
-**nf-proteindesign** is a powerful Nextflow pipeline for running [Boltzgen](https://github.com/HannesStark/boltzgen) protein design workflows in parallel across multiple design specifications. Boltzgen is an all-atom generative diffusion model that can design proteins, peptides, and nanobodies to bind various biomolecular targets including proteins, nucleic acids, and small molecules.
+**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model. Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules.
 
-!!! tip "Unified Workflow Architecture"
-## :octicons-workflow-24: Pipeline Modes
+!!! tip "Modular Analysis Pipeline"
+    The pipeline combines Boltzgen design with optional sequence optimization (ProteinMPNN + Protenix), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
+## :material-package-variant-closed: Analysis Modules
 
 <div class="feature-grid">
   <div class="feature-card">
-    <h3>📄 Design Mode</h3>
-    <p>Use pre-made design YAML files for complete control over design specifications.</p>
-    <code>--mode design</code>
+    <h3>🧬 ProteinMPNN</h3>
+    <p>Sequence optimization for designed structures with configurable sampling temperature.</p>
+    <code>--run_proteinmpnn</code>
   </div>
   
   <div class="feature-card">
-    <h3>🎯 Target Mode</h3>
-    <p>Automatically generate design variants from target structures with configurable parameters.</p>
-    <code>--mode target</code>
+    <h3>🔄 Protenix</h3>
+    <p>Structure prediction for ProteinMPNN sequences to validate refolding.</p>
+    <code>--run_protenix_refold</code>
   </div>
   
   <div class="feature-card">
-    <h3>🔬 </h3>
-    <p>Use machine learning to identify binding sites and automatically design binders.</p>
+    <h3>📊 ipSAE</h3>
+    <p>Interface quality scoring for Boltzgen and Protenix structures.</p>
+    <code>--run_ipsae</code>
+  </div>
+  
+  <div class="feature-card">
+    <h3>⚡ PRODIGY</h3>
+    <p>Binding affinity prediction (ΔG and Kd) for all structures.</p>
+    <code>--run_prodigy</code>
+  </div>
+  
+  <div class="feature-card">
+    <h3>🔍 Foldseek</h3>
+    <p>Structural similarity search in AlphaFold/Swiss-Model databases.</p>
+    <code>--run_foldseek</code>
+  </div>
+  
+  <div class="feature-card">
+    <h3>📈 Consolidation</h3>
+    <p>Unified CSV report combining all analysis metrics.</p>
+    <code>--run_consolidation</code>
   </div>
 </div>
 
 ## :material-lightning-bolt: Key Features
 
 - **:material-parallel: Parallel Processing**: Run multiple design specifications simultaneously
-- **:material-tune-variant: Flexible Modes**: two operational modes with automatic detection
-- **:material-chart-line: Comprehensive Analysis**: Optional IPSAE scoring and PRODIGY binding affinity prediction
+- **:material-file-code: YAML-Based Design**: Complete control with custom design specifications
+- **:material-chart-line: Comprehensive Analysis**: Six optional analysis modules for quality assessment
+- **:material-refresh: Sequence Optimization**: ProteinMPNN + Protenix validation workflow
 - **:material-docker: Container Support**: Full Docker compatibility
 - **:material-gpu: GPU Acceleration**: Optimized for NVIDIA GPU execution
-- **:material-file-tree: Organized Outputs**: Structured results with intermediate files and metrics
+- **:material-file-tree: Organized Outputs**: Structured results with unified reporting
 
 ## :material-pipeline: Pipeline Workflow
 
 ```mermaid
-flowchart TD
-    A[📋 Input Samplesheet CSV] --> B{Mode Selection}
-    B -->|--mode design| C1[📄 Design Mode]
-    B -->|--mode target| C2[🎯 Target Mode]
-    B -->|--mode  C3[🔬 ]
+flowchart LR
+    A[Samplesheet] --> B[Boltzgen]
+    B --> C[Budget Designs]
     
-    C1 --> D1[Use Pre-made<br/>Design YAMLs]
-    C2 --> D2[Generate Design<br/>Variants from Target]
+    C --> D{ProteinMPNN?}
+    D -->|Yes| E[Optimize]
+    E --> F{Protenix?}
+    F -->|Yes| G[Refold]
     
-    D1 --> E[🔀 Unified Workflow Entry]
-    D2 --> E
-    D3 --> E
+    C --> H[Analysis]
+    G --> H
     
-    E --> F[📦 Parallel Design Processing]
-    F --> G[⚡ BOLTZGEN Design Generation]
-    G --> H{Optional Analysis}
-    H -->|IPSAE| I[📊 Interaction Scoring]
-    H -->|PRODIGY| J[⚡ Affinity Prediction]
-    I --> K[✅ Final Results]
-    J --> K
-    H -->|None| K
+    H --> I[ipSAE]
+    H --> J[PRODIGY]
+    H --> K[Foldseek]
     
-    style B fill:#E1BEE7
-    style C1 fill:#CE93D8
-    style C2 fill:#BA68C8
-    style C3 fill:#AB47BC
-    style E fill:#9C27B0,color:#fff
-    style K fill:#8E24AA,color:#fff
+    I --> L{Consolidate?}
+    J --> L
+    K --> L
+    L -->|Yes| M[Report]
+    
+    M --> N[Results]
+    C --> N
+    
+    style B fill:#9C27B0,color:#fff
+    style E fill:#8E24AA,color:#fff
+    style G fill:#7B1FA2,color:#fff
+    style M fill:#6A1B9A,color:#fff
 ```
 
 ## :material-rocket-launch: Quick Start

@@ -53,26 +53,18 @@ global:
 
 Create a CSV file with your design specifications:
 
-=== "Design Mode"
-    ```csv title="samplesheet_design.csv"
-    sample,design_yaml
-    design1,/path/to/design1.yaml
-    design2,/path/to/design2.yaml
-    design3,/path/to/design3.yaml
-    ```
+```csv title="samplesheet.csv"
+sample_id,design_yaml,num_designs,budget
+design1,/path/to/design1.yaml,10000,20
+design2,/path/to/design2.yaml,5000,10
+design3,/path/to/design3.yaml,15000,30
+```
 
-=== "Target Mode"
-    ```csv title="samplesheet_target.csv"
-    sample,target_structure,target_residues,chain_type,min_length,max_length
-    target1,/path/to/target1.pdb,"10,11,12,45,46",protein,50,80
-    target2,/path/to/target2.pdb,"5,6,7,8,9,10",peptide,10,20
-    ```
-
-=== "Binder Mode"
-    ```csv title="samplesheet_binder.csv"
-    sample,target_structure,chain_type,min_length,max_length
-    binder1,/path/to/target.pdb,protein,30,50
-    ```
+**Column descriptions:**
+- `sample_id`: Unique identifier for the design
+- `design_yaml`: Path to the design YAML file
+- `num_designs`: Number of intermediate designs to generate (10,000-60,000 for production)
+- `budget`: Number of final diversity-optimized designs to keep
 
 ## :material-run: Running the Pipeline
 
@@ -96,55 +88,27 @@ Choose the appropriate profile for your system:
         --outdir results
     ```
 
-### Specify Pipeline Mode
+### With Analysis Modules
 
-While the pipeline auto-detects mode from samplesheet, you can specify explicitly:
-
-=== "Design Mode"
-    ```bash
-    nextflow run seqeralabs/nf-proteindesign \
-        -profile docker \
-        --mode design \
-        --input samplesheet_designs.csv \
-        --outdir results
-    ```
-
-=== "Target Mode"
-    ```bash
-    nextflow run seqeralabs/nf-proteindesign \
-        -profile docker \
-        --mode target \
-        --input samplesheet_targets.csv \
-        --outdir results \
-        --n_samples 20
-    ```
-
-=== "Binder Mode"
-    ```bash
-    nextflow run seqeralabs/nf-proteindesign \
-        -profile docker \
-        --mode binder \
-        --input samplesheet_binders.csv \
-        --outdir results \
-        --n_samples 20
-    ```
-
-## :material-tune: Common Options
-
-### Analysis Tools
-
-Enable optional analysis steps:
+Enable optional analysis steps for comprehensive quality assessment:
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
-    --run_ipsae true \        # Enable IPSAE scoring
-    --run_prodigy true        # Enable PRODIGY affinity prediction
+    --run_proteinmpnn \
+    --run_protenix_refold \
+    --run_ipsae \
+    --run_prodigy \
+    --run_foldseek \
+    --foldseek_database /path/to/afdb \
+    --run_consolidation
 ```
 
-### Boltzgen Parameters
+## :material-tune: Common Options
+
+### Design Parameters
 
 Customize design generation:
 
@@ -153,9 +117,9 @@ nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
-    --n_samples 50 \          # Number of designs per specification
-    --timesteps 100 \         # Diffusion timesteps
-    --save_traj true          # Save trajectory files
+    --num_designs 10000 \     # Number of intermediate designs
+    --budget 20 \             # Number of final designs to keep
+    --protocol protein-anything  # Design protocol
 ```
 
 ### Resource Allocation
