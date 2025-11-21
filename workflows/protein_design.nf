@@ -11,6 +11,7 @@ include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { EXTRACT_TARGET_SEQUENCES } from '../modules/local/extract_target_sequences'
 include { PROTENIX_REFOLD } from '../modules/local/protenix_refold'
+include { CONVERT_PROTENIX_TO_NPZ } from '../modules/local/convert_protenix_to_npz'
 include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
 include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
 include { FOLDSEEK_SEARCH } from '../modules/local/foldseek_search'
@@ -77,6 +78,52 @@ workflow PROTEIN_DESIGN {
             
             // Run Protenix structure prediction on combined sequences
             PROTENIX_REFOLD(ch_protenix_input)
+            
+            // ================================================================
+            // Step 4: Convert Protenix confidence JSON to NPZ for ipSAE
+            // ================================================================
+            // Prepare conversion script as a channel
+            ch_conversion_script = Channel.fromPath("${projectDir}/assets/convert_protenix_to_npz.py", checkIfExists: true)
+            
+            // Pair confidence JSON files with their corresponding CIF structures
+            // This runs in parallel with PRODIGY and feeds into IPSAE
+            ch_protenix_for_conversion = PROTENIX_REFOLD.out.structures
+                .join(PROTENIX_REFOLD.out.confidence, by: 0)
+                .flatMap { meta, cif_files, json_files ->
+                    // Convert to lists if single files
+                    def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                    def json_list = json_files instanceof List ? json_files : [json_files]
+                    
+                    // Create a map of basenames for matching
+                    def json_map = [:]
+                    json_list.each { json_file ->
+                        // Extract base name (without _confidence suffix if present)
+                        def base_name = json_file.baseName.replaceAll(/_confidence.*$/, '')
+                        json_map[base_name] = json_file
+                    }
+                    
+                    // Match CIF files with their JSON confidence files
+                    cif_list.collect { cif_file ->
+                        def base_name = cif_file.baseName
+                        def json_file = json_map[base_name]
+                        
+                        if (json_file) {
+                            def conversion_meta = [:]
+                            conversion_meta.id = "${meta.id}_${base_name}"
+                            conversion_meta.parent_id = meta.parent_id
+                            conversion_meta.mpnn_parent_id = meta.id
+                            conversion_meta.model_id = base_name
+                            
+                            [conversion_meta, json_file, cif_file]
+                        } else {
+                            log.warn "⚠️  No matching confidence JSON found for ${cif_file.name}"
+                            null
+                        }
+                    }.findAll { it != null }
+                }
+            
+            // Run conversion to NPZ format
+            CONVERT_PROTENIX_TO_NPZ(ch_protenix_for_conversion, ch_conversion_script)
         }
     } else {
         // Use Boltzgen outputs directly if ProteinMPNN is disabled
@@ -86,17 +133,19 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     // OPTIONAL: IPSAE scoring if enabled
     // ========================================================================
-    // NOTE: IPSAE requires NPZ confidence files from Boltzgen.
-    // Protenix structures are not included here as they use CIF-embedded pLDDT
-    // which would require conversion to NPZ format.
+    // NOTE: IPSAE requires NPZ confidence files. We now support both:
+    //   1. Boltzgen budget designs (native NPZ output)
+    //   2. Protenix refolded structures (converted from JSON to NPZ)
     if (params.run_ipsae) {
         // Prepare IPSAE script as a channel
         ch_ipsae_script = Channel.fromPath("${projectDir}/assets/ipsae.py", checkIfExists: true)
         
+        // ====================================================================
+        // Part 1: Process Boltzgen budget design CIF and NPZ files
+        // ====================================================================
         // Process ALL budget design CIF and NPZ files from intermediate_designs_inverse_folded
         // This ensures we run IPSAE on ALL designs before filtering (e.g., if budget=10, run 10 times)
-        // Strategy: Use flatMap to pair CIF and NPZ files with matching basenames
-        ch_ipsae_input = BOLTZGEN_RUN.out.budget_design_cifs
+        ch_ipsae_boltzgen = BOLTZGEN_RUN.out.budget_design_cifs
             .join(BOLTZGEN_RUN.out.budget_design_npz, by: 0)
             .flatMap { meta, cif_files, npz_files ->
                 // Convert to list if single file
@@ -119,6 +168,7 @@ workflow PROTEIN_DESIGN {
                         model_meta.id = "${meta.id}_${base_name}"
                         model_meta.parent_id = meta.id
                         model_meta.model_id = "${meta.id}_${base_name}"
+                        model_meta.source = "boltzgen"
                         
                         [model_meta, npz_file, cif_file]
                     } else {
@@ -128,7 +178,28 @@ workflow PROTEIN_DESIGN {
                 }.findAll { it != null }  // Remove null entries where no match was found
             }
         
-        // Run IPSAE calculation for each CIF/NPZ pair from budget designs
+        // ====================================================================
+        // Part 2: Process Protenix refolded structures (if enabled)
+        // ====================================================================
+        // Add Protenix NPZ files if Protenix refolding is enabled
+        if (params.run_proteinmpnn && params.run_protenix_refold) {
+            // Get NPZ and CIF pairs from the conversion step
+            ch_ipsae_protenix = CONVERT_PROTENIX_TO_NPZ.out.npz_with_cif
+                .map { meta, npz_file, cif_file ->
+                    // Add source tracking
+                    def ipsae_meta = meta.clone()
+                    ipsae_meta.source = "protenix"
+                    [ipsae_meta, npz_file, cif_file]
+                }
+            
+            // Combine both Boltzgen and Protenix inputs
+            ch_ipsae_input = ch_ipsae_boltzgen.mix(ch_ipsae_protenix)
+        } else {
+            // Only Boltzgen inputs
+            ch_ipsae_input = ch_ipsae_boltzgen
+        }
+        
+        // Run IPSAE calculation for all CIF/NPZ pairs (Boltzgen + Protenix)
         IPSAE_CALCULATE(ch_ipsae_input, ch_ipsae_script)
     }
     
