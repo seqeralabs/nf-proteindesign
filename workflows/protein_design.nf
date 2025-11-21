@@ -47,8 +47,26 @@ workflow PROTEIN_DESIGN {
         
         CONVERT_CIF_TO_PDB(ch_structures_for_conversion)
         
-        // Step 2: Run ProteinMPNN on converted PDB structures
-        PROTEINMPNN_OPTIMIZE(CONVERT_CIF_TO_PDB.out.pdb_files)
+        // Step 2: Parallelize ProteinMPNN - run separately for each budget design
+        // Use flatMap to create individual tasks per PDB file (one per budget iteration)
+        ch_pdb_per_design = CONVERT_CIF_TO_PDB.out.pdb_files_all
+            .flatMap { meta, pdb_files ->
+                // Convert to list if single file
+                def pdb_list = pdb_files instanceof List ? pdb_files : [pdb_files]
+                
+                // Create a separate channel entry for each PDB file
+                pdb_list.collect { pdb_file ->
+                    def design_meta = [:]
+                    design_meta.id = "${meta.id}_${pdb_file.baseName}"
+                    design_meta.parent_id = meta.id
+                    design_meta.design_name = pdb_file.baseName
+                    
+                    [design_meta, pdb_file]
+                }
+            }
+        
+        // Run ProteinMPNN on each design individually (parallel execution per budget design)
+        PROTEINMPNN_OPTIMIZE(ch_pdb_per_design)
         
         // Use ProteinMPNN optimized structures for downstream analyses
         ch_final_designs_for_analysis = PROTEINMPNN_OPTIMIZE.out.optimized_designs
@@ -61,9 +79,24 @@ workflow PROTEIN_DESIGN {
             ch_boltzgen_structures = BOLTZGEN_RUN.out.final_cifs
             EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures)
             
-            // Combine ProteinMPNN FASTA outputs with target sequence
-            // Join based on parent_id (meta.parent_id from MPNN matches meta.id from Boltzgen)
-            ch_protenix_input = PROTEINMPNN_OPTIMIZE.out.sequences
+            // Parallelize Protenix per FASTA file (one per ProteinMPNN sequence)
+            // Each ProteinMPNN run generates multiple FASTA files (mpnn_num_seq_per_target)
+            ch_protenix_per_sequence = PROTEINMPNN_OPTIMIZE.out.sequences
+                .flatMap { meta, fasta_files ->
+                    // Convert to list if single file
+                    def fasta_list = fasta_files instanceof List ? fasta_files : [fasta_files]
+                    
+                    // Create a separate entry for each FASTA file
+                    fasta_list.collect { fasta_file ->
+                        def seq_meta = [:]
+                        seq_meta.id = "${meta.id}_${fasta_file.baseName}"
+                        seq_meta.parent_id = meta.parent_id
+                        seq_meta.mpnn_parent_id = meta.id
+                        seq_meta.sequence_name = fasta_file.baseName
+                        
+                        [seq_meta, fasta_file]
+                    }
+                }
                 .map { meta, fasta -> 
                     [meta.parent_id, meta, fasta]
                 }
@@ -76,8 +109,8 @@ workflow PROTEIN_DESIGN {
                     [meta, fasta, target_seq]
                 }
             
-            // Run Protenix structure prediction on combined sequences
-            PROTENIX_REFOLD(ch_protenix_input)
+            // Run Protenix structure prediction on each sequence individually
+            PROTENIX_REFOLD(ch_protenix_per_sequence)
             
             // ================================================================
             // Step 4: Convert Protenix confidence JSON to NPZ for ipSAE
