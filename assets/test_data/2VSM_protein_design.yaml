@@ -5,7 +5,7 @@ entities:
   # Specify a designed protein chain
   # Random number between 80 and 120 of designed residues
   - protein: 
-      id: E
+      id: B
       sequence: 80..120
   
   # Specification of the 2VSM target structure
