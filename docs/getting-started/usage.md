@@ -21,42 +21,32 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## :material-file-table: Samplesheet Format
 
-The samplesheet determines which mode the pipeline runs in.
+The pipeline uses a CSV samplesheet to specify design jobs. Each row represents a separate design run.
 
-### Mode Auto-Detection
+### Required Columns
 
-The pipeline automatically detects the mode based on column headers:
+| Column | Required | Description |
+|--------|----------|-------------|
+| `sample` | ✅ | Unique sample identifier |
+| `design_yaml` | ✅ | Path to design YAML file (see below) |
 
-| Column Present | Mode | Description |
-|----------------|------|-------------|
-| `design_yaml` | Design | Use pre-made YAML files |
-| `target_structure` | Target/Binder | Generate design variants |
-### Required Columns by Mode
+### Optional Columns
 
-=== "Design Mode"
-    | Column | Required | Description |
-    |--------|----------|-------------|
-    | `sample` | ✅ | Unique sample identifier |
-    | `design_yaml` | ✅ | Path to design YAML file |
+Additional columns can override default parameters per sample:
 
-=== "Target Mode"
-    | Column | Required | Description |
-    |--------|----------|-------------|
-    | `sample` | ✅ | Unique sample identifier |
-    | `target_structure` | ✅ | Path to target structure (PDB/CIF) |
-    | `target_residues` | Optional | Binding site residues (comma-separated) |
-    | `chain_type` | Optional | Type: `protein`, `peptide`, `nanobody` |
-    | `min_length` | Optional | Minimum binder length |
-    | `max_length` | Optional | Maximum binder length |
+| Column | Type | Description |
+|--------|------|-------------|
+| `num_designs` | Integer | Number of designs to generate (overrides `--num_designs`) |
+| `budget` | Integer | Number of final designs to keep (overrides `--budget`) |
 
-=== "Binder Mode"
-    | Column | Required | Description |
-    |--------|----------|-------------|
-    | `sample` | ✅ | Unique sample identifier |
-    | `target_structure` | ✅ | Path to target structure (PDB/CIF) |
-    | `chain_type` | Optional | Type: `protein`, `peptide`, `nanobody` |
-    | `min_length` | Optional | Minimum binder length |
-    | `max_length` | Optional | Maximum binder length |
+### Example Samplesheet
+
+```csv
+sample,design_yaml,num_designs,budget
+protein_binder,designs/egfr_binder.yaml,10000,50
+nanobody_design,designs/spike_nanobody.yaml,5000,20
+peptide_binder,designs/il6_peptide.yaml,3000,10
+```
 
 ## :material-file-document: Design YAML Format
 
@@ -149,14 +139,14 @@ results/
 
 ## :material-play-circle: Example Workflows
 
-### Example 1: Simple Design Mode
+### Example 1: Basic Protein Design
 
 ```bash
 # 1. Create design YAML
-cat > my_design.yaml << EOF
-name: antibody_target
+cat > protein_design.yaml << EOF
+name: egfr_binder
 target:
-  structure: data/target.pdb
+  structure: data/egfr.pdb
   residues: [10, 11, 12, 45, 46]
 designed:
   chain_type: protein
@@ -168,7 +158,7 @@ EOF
 # 2. Create samplesheet
 cat > samples.csv << EOF
 sample,design_yaml
-design1,my_design.yaml
+egfr_binder,protein_design.yaml
 EOF
 
 # 3. Run pipeline
@@ -178,43 +168,54 @@ nextflow run seqeralabs/nf-proteindesign \
     --outdir results
 ```
 
-### Example 2: Target Mode with Analysis
+### Example 2: Multiple Designs with Analysis
 
 ```bash
-# 1. Create samplesheet
-cat > targets.csv << EOF
-sample,target_structure,target_residues,chain_type,min_length,max_length
-egfr,data/egfr.pdb,"10,11,12,45,46",protein,60,120
-spike,data/spike.cif,"417,484,501",nanobody,110,130
+# 1. Create design YAMLs for different targets
+cat > egfr_design.yaml << EOF
+name: egfr_binder
+target:
+  structure: data/egfr.pdb
+  residues: [10, 11, 12, 45, 46]
+designed:
+  chain_type: protein
+  length: [60, 120]
 EOF
 
-# 2. Run with affinity prediction
+cat > spike_design.yaml << EOF
+name: spike_nanobody
+target:
+  structure: data/spike.cif
+  residues: [417, 484, 501]
+designed:
+  chain_type: nanobody
+  length: [110, 130]
+EOF
+
+# 2. Create samplesheet
+cat > samples.csv << EOF
+sample,design_yaml,num_designs,budget
+egfr_binder,egfr_design.yaml,10000,50
+spike_nanobody,spike_design.yaml,5000,20
+EOF
+
+# 3. Run with analysis modules
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --mode target \
-    --input targets.csv \
+    --input samples.csv \
     --outdir results \
-    --n_samples 30 \
-    --run_prodigy
+    --run_proteinmpnn \
+    --run_protenix_refold \
+    --run_prodigy \
+    --run_consolidation
 ```
 
-### Example 3: Binder Mode (No Binding Site)
+### Example 3: Test Run
 
 ```bash
-# 1. Create samplesheet
-cat > binders.csv << EOF
-sample,target_structure,chain_type,min_length,max_length
-binder1,data/target1.pdb,protein,50,100
-binder2,data/target2.pdb,nanobody,110,130
-EOF
-
-# 2. Run pipeline
+# Use built-in test profile
 nextflow run seqeralabs/nf-proteindesign \
-    -profile docker \
-    --mode binder \
-    --input binders.csv \
-    --outdir results \
-    --n_samples 20
+    -profile test_design_protein,docker
 ```
 
 ## :material-refresh: Resume Failed Runs
@@ -348,9 +349,9 @@ nextflow run ... --n_samples 10  # Reduce batch size
 
 ## :material-arrow-right: Next Steps
 
-- Learn about [Pipeline Modes](../modes/overview.md) in detail
 - Check the [Quick Reference](quick-reference.md) for common commands
 - Explore [Analysis Tools](../analysis/prodigy.md) integration
+- Review [Pipeline Parameters](../reference/parameters.md) for advanced configuration
 
 ---
 

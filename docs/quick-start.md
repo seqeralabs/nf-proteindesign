@@ -247,9 +247,9 @@ cat covid_binders/prodigy/spike_nb1_prodigy_predictions.csv
 
 Now that you're up and running:
 
-1. **Learn More About Modes**: Check the [Pipeline Modes](modes/overview.md) documentation
+1. **Learn Basic Usage**: Check the [Usage Guide](getting-started/usage.md) for detailed instructions
 2. **Optimize Parameters**: See the [Parameters Reference](reference/parameters.md)
-3. **Analyze Results**: Learn about [PRODIGY](analysis/prodigy.md) and [ipSAE](analysis/ipsae.md)
+3. **Enable Analysis Modules**: Learn about [ProteinMPNN/Protenix](analysis/proteinmpnn-protenix.md), [PRODIGY](analysis/prodigy.md), and [ipSAE](analysis/ipsae.md)
 4. **Advanced Usage**: Explore [Architecture](architecture/design.md) details
 
 ---
