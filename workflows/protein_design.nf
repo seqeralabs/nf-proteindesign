@@ -37,15 +37,9 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     if (params.run_proteinmpnn) {
         // Step 1: Convert CIF structures to PDB format (ProteinMPNN requires PDB)
-        // Prepare input channel with structures from Boltzgen budget designs (intermediate_designs_inverse_folded)
-        // These are the same structures that IPSAE and PRODIGY analyze
-        ch_structures_for_conversion = BOLTZGEN_RUN.out.results
-            .map { meta, results_dir ->
-                def budget_designs_dir = file("${results_dir}/intermediate_designs_inverse_folded")
-                [meta, budget_designs_dir]
-            }
-        
-        CONVERT_CIF_TO_PDB(ch_structures_for_conversion)
+        // Use budget_design_cifs which contains ONLY the budget designs (e.g., 2 structures if budget=2)
+        // NOT all designs from results directory
+        CONVERT_CIF_TO_PDB(BOLTZGEN_RUN.out.budget_design_cifs)
         
         // Step 2: Parallelize ProteinMPNN - run separately for each budget design
         // Use flatMap to create individual tasks per PDB file (one per budget iteration)
@@ -72,13 +66,20 @@ workflow PROTEIN_DESIGN {
         ch_final_designs_for_analysis = PROTEINMPNN_OPTIMIZE.out.optimized_designs
         
         // ====================================================================
-        // Step 3: Protenix refolding if enabled
+        // Step 3: Extract target sequences for Protenix refolding
+        // ====================================================================
+        // PURPOSE: Extract the TARGET sequence (binding partner) from Boltzgen structures
+        // WHY: Protenix needs to know which chain is the target (to keep fixed) when
+        //      refolding ProteinMPNN-optimized binder sequences
+        // WHAT: Reads original Boltzgen CIF files and extracts the target chain sequence
+        // OUTPUT: Plain text file with target sequence (one per design)
         // ====================================================================
         if (params.run_protenix_refold) {
             // Prepare extraction script as a channel
             ch_extract_script = Channel.fromPath("${projectDir}/assets/extract_target_sequence.py", checkIfExists: true)
             
-            // Extract target sequences from Boltzgen structures
+            // Extract target sequences from Boltzgen final structures
+            // Use final_cifs which contains one representative structure per design
             ch_boltzgen_structures = BOLTZGEN_RUN.out.final_cifs
             EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures, ch_extract_script)
             
