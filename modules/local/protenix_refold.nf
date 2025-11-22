@@ -165,9 +165,39 @@ PARSE_FASTA
     echo ""
     echo "Organizing outputs..."
     
-    # Move all results to output directory
+    # Move all results to output directory and rename with sequence suffix
     if [ -d "protenix_results" ]; then
-        mv protenix_results/* ${meta.id}_protenix_output/ 2>/dev/null || true
+        # Create output directory structure
+        mkdir -p ${meta.id}_protenix_output
+        
+        # Process each prediction directory to add sequence-specific suffix
+        for pred_dir in protenix_results/*_seq_*; do
+            if [ -d "\${pred_dir}" ]; then
+                # Extract sequence number from directory name
+                seq_num=\$(basename "\${pred_dir}" | grep -oP '_seq_\\K[0-9]+')
+                
+                echo "  Renaming outputs for sequence \${seq_num}..."
+                
+                # Rename all CIF and JSON files to include sequence suffix
+                find "\${pred_dir}" -type f \\( -name "*.cif" -o -name "*_confidence*.json" \\) | while read file; do
+                    filename=\$(basename "\${file}")
+                    extension="\${filename##*.}"
+                    basename_without_ext="\${filename%.*}"
+                    
+                    # Add sequence suffix before extension
+                    new_filename="\${basename_without_ext}_seq\${seq_num}.\${extension}"
+                    
+                    # Preserve directory structure
+                    relative_dir=\$(dirname "\${file#\${pred_dir}/}")
+                    target_dir="${meta.id}_protenix_output/\${relative_dir}"
+                    mkdir -p "\${target_dir}"
+                    
+                    # Copy with new name
+                    cp "\${file}" "\${target_dir}/\${new_filename}"
+                    echo "    Renamed: \${filename} → \${new_filename}"
+                done
+            fi
+        done
     fi
     
     # Count predictions
