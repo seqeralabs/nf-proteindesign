@@ -73,14 +73,23 @@ workflow PROTEIN_DESIGN {
         //      refolding ProteinMPNN-optimized binder sequences
         // WHAT: Reads original Boltzgen CIF files and extracts the target chain sequence
         // OUTPUT: Plain text file with target sequence (one per design)
+        // SOLUTION: Use ONLY the first budget design CIF (rank_1) to avoid naming collisions
+        //           since the target sequence is identical across all designs for a sample
         // ====================================================================
         if (params.run_protenix_refold) {
             // Prepare extraction script as a channel
             ch_extract_script = Channel.fromPath("${projectDir}/assets/extract_target_sequence.py", checkIfExists: true)
             
-            // Extract target sequences from Boltzgen final structures
-            // Use final_cifs which contains one representative structure per design
-            ch_boltzgen_structures = BOLTZGEN_RUN.out.final_cifs
+            // Extract target sequences from the FIRST budget design only
+            // The target is the same across all designs, so we only need to extract it once
+            ch_boltzgen_structures = BOLTZGEN_RUN.out.budget_design_cifs
+                .map { meta, cif_files ->
+                    // Take only the FIRST CIF file (typically rank_1.cif)
+                    def cif_list = cif_files instanceof List ? cif_files : [cif_files]
+                    def first_cif = cif_list.sort()[0]  // Sort to ensure consistent selection
+                    [meta, first_cif]
+                }
+            
             EXTRACT_TARGET_SEQUENCES(ch_boltzgen_structures, ch_extract_script)
             
             // Parallelize Protenix per FASTA file (one per ProteinMPNN sequence)
