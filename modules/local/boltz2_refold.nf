@@ -72,7 +72,7 @@ process BOLTZ2_REFOLD {
     echo ""
     echo "Processing ProteinMPNN sequences..."
     
-    python3 <<'PARSE_FASTA'
+    python3 <<PARSE_FASTA
 import sys
 import yaml
 import os
@@ -81,7 +81,7 @@ import os
 fasta_input = "${mpnn_sequences}"
 fasta_files = fasta_input.split() if " " in fasta_input else [fasta_input]
 
-target_seq = "\${TARGET_SEQ}"
+target_seq = "\$TARGET_SEQ"
 output_base = "${meta.id}"
 parent_id = "${meta.parent_id}"
 
