@@ -1,0 +1,6 @@
+reports:
+  "results/design_metrics_report.html":
+    display: "Protein Design Metrics (HTML)"
+  "results/design_metrics_summary.csv":
+    display: "Protein Design Metrics (CSV)"
+    mimeType: "text/csv"
