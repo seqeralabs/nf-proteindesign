@@ -1,0 +1,12 @@
+# RFdiffusion design specification — Nipah Glycoprotein binder
+# Compatible with both rfdiffusion_v1 and rfdiffusion_v3
+#
+# contig syntax: "<binder_length>/0 <TargetChain><start>-<end>"
+#   80-120       = design a binder of 80-120 residues
+#   /0           = chain break (separates binder from target)
+#   A1-100       = fix target chain A residues 1-100 in place
+#
+# hotspot_res: optional target residues to bias the binder towards
+
+contig: "80-120/0 A1-100"
+hotspot_res: []

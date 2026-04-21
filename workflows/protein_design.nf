@@ -2,11 +2,18 @@
 ========================================================================================
     PROTEIN_DESIGN: Workflow for protein design using YAML specifications
 ========================================================================================
-    This workflow uses pre-made design YAML files for protein design with Boltzgen
-    and optional analysis modules.
+    Backbone design is delegated to one of two subworkflows selected via
+    params.design_tool:
+      'boltzgen'        -> DESIGN_BOLTZGEN  (default)
+      'rfdiffusion_v1'  -> DESIGN_RFDIFFUSION -> RFDIFFUSION_V1_RUN
+      'rfdiffusion_v3'  -> DESIGN_RFDIFFUSION -> RFDIFFUSION_V3_RUN
+
+    All downstream steps (ProteinMPNN, Boltz-2, analysis) are tool-agnostic and
+    consume the normalised budget_design_cifs channel regardless of which tool ran.
 ----------------------------------------------------------------------------------------
 */
-include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
+include { DESIGN_BOLTZGEN    } from '../subworkflows/local/design_boltzgen'
+include { DESIGN_RFDIFFUSION } from '../subworkflows/local/design_rfdiffusion'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { PREPARE_BOLTZ2_SEQUENCES } from '../modules/local/prepare_boltz2_sequences'
@@ -26,45 +33,25 @@ workflow PROTEIN_DESIGN {
     main:
 
     // ========================================================================
-    // Run Boltzgen on design YAMLs OR use pre-computed results
+    // Backbone design: Boltzgen or RFdiffusion (v1/v3)
     // ========================================================================
 
-    // Split input channel into two branches: with and without pre-computed Boltzgen results
-    ch_input
-        .branch { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
-            with_precomputed: boltzgen_output_dir != null
-                return [meta, boltzgen_output_dir]
-            needs_boltzgen: boltzgen_output_dir == null
-                return [meta, design_yaml, structure_files]
-        }
-        .set { ch_branched }
-
-    // Run Boltzgen only for samples without pre-computed results
-    BOLTZGEN_RUN(ch_branched.needs_boltzgen, ch_cache)
-    
-    // Create channel from pre-computed Boltzgen output directories
-    ch_precomputed_boltzgen = ch_branched.with_precomputed
-        .map { meta, boltzgen_dir ->
-            // Stage the pre-computed directory as if it came from BOLTZGEN_RUN
-            [meta, boltzgen_dir]
-        }
-    
-    // Combine Boltzgen results from both sources (newly run + pre-computed)
-    ch_boltzgen_results = BOLTZGEN_RUN.out.results
-        .mix(ch_precomputed_boltzgen)
-    
-    // Extract budget_design_cifs from both sources for downstream processing
-    ch_budget_cifs_new = BOLTZGEN_RUN.out.budget_design_cifs
-
-    // For precomputed results, extract CIF files from the precomputed directory
-    ch_budget_cifs_precomputed = ch_branched.with_precomputed
-        .map { meta, boltzgen_dir ->
-            def budget_cifs = file("${boltzgen_dir}/final_ranked_designs/final_*_designs/*.cif")
-            [meta, budget_cifs]
-        }
-
-    ch_budget_design_cifs = ch_budget_cifs_new
-        .mix(ch_budget_cifs_precomputed)
+    if (params.design_tool == 'boltzgen') {
+        // Full input tuple passed — DESIGN_BOLTZGEN handles the pre-computed
+        // shortcut (boltzgen_output_dir) internally
+        DESIGN_BOLTZGEN(ch_input, ch_cache)
+        ch_design_results     = DESIGN_BOLTZGEN.out.results
+        ch_budget_design_cifs = DESIGN_BOLTZGEN.out.budget_design_cifs
+    } else {
+        // RFdiffusion (v1 or v3): strip fields not consumed by the subworkflow
+        ch_rfd_input = ch_input
+            .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
+                [meta, design_yaml, structure_files]
+            }
+        DESIGN_RFDIFFUSION(ch_rfd_input, ch_cache)
+        ch_design_results     = DESIGN_RFDIFFUSION.out.results
+        ch_budget_design_cifs = DESIGN_RFDIFFUSION.out.budget_design_cifs
+    }
     
     // ========================================================================
     // ProteinMPNN: Optimize sequences for designed structures
@@ -208,9 +195,8 @@ workflow PROTEIN_DESIGN {
             BOLTZ2_REFOLD(ch_boltz2_input, ch_boltz2_cache)
         }
     } else {
-        // Use Boltzgen outputs directly if ProteinMPNN is disabled
-        // Use the combined channel that includes both newly computed and pre-computed results
-        ch_final_designs_for_analysis = ch_boltzgen_results
+        // Use design tool outputs directly if ProteinMPNN is disabled
+        ch_final_designs_for_analysis = ch_design_results
     }
     
     // ========================================================================
@@ -453,9 +439,9 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Boltzgen outputs (combined from both newly computed and pre-computed sources)
-    boltzgen_results = ch_boltzgen_results
-    final_designs = ch_budget_design_cifs
+    // Design tool outputs (Boltzgen, RFdiffusion v1, or RFdiffusion v3)
+    design_results = ch_design_results
+    final_designs  = ch_budget_design_cifs
     
     // ProteinMPNN outputs (will be empty if not run)
     mpnn_optimized = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.optimized_designs : Channel.empty()
