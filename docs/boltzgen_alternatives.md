@@ -175,38 +175,21 @@ Two further candidates remain under consideration (Genie 2 and salad) but requir
 - **Limitation:** CLI-only invocation requires a config adapter layer. Newer and less experimentally validated than RFdiffusion v1.
 
 ---
+## LICENSE INFO
+**BSD 3-Clause (RFdiffusion v1)**
+Freely permitted in any setting (commercial, public, academic). The only constraints are: include the copyright notice somewhere in your materials,
+and don't imply the original authors endorse your work. 
+Standard slide citation "RFdiffusion — Baker Lab / RosettaCommons" satisfies this fully.    
+                                                            
+**Apache 2.0 (Genie2 and SALAD code)**                                                                                                                
+Grants a patent licence from contributors, which actually protects you as a user. For a presentation you just need attribution; no requirement to share your own code or modifications.              
+   
+**CC-BY 4.0 (SALAD model weights)**                                                                                                                    
+  Creative Commons Attribution is specifically designed for content sharing in talks, publications and demos. You can use
+  results or figures derived from the weights commercially as long as you credit the authors. 
+  standard "SALAD, Jendrusch et al. 2025" citation.
 
-## Eliminated Candidates
-
-### FrameFlow
-
-Eliminated because it does not meaningfully improve on RFdiffusion v1 — competitive designability on standard benchmarks but no clear quality advantage, limited wet-lab validation, and no capability gains that would justify the integration cost over the already-selected RFdiffusion options.
-
-### BinderFlow
-
-BinderFlow was eliminated despite being genuinely generative. Investigation of the source code confirmed:
-
-- `rfd.sh` calls RFdiffusion's own `run_inference.py` directly — BinderFlow owns none of the backbone generation logic and is purely an orchestration layer on top of RFdiffusion.
-- PyRosetta is used only in the downstream `scoring.sh` step (after backbone generation and ProteinMPNN), not during diffusion. However, PyRosetta requires a commercial licence for non-academic use, adding a licensing constraint that doesn't exist in the current pipeline.
-- The orchestration model is built entirely around SLURM batch job submission and polling for completion marker files. There is no clean single entrypoint suitable for wrapping in a Nextflow `process` block, and no Docker or Singularity containers are provided.
-
-Since BinderFlow is a wrapper around RFdiffusion and adds SLURM/licensing complexity with no additional generative capability, integrating RFdiffusion directly is the better path.
-
-### EvoPro
-
-Eliminated because it is a genetic algorithm/evolutionary optimizer, not a generative diffusion model. It iterates over existing sequences rather than generating novel protein backbones from scratch, placing it in the same functional role as ProteinMPNN — which the pipeline already performs downstream.
-
-### ProteinDJ
-
-Eliminated because it is itself a full Nextflow pipeline that internally wraps RFdiffusion + ProteinMPNN + Boltz-2. Embedding it as a single module replacement for Boltzgen would nest one pipeline inside another, duplicating steps already present in `nf-proteindesign`.
-
----
 
 ## Next Steps
 
-- Implement `modules/local/rfdiffusion_v1_run.nf` — wraps `run_inference.py` with Hydra CLI, maps YAML design spec to contig params, outputs PDB + `.trb` files
-- Implement `modules/local/rfdiffusion_v3_run.nf` — wraps `rfd3 design` via `rosettacommons/foundry` Docker image, converts YAML design spec to JSON input, outputs full-atom PDB files
-- Add `rfdiffusion_version` parameter to `nextflow.config` (default: `v3`)
-- Wire workflow-level conditional in `workflows/protein_design.nf` to invoke the appropriate module
-- Verify output PDB compatibility with `CONVERT_CIF_TO_PDB` and `IPSAE_CALCULATE` for both versions
-- Map Boltzgen's design YAML schema to the shared RFdiffusion contig input format
+
