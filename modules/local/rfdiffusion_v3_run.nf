@@ -5,14 +5,14 @@
     Runs RFdiffusion3 via the RosettaCommons Foundry framework (rfd3 CLI).
     Official container: rosettacommons/foundry
 
-    Design YAML schema (shared with rfdiffusion_v1, rfdiffusion-format):
+    Design YAML schema (rfdiffusion-format):
         contig:       Contig specification string, e.g. "80-120/0 A1-100"
                       Syntax: "[binder_length/0 TargetChain_start-end]"
         hotspot_res:  Optional list of hotspot residues on target, e.g. ["A42","A45"]
 
     The module converts the YAML spec to the JSON format required by rfd3 and
-    organises outputs into the same directory structure as BOLTZGEN_RUN and
-    RFDIFFUSION_V1_RUN so all downstream modules are unaffected.
+    organises outputs into the same directory structure as BOLTZGEN_RUN so all
+    downstream modules are unaffected.
 
     Input structure files may be PDB or CIF; CIF files are converted automatically.
 ========================================================================================

@@ -2,10 +2,8 @@
 ========================================================================================
     PROTEIN_DESIGN: Workflow for protein design using YAML specifications
 ========================================================================================
-    Backbone design is delegated to one of two subworkflows selected via
-    params.design_tool:
+    Backbone design is delegated to a subworkflow selected via params.design_tool:
       'boltzgen'        -> DESIGN_BOLTZGEN  (default)
-      'rfdiffusion_v1'  -> DESIGN_RFDIFFUSION -> RFDIFFUSION_V1_RUN
       'rfdiffusion_v3'  -> DESIGN_RFDIFFUSION -> RFDIFFUSION_V3_RUN
 
     All downstream steps (ProteinMPNN, Boltz-2, analysis) are tool-agnostic and
@@ -33,7 +31,7 @@ workflow PROTEIN_DESIGN {
     main:
 
     // ========================================================================
-    // Backbone design: Boltzgen or RFdiffusion (v1/v3)
+    // Backbone design: Boltzgen or RFdiffusion3
     // ========================================================================
 
     if (params.design_tool == 'boltzgen') {
@@ -43,7 +41,7 @@ workflow PROTEIN_DESIGN {
         ch_design_results     = DESIGN_BOLTZGEN.out.results
         ch_budget_design_cifs = DESIGN_BOLTZGEN.out.budget_design_cifs
     } else {
-        // RFdiffusion (v1 or v3): strip fields not consumed by the subworkflow
+        // RFdiffusion3: strip fields not consumed by the subworkflow
         ch_rfd_input = ch_input
             .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
                 [meta, design_yaml, structure_files]
@@ -439,7 +437,7 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Design tool outputs (Boltzgen, RFdiffusion v1, or RFdiffusion v3)
+    // Design tool outputs (Boltzgen or RFdiffusion3)
     design_results = ch_design_results
     final_designs  = ch_budget_design_cifs
     

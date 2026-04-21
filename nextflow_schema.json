@@ -45,9 +45,9 @@
                     "type": "string",
                     "default": "boltzgen",
                     "description": "Generative backbone design tool to use.",
-                    "help_text": "Select which tool performs the backbone design step:\n- **boltzgen** (default): Boltzgen diffusion model (Seqera container).\n- **rfdiffusion_v1**: RFdiffusion v1 — residue-level SE(3) diffusion (RosettaCommons/RFdiffusion).\n- **rfdiffusion_v3**: RFdiffusion3 — all-atom diffusion via RosettaCommons Foundry (faster, expanded capability set).\n\nAll downstream steps (ProteinMPNN, Boltz-2, analysis) are unaffected by this choice.",
+                    "help_text": "Select which tool performs the backbone design step:\n- **boltzgen** (default): Boltzgen diffusion model (Seqera container).\n- **rfdiffusion_v3**: RFdiffusion3 — all-atom diffusion via RosettaCommons Foundry (faster, expanded capability set).\n\nAll downstream steps (ProteinMPNN, Boltz-2, analysis) are unaffected by this choice.",
                     "fa_icon": "fas fa-tools",
-                    "enum": ["boltzgen", "rfdiffusion_v1", "rfdiffusion_v3"]
+                    "enum": ["boltzgen", "rfdiffusion_v3"]
                 }
             }
         },

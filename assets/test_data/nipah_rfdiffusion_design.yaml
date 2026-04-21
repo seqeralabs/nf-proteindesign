@@ -1,5 +1,4 @@
-# RFdiffusion design specification — Nipah Glycoprotein binder
-# Compatible with both rfdiffusion_v1 and rfdiffusion_v3
+# RFdiffusion3 design specification — Nipah Glycoprotein binder
 #
 # contig syntax: "<binder_length>/0 <TargetChain><start>-<end>"
 #   80-120       = design a binder of 80-120 residues

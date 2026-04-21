@@ -54,7 +54,7 @@ workflow NFPROTEINDESIGN {
     def banner_width = 64
     def version_text = "nf-proteindesign v1.0.0"
     def mode_line = "Mode: DESIGN"
-    def tool_labels = ['boltzgen': 'Boltzgen', 'rfdiffusion_v1': 'RFdiffusion v1', 'rfdiffusion_v3': 'RFdiffusion3']
+    def tool_labels = ['boltzgen': 'Boltzgen', 'rfdiffusion_v3': 'RFdiffusion3']
     def desc_line = "Design tool: ${tool_labels.getOrDefault(params.design_tool, params.design_tool)}"
     def modules_header = "Analysis Modules:"
     def output_line = "Output: ${params.outdir}"
