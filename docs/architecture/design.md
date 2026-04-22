@@ -2,22 +2,22 @@
 
 ## :material-sitemap: Overview
 
-The nf-proteindesign pipeline processes design YAML specifications through Boltzgen with a comprehensive suite of optional analysis modules for sequence optimization, structure validation, and quality assessment.
+The nf-proteindesign pipeline processes design YAML specifications through Complexa with a comprehensive suite of optional analysis modules for sequence optimization, structure validation, and quality assessment.
 
 ## :octicons-workflow-24: Complete Pipeline Flow
 
 ```mermaid
 flowchart TD
-    A[Input Samplesheet<br/>with Design YAMLs] --> B{Check Boltzgen<br/>Output Dir}
+    A[Input Samplesheet<br/>with Design YAMLs] --> B{Check Complexa<br/>Output Dir}
     
-    B -->|Null| C[Run Boltzgen Design<br/>GPU Process]
-    B -->|Provided| D[Stage Precomputed<br/>Boltzgen Results]
+    B -->|Null| C[Run Complexa Design<br/>GPU Process]
+    B -->|Provided| D[Stage Precomputed<br/>Complexa Results]
     
     C --> E[Budget Designs<br/>CIF + NPZ Files]
     D --> E
     
     E --> F{ProteinMPNN<br/>Enabled?}
-    F -->|No| Z1[Output Boltzgen<br/>Designs Only]
+    F -->|No| Z1[Output Complexa<br/>Designs Only]
     
     F -->|Yes| G[Convert CIF to PDB<br/>Per Design]
     G --> H[ProteinMPNN Optimize<br/>Parallel per Budget Design<br/>GPU Process]
@@ -73,17 +73,17 @@ flowchart TD
 !!! warning "Key Architecture Notes"
     - **Analysis modules** (IPSAE, PRODIGY, Foldseek) **only process Boltz-2 structures**
     - Both `--run_proteinmpnn` and `--run_boltz2_refold` must be enabled for analysis
-    - Boltzgen budget designs are NOT analyzed directly - only used for ProteinMPNN input
-    - Precomputed Boltzgen results can be reused via `boltzgen_output_dir` in samplesheet
+    - Complexa budget designs are NOT analyzed directly - only used for ProteinMPNN input
+    - Precomputed Complexa results can be reused via `complexa_output_dir` in samplesheet
 
 ## :material-puzzle: Key Components
 
 ### 1. Core Design Module
 
-Boltzgen generates protein designs from YAML specifications:
+Complexa generates protein designs from YAML specifications:
 
 ```groovy
-process BOLTZGEN_RUN {
+process COMPLEXA_RUN {
     label 'gpu'
     
     input:
@@ -97,7 +97,7 @@ process BOLTZGEN_RUN {
     
     script:
     """
-    boltzgen design \\
+    complexa design \\
         --design_file ${design_yaml} \\
         --output_dir ${meta.id}_output \\
         --num_designs ${meta.num_designs} \\
@@ -117,7 +117,7 @@ workflow {
         PROTEINMPNN_OPTIMIZE(pdb_files)
         
         if (params.run_boltz2_refold) {
-            EXTRACT_TARGET_SEQUENCES(boltzgen_structures)
+            EXTRACT_TARGET_SEQUENCES(complexa_structures)
             PROTENIX_REFOLD(mpnn_sequences, target_sequences)
             CONVERT_PROTENIX_TO_NPZ(boltz2_outputs)
         }
@@ -133,7 +133,7 @@ Multiple analyses run simultaneously:
 workflow {
     // All analyses run in parallel on budget designs
     if (params.run_ipsae) {
-        IPSAE_CALCULATE(boltzgen_cifs, boltzgen_npz)
+        IPSAE_CALCULATE(complexa_cifs, complexa_npz)
         if (boltz2_enabled) {
             IPSAE_CALCULATE(boltz2_cifs, boltz2_npz)
         }
@@ -159,7 +159,7 @@ workflow {
 
 | Process | Purpose | Label | Output |
 |---------|---------|-------|--------|
-| `BOLTZGEN_RUN` | Design proteins with Boltzgen diffusion | `gpu` | CIF + NPZ (budget designs) |
+| `COMPLEXA_RUN` | Design proteins with Complexa diffusion | `gpu` | CIF + NPZ (budget designs) |
 | `CONVERT_CIF_TO_PDB` | Convert CIF structures to PDB format | `cpu` | PDB files |
 | `PROTEINMPNN_OPTIMIZE` | Sequence optimization for designs | `gpu` | FASTA sequences + scores |
 | `PREPARE_BOLTZ2_SEQUENCES` | Split MPNN FASTA + process target | `cpu` | Individual FASTA files |
@@ -199,7 +199,7 @@ workflows/
 └── protein_design.nf                # Main workflow orchestration
 
 modules/local/
-├── boltzgen_run.nf                  # Boltzgen design generation (GPU)
+├── complexa_run.nf                  # Complexa design generation (GPU)
 ├── convert_cif_to_pdb.nf            # CIF to PDB conversion
 ├── proteinmpnn_optimize.nf          # ProteinMPNN sequence optimization (GPU)
 ├── prepare_boltz2_sequences.nf      # Split MPNN FASTA + process target
@@ -258,7 +258,7 @@ params {
 
 ### 2. Design Generation
 
-- Parallel Boltzgen design runs
+- Parallel Complexa design runs
 - Generate budget designs (CIF + NPZ)
 - GPU-accelerated diffusion sampling
 
@@ -271,7 +271,7 @@ params {
 
 ### 4. Parallel Analysis (Optional)
 
-- **ipSAE**: Interface quality scoring (Boltzgen + Boltz-2)
+- **ipSAE**: Interface quality scoring (Complexa + Boltz-2)
 - **PRODIGY**: Binding affinity prediction (all structures)
 - **Foldseek**: Structural similarity search (all structures)
 

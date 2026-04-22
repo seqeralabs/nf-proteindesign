@@ -6,7 +6,7 @@
     1. Splits ProteinMPNN multi-sequence FASTA into individual files
     2. Processes target sequence FASTA to clean format (no header, single line)
 
-    All sequences are included (original Boltzgen sequence + MPNN-designed sequences).
+    All sequences are included (original Complexa sequence + MPNN-designed sequences).
 ----------------------------------------------------------------------------------------
 */
 

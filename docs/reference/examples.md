@@ -9,7 +9,7 @@ Design a protein to bind EGFR using a pre-made design specification.
 ### Create Design YAML
 
 ```yaml title="egfr_protein_design.yaml"
-# Boltzgen design specification for protein binder
+# Complexa design specification for protein binder
 entities:
   # Designed protein entity
   - protein:
@@ -64,7 +64,7 @@ Design peptide binders for a target protein.
 ### Create Design YAML
 
 ```yaml title="peptide_design.yaml"
-# Boltzgen design specification for peptide binder
+# Complexa design specification for peptide binder
 entities:
   # Designed peptide entity
   - protein:
@@ -103,7 +103,7 @@ Design nanobodies to bind a specific target.
 ### Create Design YAML
 
 ```yaml title="nanobody_design.yaml"
-# Boltzgen design specification for nanobody
+# Complexa design specification for nanobody
 entities:
   # Designed nanobody entity
   - protein:
@@ -289,7 +289,7 @@ After pipeline completion, you'll find:
 ```
 results/
 └── {sample_id}/
-    ├── boltzgen/
+    ├── complexa/
     │   ├── final_ranked_designs/
     │   │   ├── design_1.cif          # Top ranked design
     │   │   ├── design_2.cif
@@ -330,7 +330,7 @@ results/
 
 ### Analysis Workflow
 
-1. Run Boltzgen to generate initial designs
+1. Run Complexa to generate initial designs
 2. Enable ProteinMPNN for sequence optimization
 3. Use IPSAE for interface quality scoring
 4. Apply PRODIGY for binding affinity prediction

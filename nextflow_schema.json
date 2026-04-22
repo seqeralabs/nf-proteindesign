@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/nextflow_schema.json",
     "title": "nf-proteindesign pipeline parameters",
-    "description": "Nextflow pipeline for Boltzgen protein design using pre-made design YAML specifications",
+    "description": "Nextflow pipeline for Proteina-Complexa protein design using pre-made design YAML specifications",
     "type": "object",
     "definitions": {
         "input_output_options": {
@@ -34,10 +34,10 @@
                 }
             }
         },
-        "boltzgen_options": {
-            "title": "Boltzgen design parameters",
+        "complexa_options": {
+            "title": "Proteina-Complexa design parameters",
             "type": "object",
-            "description": "Core parameters for Boltzgen protein design execution.",
+            "description": "Core parameters for Proteina-Complexa protein design execution.",
             "default": "",
             "fa_icon": "fas fa-cogs",
             "properties": {
@@ -48,16 +48,16 @@
                     "help_text": "If not specified, defaults to ~/.cache. The cache directory stores downloaded model weights for faster execution.",
                     "fa_icon": "fas fa-database"
                 },
-                "boltzgen_config": {
+                "complexa_config": {
                     "type": "string",
                     "format": "file-path",
-                    "description": "Optional path to custom Boltzgen config YAML to override defaults.",
+                    "description": "Optional path to custom Complexa config YAML to override defaults.",
                     "fa_icon": "fas fa-file-code"
                 },
                 "steps": {
                     "type": "string",
                     "description": "Optional comma-separated list of steps to run (e.g., 'filtering' to rerun only filtering).",
-                    "help_text": "Advanced option for rerunning specific Boltzgen pipeline steps.",
+                    "help_text": "Advanced option for rerunning specific Complexa pipeline steps.",
                     "fa_icon": "fas fa-tasks"
                 }
             }
@@ -72,7 +72,7 @@
                 "run_proteinmpnn": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable ProteinMPNN sequence optimization of Boltzgen designs.",
+                    "description": "Enable ProteinMPNN sequence optimization of Complexa designs.",
                     "help_text": "ProteinMPNN can further optimize sequences for the designed structures.",
                     "fa_icon": "fas fa-toggle-on"
                 },
@@ -197,7 +197,7 @@
                 "run_ipsae": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Enable IPSAE scoring of Boltzgen predictions.",
+                    "description": "Enable IPSAE scoring of Complexa predictions.",
                     "help_text": "IPSAE evaluates protein-protein interface quality using predicted aligned error (PAE) and structural distances.",
                     "fa_icon": "fas fa-toggle-on"
                 },
@@ -293,7 +293,7 @@
                     "type": "boolean",
                     "default": false,
                     "description": "Enable consolidated metrics report generation.",
-                    "help_text": "Generates a comprehensive report combining Boltzgen, ProteinMPNN, IPSAE, and PRODIGY results.",
+                    "help_text": "Generates a comprehensive report combining Complexa, ProteinMPNN, IPSAE, and PRODIGY results.",
                     "fa_icon": "fas fa-toggle-on"
                 },
                 "report_top_n": {
@@ -399,7 +399,7 @@
             "$ref": "#/definitions/input_output_options"
         },
         {
-            "$ref": "#/definitions/boltzgen_options"
+            "$ref": "#/definitions/complexa_options"
         },
         {
             "$ref": "#/definitions/proteinmpnn_options"

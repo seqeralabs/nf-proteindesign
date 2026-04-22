@@ -53,7 +53,7 @@ peptide_binder,designs/il6_peptide.yaml,3000,10
 For Design mode, create YAML files following this structure:
 
 ```yaml
-# Boltzgen design specification
+# Complexa design specification
 entities:
   # Designed protein entity
   - protein:
@@ -108,14 +108,14 @@ The pipeline creates an organized output directory:
 ```
 results/
 ├── {sample_id}/
-│   ├── boltzgen/
+│   ├── complexa/
 │   │   ├── final_ranked_designs/    # Your final designs ⭐
 │   │   │   ├── design_1.cif
 │   │   │   ├── design_2.cif
 │   │   │   └── ...
 │   │   ├── intermediate_designs/    # Intermediate outputs
 │   │   │   └── ...
-│   │   └── boltzgen.log            # Execution log
+│   │   └── complexa.log            # Execution log
 │   │
 │   ├── prodigy/                     # If --run_prodigy enabled
 │   │   ├── design_1_prodigy_results.txt
@@ -134,7 +134,7 @@ results/
 ### Key Output Files
 
 !!! tip "Most Important Files"
-    - **Final designs**: `boltzgen/{sample}/final_ranked_designs/*.cif`
+    - **Final designs**: `complexa/{sample}/final_ranked_designs/*.cif`
     - **Execution report**: `pipeline_info/execution_report.html`
     - **Affinity predictions**: `prodigy/{sample}/design_*_summary.csv`
 

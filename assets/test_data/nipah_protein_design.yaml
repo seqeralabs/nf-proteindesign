@@ -1,4 +1,4 @@
-# Boltzgen design specification for protein binder to 2VSM
+# Complexa design specification for protein binder to 2VSM
 # Designs a protein to bind the 2VSM structure (chain A)
 
 entities:

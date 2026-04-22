@@ -2,13 +2,13 @@
 
 > ⚠️ **IMPORTANT**: This pipeline was developed by Seqera as a proof of principle using Seqera AI. It demonstrates the capabilities of AI-assisted bioinformatics pipeline development but should be thoroughly validated before use in production environments.
 
-A Nextflow pipeline for AI-powered protein design using Boltzgen to design protein binders, nanobodies, and peptides.
+A Nextflow pipeline for AI-powered protein design using Proteina-Complexa to design protein binders, nanobodies, and peptides.
 
 ## 📋 Overview
 
-This pipeline automates the process of designing novel protein binders using Boltzgen and provides comprehensive analysis through optional modules:
+This pipeline automates the process of designing novel protein binders using Proteina-Complexa and provides comprehensive analysis through optional modules:
 
-- 🎯 **Boltzgen Design**: Generate protein, nanobody, or peptide binders for target structures
+- 🎯 **Complexa Design**: Generate protein, nanobody, or peptide binders for target structures
 - 🧬 **ProteinMPNN**: Optimize sequences for improved stability and expression
 - 🔄 **Boltz-2 Refolding**: Validate designs through structure prediction
 - 📊 **IPSAE**: Score protein-protein interface quality
@@ -77,7 +77,7 @@ Results are organized by sample in the output directory:
 
 ```
 results/
-├── boltzgen/          # Boltzgen designs and structures
+├── complexa/          # Complexa designs and structures
 ├── proteinmpnn/       # Optimized sequences (if enabled)
 ├── boltz2/            # Refolded structures (if enabled)
 ├── ipsae/             # Interface scores (if enabled)
@@ -90,7 +90,7 @@ results/
 
 If you use this pipeline, please cite:
 
-- **Boltzgen**: [Add Boltzgen citation]
+- **Proteina-Complexa**: [Add Complexa citation]
 - **ProteinMPNN**: Dauparas et al. (2022) Science
 - **Nextflow**: Di Tommaso et al. (2017) Nature Biotechnology
 

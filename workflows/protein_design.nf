@@ -1,13 +1,12 @@
 /*
 ========================================================================================
-    PROTEIN_DESIGN: Workflow for protein design using YAML specifications
+    PROTEIN_DESIGN: Workflow for protein binder design using Proteina-Complexa
 ========================================================================================
-    This workflow uses pre-made design YAML files for protein design with Boltzgen
-    and optional analysis modules.
+    This workflow runs the Proteina-Complexa design pipeline (generate → filter →
+    evaluate → analyze) and optional downstream analysis modules.
 ----------------------------------------------------------------------------------------
 */
-include { BOLTZGEN_RUN } from '../modules/local/boltzgen_run'
-include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
+include { PROTEINA_COMPLEXA_DESIGN } from '../modules/local/proteina_complexa_design'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { PREPARE_BOLTZ2_SEQUENCES } from '../modules/local/prepare_boltz2_sequences'
 include { BOLTZ2_REFOLD } from '../modules/local/boltz2_refold'
@@ -19,81 +18,54 @@ include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
 workflow PROTEIN_DESIGN {
 
     take:
-    ch_input         // channel: [meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir]
-    ch_cache         // channel: path to cache directory or EMPTY_CACHE placeholder
+    ch_input         // channel: [meta, target_pdb, pipeline_config, target_sequence]
+    ch_ckpt_dir      // channel: path to Complexa checkpoint directory
     ch_boltz2_cache  // channel: path to Boltz-2 cache directory or EMPTY_BOLTZ2_CACHE placeholder
 
     main:
 
     // ========================================================================
-    // Run Boltzgen on design YAMLs OR use pre-computed results
+    // STAGE 1: Proteina-Complexa Design (generate → filter → evaluate → analyze)
     // ========================================================================
+    // Proteina-Complexa runs the full binder design pipeline internally:
+    //   - generate: Flow-matching inference to create binder structures
+    //   - filter:   Top-N selection by reward score + sequence deduplication
+    //   - evaluate: AF2/RF3 refolding + confidence metrics (i_pAE, pLDDT, scRMSD)
+    //   - analyze:  Aggregate results, success filtering
+    //
+    // Output: PDB files directly (no CIF→PDB conversion needed)
 
-    // Split input channel into two branches: with and without pre-computed Boltzgen results
-    ch_input
-        .branch { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
-            with_precomputed: boltzgen_output_dir != null
-                return [meta, boltzgen_output_dir]
-            needs_boltzgen: boltzgen_output_dir == null
-                return [meta, design_yaml, structure_files]
-        }
-        .set { ch_branched }
-
-    // Run Boltzgen only for samples without pre-computed results
-    BOLTZGEN_RUN(ch_branched.needs_boltzgen, ch_cache)
-    
-    // Create channel from pre-computed Boltzgen output directories
-    ch_precomputed_boltzgen = ch_branched.with_precomputed
-        .map { meta, boltzgen_dir ->
-            // Stage the pre-computed directory as if it came from BOLTZGEN_RUN
-            [meta, boltzgen_dir]
-        }
-    
-    // Combine Boltzgen results from both sources (newly run + pre-computed)
-    ch_boltzgen_results = BOLTZGEN_RUN.out.results
-        .mix(ch_precomputed_boltzgen)
-    
-    // Extract budget_design_cifs from both sources for downstream processing
-    ch_budget_cifs_new = BOLTZGEN_RUN.out.budget_design_cifs
-
-    // For precomputed results, extract CIF files from the precomputed directory
-    ch_budget_cifs_precomputed = ch_branched.with_precomputed
-        .map { meta, boltzgen_dir ->
-            def budget_cifs = file("${boltzgen_dir}/final_ranked_designs/final_*_designs/*.cif")
-            [meta, budget_cifs]
+    ch_complexa_input = ch_input
+        .map { meta, target_pdb, pipeline_config, target_sequence ->
+            [meta, target_pdb, pipeline_config]
         }
 
-    ch_budget_design_cifs = ch_budget_cifs_new
-        .mix(ch_budget_cifs_precomputed)
-    
+    PROTEINA_COMPLEXA_DESIGN(ch_complexa_input, ch_ckpt_dir)
+
+    // Primary outputs for downstream processing
+    ch_complexa_results = PROTEINA_COMPLEXA_DESIGN.out.results
+    ch_design_pdbs      = PROTEINA_COMPLEXA_DESIGN.out.design_pdbs
+
     // ========================================================================
-    // ProteinMPNN: Optimize sequences for designed structures
+    // STAGE 2: ProteinMPNN — Optimize sequences for designed structures
     // ========================================================================
     if (params.run_proteinmpnn) {
-        // Step 1: Convert CIF structures to PDB format (ProteinMPNN requires PDB)
-        // Use budget_design_cifs which contains ONLY the budget designs (e.g., 2 structures if budget=2)
-        // NOT all designs from results directory
-        // Use the combined channel that includes both newly computed and pre-computed Boltzgen results
-        CONVERT_CIF_TO_PDB(ch_budget_design_cifs)
-        
-        // Step 2: Parallelize ProteinMPNN - run separately for each budget design
-        // Use flatMap to create individual tasks per PDB file (one per budget iteration)
-        ch_pdb_per_design = CONVERT_CIF_TO_PDB.out.pdb_files_all
+        // Parallelize ProteinMPNN — run separately for each design PDB
+        // Complexa outputs PDB files directly; no CIF→PDB conversion needed
+        ch_pdb_per_design = ch_design_pdbs
             .flatMap { meta, pdb_files ->
-                // Convert to list if single file and create defensive copy
                 def pdb_list = pdb_files instanceof List ? new ArrayList(pdb_files) : [pdb_files]
 
-                // Create a separate channel entry for each PDB file
                 pdb_list.collect { pdb_file ->
-                    // Extract rank number from filename (e.g., "rank1_2VSM_protein_design_1" -> "1")
-                    def rank_num = pdb_file.baseName.replaceAll(/^rank(\d+)_.*/, '$1')
+                    // Extract a design index from filename for tracking
+                    // Complexa naming: job_{job_id}_n_{length}_id_{idx}_{tag}.pdb
+                    def design_idx = pdb_list.indexOf(pdb_file)
 
-                    // Simplified naming: {sample}_r{rank}
                     def design_meta = [
-                        id: "${meta.id}_r${rank_num}",
+                        id: "${meta.id}_d${design_idx}",
                         parent_id: meta.id,
-                        rank_num: rank_num,
-                        design_name: pdb_file.baseName  // Keep original for reference
+                        rank_num: "${design_idx}",
+                        design_name: pdb_file.baseName
                     ]
 
                     [design_meta, pdb_file]
@@ -113,9 +85,9 @@ workflow PROTEIN_DESIGN {
         // 2. Process target sequence FASTA (from samplesheet) to clean format
         // ====================================================================
         if (params.run_boltz2_refold) {
-            // Get target sequence FASTA from samplesheet
+            // Get target sequence FASTA from the input channel
             ch_target_fasta = ch_input
-                .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
+                .map { meta, target_pdb, pipeline_config, target_sequence ->
                     [meta.id, target_sequence]
                 }
 
@@ -143,8 +115,8 @@ workflow PROTEIN_DESIGN {
             // ================================================================
             // Use actual placeholder files in assets/ for k8s compatibility (avoids staging non-existent files)
             ch_target_msa = ch_input
-                .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
-                    def msa_file = target_msa ?: file("${projectDir}/assets/NO_MSA", checkIfExists: true)
+                .map { meta, target_pdb, pipeline_config, target_sequence ->
+                    def msa_file = meta.target_msa ? file(meta.target_msa, checkIfExists: true) : file("${projectDir}/assets/NO_MSA", checkIfExists: true)
                     [meta.id, msa_file]
                 }
 
@@ -152,8 +124,8 @@ workflow PROTEIN_DESIGN {
             // Prepare Target Template from Samplesheet
             // ================================================================
             ch_target_template = ch_input
-                .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
-                    def template_file = target_template ?: file("${projectDir}/assets/NO_TEMPLATE", checkIfExists: true)
+                .map { meta, target_pdb, pipeline_config, target_sequence ->
+                    def template_file = meta.target_template ? file(meta.target_template, checkIfExists: true) : file("${projectDir}/assets/NO_TEMPLATE", checkIfExists: true)
                     [meta.id, template_file]
                 }
 
@@ -208,16 +180,15 @@ workflow PROTEIN_DESIGN {
             BOLTZ2_REFOLD(ch_boltz2_input, ch_boltz2_cache)
         }
     } else {
-        // Use Boltzgen outputs directly if ProteinMPNN is disabled
-        // Use the combined channel that includes both newly computed and pre-computed results
-        ch_final_designs_for_analysis = ch_boltzgen_results
+        // Use Complexa outputs directly if ProteinMPNN is disabled
+        ch_final_designs_for_analysis = ch_complexa_results
     }
     
     // ========================================================================
     // OPTIONAL: IPSAE scoring if enabled
     // ========================================================================
     // NOTE: IPSAE requires NPZ confidence files. We now support both:
-    //   1. Boltzgen budget designs (native NPZ output)
+    //   1. Complexa budget designs (native NPZ output)
     //   2. Boltz-2 refolded structures (native NPZ output - no conversion needed!)
     if (params.run_ipsae) {
         // Prepare IPSAE script as a value channel (reusable across all tasks)
@@ -337,7 +308,7 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     // OPTIONAL: Foldseek structural similarity search if enabled
     // ========================================================================
-    // Search for structural homologs of both Boltzgen and Protenix structures
+    // Search for structural homologs of both Complexa and Boltz-2 structures
     // in the AlphaFold database (or other specified database)
     if (params.run_foldseek) {
         // Validate and prepare database channel
@@ -453,26 +424,26 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Boltzgen outputs (combined from both newly computed and pre-computed sources)
-    boltzgen_results = ch_boltzgen_results
-    final_designs = ch_budget_design_cifs
-    
+    // Proteina-Complexa outputs
+    complexa_results = ch_complexa_results
+    design_pdbs      = ch_design_pdbs
+
     // ProteinMPNN outputs (will be empty if not run)
     mpnn_optimized = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.optimized_designs : Channel.empty()
     mpnn_sequences = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.sequences : Channel.empty()
-    mpnn_scores = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.scores : Channel.empty()
-    
+    mpnn_scores    = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.scores : Channel.empty()
+
     // Boltz-2 refolding outputs (will be empty if not run)
-    boltz2_structures = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.structures : Channel.empty()
-    boltz2_confidence = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.confidence : Channel.empty()
-    boltz2_pae_npz = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.pae_npz : Channel.empty()
-    boltz2_affinity = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.affinity : Channel.empty()
-    
+    boltz2_structures  = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.structures : Channel.empty()
+    boltz2_confidence  = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.confidence : Channel.empty()
+    boltz2_pae_npz     = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.pae_npz : Channel.empty()
+    boltz2_affinity    = (params.run_proteinmpnn && params.run_boltz2_refold) ? BOLTZ2_REFOLD.out.affinity : Channel.empty()
+
     // Optional analysis outputs (will be empty if not run)
     foldseek_results = (params.run_foldseek && params.run_proteinmpnn && params.run_boltz2_refold) ? FOLDSEEK_SEARCH.out.results : Channel.empty()
     foldseek_summary = (params.run_foldseek && params.run_proteinmpnn && params.run_boltz2_refold) ? FOLDSEEK_SEARCH.out.summary : Channel.empty()
 
     // Consolidation outputs (will be empty if not run)
     metrics_summary = params.run_consolidation ? CONSOLIDATE_METRICS.out.summary_csv : Channel.empty()
-    metrics_report = params.run_consolidation ? CONSOLIDATE_METRICS.out.report_html : Channel.empty()
+    metrics_report  = params.run_consolidation ? CONSOLIDATE_METRICS.out.report_html : Channel.empty()
 }

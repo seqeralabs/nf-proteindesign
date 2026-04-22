@@ -2,7 +2,7 @@
 
 /*
 ========================================================================================
-    nf-proteindesign: Nextflow pipeline for Boltzgen protein design
+    nf-proteindesign: Nextflow pipeline for Proteina-Complexa protein design
 ========================================================================================
     Github : https://github.com/seqeralabs/nf-proteindesign
 ----------------------------------------------------------------------------------------
@@ -20,17 +20,6 @@ include { samplesheetToList } from 'plugin/nf-schema'
 
 /*
 ========================================================================================
-    VALIDATE INPUTS
-========================================================================================
-*/
-
-// Validate required parameters
-if (!params.input) {
-    error "ERROR: Please provide a samplesheet with --input"
-}
-
-/*
-========================================================================================
     NAMED WORKFLOW FOR PIPELINE
 ========================================================================================
 */
@@ -40,9 +29,15 @@ include { PROTEIN_DESIGN } from './workflows/protein_design'
 workflow NFPROTEINDESIGN {
 
     // ========================================================================
+    // Validate inputs
+    // ========================================================================
+    if (!params.input) {
+        error "ERROR: Please provide a samplesheet with --input"
+    }
+
+    // ========================================================================
     // Print pipeline startup banner
     // ========================================================================
-    // Build list of enabled analysis modules
     def enabled_modules = []
     if (params.run_proteinmpnn) enabled_modules.add('ProteinMPNN')
     if (params.run_ipsae) enabled_modules.add('IPSAE')
@@ -50,18 +45,15 @@ workflow NFPROTEINDESIGN {
     if (params.run_consolidation) enabled_modules.add('Metrics Consolidation')
     def modules_str = enabled_modules.size() > 0 ? enabled_modules.join(', ') : 'None'
     
-    // Format the banner with proper width (64 chars inside the box)
     def banner_width = 64
-    def version_text = "nf-proteindesign v1.0.0"
-    def mode_line = "Mode: DESIGN"
-    def desc_line = "Using design YAML files"
+    def version_text = "nf-proteindesign v2.0.0"
+    def mode_line = "Mode: DESIGN (Proteina-Complexa)"
+    def desc_line = "Using pipeline config YAML files"
     def modules_header = "Analysis Modules:"
     def output_line = "Output: ${params.outdir}"
     
-    // Truncate modules string if too long
-    def max_modules_len = banner_width - 2
-    if (modules_str.length() > max_modules_len) {
-        modules_str = modules_str.substring(0, max_modules_len - 3) + "..."
+    if (modules_str.length() > banner_width - 2) {
+        modules_str = modules_str.substring(0, banner_width - 5) + "..."
     }
     
     log.info """
@@ -91,157 +83,65 @@ workflow NFPROTEINDESIGN {
     
     // Validate and parse samplesheet using nf-schema
     def design_samplesheet = samplesheetToList(
-        params.input, 
+        params.input,
         "${projectDir}/assets/schema_input_design.json"
     )
-    
+
     ch_input = Channel
         .fromList(design_samplesheet)
         .map { tuple ->
-            // samplesheetToList returns list of values in schema order
-            // Order: sample_id, design_yaml, structure_files, protocol, num_designs, budget, reuse, target_msa, target_sequence, target_template, boltzgen_output_dir
-            def sample_id = tuple[0]
-            def design_yaml_path = tuple[1]
-            def structure_files_str = tuple[2]
-            def protocol = tuple[3]
-            def num_designs = tuple[4]
-            def budget = tuple[5]
-            def reuse = tuple.size() > 6 ? tuple[6] : null
-            def target_msa_path = tuple.size() > 7 ? tuple[7] : null
-            def target_sequence_path = tuple.size() > 8 ? tuple[8] : null
-            def target_template_path = tuple.size() > 9 ? tuple[9] : null
-            def boltzgen_output_dir_path = tuple.size() > 10 ? tuple[10] : null
-            
-            // Convert design YAML to file object and validate existence
-            // Smart path resolution: try launchDir first (for local runs), then projectDir (for Platform)
-            def design_yaml
-            if (design_yaml_path.startsWith('/') || design_yaml_path.contains('://')) {
-                // Absolute path or remote URL - use as-is
-                design_yaml = file(design_yaml_path, checkIfExists: true)
-            } else {
-                // Relative path - try launchDir first, then projectDir
-                def launchDir_path = file(design_yaml_path)
-                if (launchDir_path.exists()) {
-                    design_yaml = launchDir_path
-                } else {
-                    // Fall back to projectDir (for Seqera Platform)
-                    design_yaml = file("${project_dir}/${design_yaml_path}", checkIfExists: true)
-                }
-            }
-            
-            // Parse structure files (can be comma-separated list)
-            def structure_files = []
-            if (structure_files_str) {
-                structure_files_str.split(',').each { structure_path ->
-                    def trimmed_path = structure_path.trim()
-                    if (trimmed_path.startsWith('/') || trimmed_path.contains('://')) {
-                        structure_files.add(file(trimmed_path, checkIfExists: true))
-                    } else {
-                        def launchDir_path = file(trimmed_path)
-                        if (launchDir_path.exists()) {
-                            structure_files.add(launchDir_path)
-                        } else {
-                            structure_files.add(file("${project_dir}/${trimmed_path}", checkIfExists: true))
-                        }
-                    }
-                }
-            }
-            
-            // Parse target MSA file if provided
-            def target_msa = null
-            if (target_msa_path) {
-                if (target_msa_path.startsWith('/') || target_msa_path.contains('://')) {
-                    target_msa = file(target_msa_path, checkIfExists: true)
-                } else {
-                    def launchDir_path = file(target_msa_path)
-                    if (launchDir_path.exists()) {
-                        target_msa = launchDir_path
-                    } else {
-                        target_msa = file("${project_dir}/${target_msa_path}", checkIfExists: true)
-                    }
-                }
-            }
+            // samplesheetToList returns values in schema property order:
+            // sample_id, target_pdb, pipeline_config, target_sequence, target_msa, target_template
+            def sample_id            = tuple[0]
+            def target_pdb_path      = tuple[1]
+            def pipeline_config_path = tuple[2]
+            def target_sequence_path = tuple[3]
+            def target_msa_path      = tuple.size() > 4 ? tuple[4] : null
+            def target_template_path = tuple.size() > 5 ? tuple[5] : null
 
-            // Parse target sequence FASTA file (required for Boltz2 refolding)
-            def target_sequence = null
-            if (target_sequence_path) {
-                if (target_sequence_path.startsWith('/') || target_sequence_path.contains('://')) {
-                    target_sequence = file(target_sequence_path, checkIfExists: true)
-                } else {
-                    def launchDir_path = file(target_sequence_path)
-                    if (launchDir_path.exists()) {
-                        target_sequence = launchDir_path
-                    } else {
-                        target_sequence = file("${project_dir}/${target_sequence_path}", checkIfExists: true)
-                    }
-                }
-            }
+            // Resolve file paths (try launchDir first, then projectDir for Platform)
+            def target_pdb = target_pdb_path.startsWith('/') || target_pdb_path.contains('://') ?
+                file(target_pdb_path, checkIfExists: true) :
+                (file(target_pdb_path).exists() ? file(target_pdb_path) : file("${project_dir}/${target_pdb_path}", checkIfExists: true))
 
-            // Parse target template CIF file (optional for Boltz2 refolding)
-            def target_template = null
-            if (target_template_path) {
-                if (target_template_path.startsWith('/') || target_template_path.contains('://')) {
-                    target_template = file(target_template_path, checkIfExists: true)
-                } else {
-                    def launchDir_path = file(target_template_path)
-                    if (launchDir_path.exists()) {
-                        target_template = launchDir_path
-                    } else {
-                        target_template = file("${project_dir}/${target_template_path}", checkIfExists: true)
-                    }
-                }
-            }
+            def pipeline_config = pipeline_config_path.startsWith('/') || pipeline_config_path.contains('://') ?
+                file(pipeline_config_path, checkIfExists: true) :
+                (file(pipeline_config_path).exists() ? file(pipeline_config_path) : file("${project_dir}/${pipeline_config_path}", checkIfExists: true))
 
-            // Parse boltzgen_output_dir if provided
-            def boltzgen_output_dir = null
-            if (boltzgen_output_dir_path) {
-                if (boltzgen_output_dir_path.startsWith('/') || boltzgen_output_dir_path.contains('://')) {
-                    boltzgen_output_dir = file(boltzgen_output_dir_path, type: 'dir', checkIfExists: true)
-                } else {
-                    def launchDir_path = file(boltzgen_output_dir_path, type: 'dir')
-                    if (launchDir_path.exists()) {
-                        boltzgen_output_dir = launchDir_path
-                    } else {
-                        boltzgen_output_dir = file("${project_dir}/${boltzgen_output_dir_path}", type: 'dir', checkIfExists: true)
-                    }
-                }
-            }
+            def target_sequence = target_sequence_path.startsWith('/') || target_sequence_path.contains('://') ?
+                file(target_sequence_path, checkIfExists: true) :
+                (file(target_sequence_path).exists() ? file(target_sequence_path) : file("${project_dir}/${target_sequence_path}", checkIfExists: true))
 
+            // Build metadata map
             def meta = [:]
-            meta.id = sample_id
-            meta.protocol = protocol
-            meta.num_designs = num_designs
-            meta.budget = budget
-            meta.reuse = reuse ?: false
+            meta.id              = sample_id
+            meta.target_msa      = target_msa_path      // stored as string; resolved in workflow if needed
+            meta.target_template = target_template_path  // stored as string; resolved in workflow if needed
 
-            [meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir]
+            [meta, target_pdb, pipeline_config, target_sequence]
         }
 
     // ========================================================================
-    // Prepare cache directory channel for Boltzgen
+    // Prepare Complexa checkpoint directory channel
     // ========================================================================
 
-    // If cache_dir is specified, stage it as input; otherwise use empty placeholder
-    if (params.cache_dir) {
-        ch_cache = Channel
-            .fromPath(params.cache_dir, type: 'dir', checkIfExists: true)
+    if (params.complexa_ckpt_dir) {
+        ch_ckpt_dir = Channel
+            .fromPath(params.complexa_ckpt_dir, type: 'dir', checkIfExists: true)
             .first()
     } else {
-        // Create a placeholder file when no cache is provided
-        ch_cache = Channel.value(file('EMPTY_CACHE'))
+        ch_ckpt_dir = Channel.value(file('EMPTY_CKPT'))
     }
 
     // ========================================================================
     // Prepare cache directory channel for Boltz-2
     // ========================================================================
 
-    // If boltz2_cache is specified, stage it as input; otherwise use empty placeholder
     if (params.boltz2_cache) {
         ch_boltz2_cache = Channel
             .fromPath(params.boltz2_cache, type: 'dir', checkIfExists: true)
             .first()
     } else {
-        // Create a placeholder file when no cache is provided
         ch_boltz2_cache = Channel.value(file('EMPTY_BOLTZ2_CACHE'))
     }
 
@@ -249,7 +149,7 @@ workflow NFPROTEINDESIGN {
     // Run PROTEIN_DESIGN workflow
     // ========================================================================
 
-    PROTEIN_DESIGN(ch_input, ch_cache, ch_boltz2_cache)
+    PROTEIN_DESIGN(ch_input, ch_ckpt_dir, ch_boltz2_cache)
 
 }
 

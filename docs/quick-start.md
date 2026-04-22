@@ -24,7 +24,7 @@ Before running the pipeline, ensure you have:
 ### Hardware Requirements
 
 !!! warning "GPU Required"
-    Boltzgen requires an NVIDIA GPU with CUDA support for reasonable execution times. CPU execution is possible but extremely slow.
+    Complexa requires an NVIDIA GPU with CUDA support for reasonable execution times. CPU execution is possible but extremely slow.
 
 - **GPU**: NVIDIA GPU with CUDA 11.8+ support
 - **Memory**: 16GB RAM minimum, 32GB+ recommended
@@ -34,7 +34,7 @@ Before running the pipeline, ensure you have:
 
 ### 1. Design YAML Files (Design Mode)
 
-Create a design specification file following Boltzgen format:
+Create a design specification file following Complexa format:
 
 ```yaml title="my_design.yaml"
 name: antibody_design_example
@@ -143,11 +143,11 @@ After successful execution, your `results/` directory will contain:
 
 ```
 results/
-├── boltzgen/              # Main Boltzgen outputs
+├── complexa/              # Main Complexa outputs
 │   ├── sample1/
 │   │   ├── final_ranked_designs/
 │   │   ├── intermediate_designs/
-│   │   └── boltzgen.log
+│   │   └── complexa.log
 │   └── sample2/
 │       └── ...
 ├── ipsae/                 # IPSAE scores (if enabled)
@@ -163,7 +163,7 @@ results/
 ```
 
 !!! tip "Final Designs"
-    The most important files are in `boltzgen/*/final_ranked_designs/` - these contain your ranked protein designs ready for experimental validation.
+    The most important files are in `complexa/*/final_ranked_designs/` - these contain your ranked protein designs ready for experimental validation.
 
 ## :material-test-tube: Example Workflow
 
@@ -209,7 +209,7 @@ nextflow run seqeralabs/nf-proteindesign \
 open covid_binders/pipeline_info/execution_report.html
 
 # Check final designs
-ls covid_binders/boltzgen/spike_nb1/final_ranked_designs/
+ls covid_binders/complexa/spike_nb1/final_ranked_designs/
 
 # View binding predictions
 cat covid_binders/prodigy/spike_nb1_prodigy_predictions.csv
@@ -241,7 +241,7 @@ cat covid_binders/prodigy/spike_nb1_prodigy_predictions.csv
     
     **Solution**: Pre-pull containers or use cached versions:
     ```bash
-    docker pull ghcr.io/flouwuenne/boltzgen:latest
+    docker pull cr.seqera.io/scidev/complexa:latest
     ```
 
 ## :material-arrow-right: Next Steps

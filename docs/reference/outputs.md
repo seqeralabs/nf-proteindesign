@@ -7,18 +7,18 @@ Complete guide to understanding pipeline outputs.
 ```
 results/
 ├── {sample_id}/
-│   ├── boltzgen/
+│   ├── complexa/
 │   ├── prodigy/
 │   └── ipsae/
 └── pipeline_info/
 ```
 
-## :material-dna: Boltzgen Outputs
+## :material-dna: Complexa Outputs
 
 ### Final Ranked Designs
 
 ```
-results/{sample}/boltzgen/final_ranked_designs/
+results/{sample}/complexa/final_ranked_designs/
 ├── design_1.cif
 ├── design_2.cif
 └── ...
@@ -31,7 +31,7 @@ results/{sample}/boltzgen/final_ranked_designs/
 ### Intermediate Designs
 
 ```
-results/{sample}/boltzgen/intermediate_designs/
+results/{sample}/complexa/intermediate_designs/
 ├── generation_*.cif
 ├── inverse_fold_*.cif
 └── refold_*.cif
@@ -42,7 +42,7 @@ results/{sample}/boltzgen/intermediate_designs/
 ### Log Files
 
 ```
-results/{sample}/boltzgen/boltzgen.log
+results/{sample}/complexa/complexa.log
 ```
 
 **Description**: Complete execution log with design metrics.
@@ -151,7 +151,7 @@ results/pipeline_info/execution_trace.txt
 **Format**: TSV file with detailed process information:
 ```
 task_id  hash      native_id  name         status    exit  submit               duration  realtime  %cpu      rss       vmem
-1        ab/cd12   12345      BOLTZGEN_RUN COMPLETED 0     2024-01-15 10:00:00  1h 23m    1h 21m    95.2%     16.2 GB   24.1 GB
+1        ab/cd12   12345      COMPLEXA_RUN COMPLETED 0     2024-01-15 10:00:00  1h 23m    1h 21m    95.2%     16.2 GB   24.1 GB
 ```
 
 ## :material-file-download: File Formats
@@ -203,7 +203,7 @@ All outputs for each sample grouped together:
 ```
 results/
 ├── sample1/
-│   ├── boltzgen/
+│   ├── complexa/
 │   ├── prodigy/
 │   └── ipsae/
 └── sample2/
@@ -216,7 +216,7 @@ Within each sample, organized by analysis:
 
 ```
 {sample}/
-├── boltzgen/          # Primary designs
+├── complexa/          # Primary designs
 ├── prodigy/           # Binding affinity
 └── ipsae/             # Interface scoring
 ```
@@ -293,7 +293,7 @@ grep "FAILED" results/pipeline_info/execution_trace.txt
 ```bash
 # Ensure all expected files exist
 for sample in sample1 sample2; do
-    if [ ! -d "results/${sample}/boltzgen/final_ranked_designs" ]; then
+    if [ ! -d "results/${sample}/complexa/final_ranked_designs" ]; then
         echo "Missing designs for ${sample}"
     fi
 done
@@ -306,7 +306,7 @@ done
 ```bash
 # Create archive of final results
 tar -czf protein_designs.tar.gz \
-    results/*/boltzgen/final_ranked_designs/ \
+    results/*/complexa/final_ranked_designs/ \
     results/*/prodigy/*_summary.csv \
     results/pipeline_info/execution_report.html
 ```

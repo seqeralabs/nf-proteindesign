@@ -4,7 +4,7 @@
 
 ProteinMPNN and Boltz-2 form a sequence optimization and validation workflow that improves designed structures through iterative refinement:
 
-1. **ProteinMPNN** optimizes amino acid sequences for Boltzgen-designed structures
+1. **ProteinMPNN** optimizes amino acid sequences for Complexa-designed structures
 2. **Boltz-2** predicts structures for the optimized sequences to validate refolding
 
 This workflow helps identify sequences that maintain the desired structure while potentially improving stability, expression, or other properties.
@@ -13,7 +13,7 @@ This workflow helps identify sequences that maintain the desired structure while
 
 ```mermaid
 flowchart TB
-    A[Boltzgen Budget Designs<br/>CIF Files] --> B[Convert CIF to PDB<br/>Per Design]
+    A[Complexa Budget Designs<br/>CIF Files] --> B[Convert CIF to PDB<br/>Per Design]
     
     B --> C[ProteinMPNN Optimize<br/>Parallel per Budget Design<br/>🎮 GPU Process]
     
@@ -50,7 +50,7 @@ flowchart TB
     - **Parallelization**: Each budget design is processed independently by ProteinMPNN
     - **Sequence Generation**: ProteinMPNN creates 8 sequences per structure by default (`--mpnn_num_seq_per_target`)
     - **Boltz-2 Input**: Multi-FASTA is split into individual files, target FASTA is cleaned
-    - **Analysis Requirements**: All analysis modules require Boltz-2 outputs (not Boltzgen designs)
+    - **Analysis Requirements**: All analysis modules require Boltz-2 outputs (not Complexa designs)
 
 ## When to Use This Workflow
 
@@ -199,15 +199,15 @@ Boltz-2 provides multiple confidence metrics in JSON format:
 - **pLDDT < 60**: Low confidence, may be disordered
 - **pTM > 0.8**: Good overall structure quality
 
-## Comparison with Boltzgen
+## Comparison with Complexa
 
 ### Structural Similarity
 
-Compare Boltz-2 structures to original Boltzgen designs:
+Compare Boltz-2 structures to original Complexa designs:
 
 ```bash
 # Use TM-align or similar tool
-tmalign results/sample1/boltzgen/design_0001.cif \
+tmalign results/sample1/complexa/design_0001.cif \
         results/sample1/boltz2/structures/mpnn_0001_model_0.cif
 ```
 
@@ -221,7 +221,7 @@ tmalign results/sample1/boltzgen/design_0001.cif \
 When multiple analyses are enabled, compare metrics:
 
 ```bash
-# Enable all analyses for both Boltzgen and Boltz-2
+# Enable all analyses for both Complexa and Boltz-2
 nextflow run seqeralabs/nf-proteindesign \
     --input samplesheet.csv \
     --run_proteinmpnn \
@@ -236,7 +236,7 @@ nextflow run seqeralabs/nf-proteindesign \
 ```
 
 The consolidated metrics report will show:
-- **Boltzgen designs**: Original structure metrics
+- **Complexa designs**: Original structure metrics
 - **Boltz-2 designs**: Sequence-optimized structure metrics
 - Side-by-side comparison of quality scores
 
@@ -266,7 +266,7 @@ The consolidated metrics report will show:
 --boltz2_diffusion_samples 1
 ```
 
-**Analysis**: Compare Boltzgen vs. Boltz-2 structures using TM-align
+**Analysis**: Compare Complexa vs. Boltz-2 structures using TM-align
 
 ### 3. Comprehensive Quality Assessment
 
@@ -333,7 +333,7 @@ For a design with 20 budget structures and 8 sequences per structure:
 
 ### Structural Divergence
 
-**Boltz-2 structures differ from Boltzgen**:
+**Boltz-2 structures differ from Complexa**:
 - Check ProteinMPNN scores (should be < -1.5)
 - Verify target sequence extraction worked correctly
 - Consider if sequence optimization is too aggressive
@@ -343,7 +343,7 @@ For a design with 20 budget structures and 8 sequences per structure:
 
 1. **Start conservative**: Use default parameters first
 2. **Validate small set**: Test on 2-3 designs before full run
-3. **Compare metrics**: Use consolidation to compare Boltzgen vs. Boltz-2
+3. **Compare metrics**: Use consolidation to compare Complexa vs. Boltz-2
 4. **Check structural similarity**: Always verify refolding maintains structure
 5. **Consider tradeoffs**: Lower ProteinMPNN scores may not always mean better designs
 
@@ -351,7 +351,7 @@ For a design with 20 budget structures and 8 sequences per structure:
 
 ### ipSAE
 
-Automatically analyzes both Boltzgen and Boltz-2 structures when enabled:
+Automatically analyzes both Complexa and Boltz-2 structures when enabled:
 
 ```bash
 --run_ipsae  # Will process both sources
@@ -367,7 +367,7 @@ Predicts binding affinity for both structure types:
 
 ### Foldseek
 
-Searches for homologs of both Boltzgen and Boltz-2 designs:
+Searches for homologs of both Complexa and Boltz-2 designs:
 
 ```bash
 --run_foldseek --foldseek_database /path/to/database_dir --foldseek_database_name afdb
@@ -380,6 +380,6 @@ Searches for homologs of both Boltzgen and Boltz-2 designs:
 
 ## See Also
 
-- [ipSAE Scoring](ipsae.md) - Works with both Boltzgen and Boltz-2 NPZ files
+- [ipSAE Scoring](ipsae.md) - Works with both Complexa and Boltz-2 NPZ files
 - [PRODIGY Binding Affinity](prodigy.md) - Analyzes all predicted structures
-- [Metrics Consolidation](consolidation.md) - Compare Boltzgen vs. Boltz-2 metrics
+- [Metrics Consolidation](consolidation.md) - Compare Complexa vs. Boltz-2 metrics

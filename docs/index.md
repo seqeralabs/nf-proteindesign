@@ -12,10 +12,10 @@
 
 ## :material-test-tube: Overview
 
-**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model. Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules.
+**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Complexa](https://github.com/Proteina-AI/complexa), an all-atom generative diffusion model. Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules.
 
 !!! tip "Modular Analysis Pipeline"
-    The pipeline combines Boltzgen design with optional sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
+    The pipeline combines Complexa design with optional sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
 ## :material-package-variant-closed: Analysis Modules
 
 <div class="feature-grid">
@@ -33,7 +33,7 @@
   
   <div class="feature-card">
     <h3>📊 ipSAE</h3>
-    <p>Interface quality scoring for Boltzgen and Boltz-2 structures.</p>
+    <p>Interface quality scoring for Complexa and Boltz-2 structures.</p>
     <code>--run_ipsae</code>
   </div>
   
@@ -70,14 +70,14 @@
 
 ```mermaid
 graph TB
-    A[Samplesheet<br/>Design YAMLs] --> B{Boltzgen<br/>Precomputed?}
-    B -->|No| C[Run Boltzgen Design]
+    A[Samplesheet<br/>Design YAMLs] --> B{Complexa<br/>Precomputed?}
+    B -->|No| C[Run Complexa Design]
     B -->|Yes| D[Use Precomputed]
     C --> E[Budget Designs<br/>CIF + NPZ]
     D --> E
     
     E --> F{ProteinMPNN<br/>Enabled?}
-    F -->|No| Z[Boltzgen Outputs Only]
+    F -->|No| Z[Complexa Outputs Only]
     F -->|Yes| G[Sequence Optimization<br/>Parallel per Design]
     
     G --> H{Boltz-2<br/>Enabled?}
@@ -112,7 +112,7 @@ graph TB
 ```
 
 !!! info "Analysis Requirements"
-    **IPSAE, PRODIGY, and Foldseek** require **both** `--run_proteinmpnn` and `--run_boltz2_refold` to be enabled. These modules analyze only the Boltz-2 refolded structures, not the original Boltzgen designs.
+    **IPSAE, PRODIGY, and Foldseek** require **both** `--run_proteinmpnn` and `--run_boltz2_refold` to be enabled. These modules analyze only the Boltz-2 refolded structures, not the original Complexa designs.
 
 ## :material-rocket-launch: Quick Start
 
@@ -134,7 +134,7 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## :material-chemical-weapon: What Can You Design?
 
-The pipeline leverages Boltzgen's capabilities to design:
+The pipeline leverages Complexa's capabilities to design:
 
 - **Proteins**: Full-length protein binders targeting specific interfaces
 - **Peptides**: Short peptide sequences for tight binding

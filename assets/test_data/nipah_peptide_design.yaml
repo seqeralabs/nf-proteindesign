@@ -1,4 +1,4 @@
-# Boltzgen design specification for peptide binder to 2VSM
+# Complexa design specification for peptide binder to 2VSM
 # Designs a peptide to bind specific residues on 2VSM structure
 
 entities:

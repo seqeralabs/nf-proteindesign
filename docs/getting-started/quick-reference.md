@@ -35,11 +35,11 @@ design2,designs/another_design.yaml,data/target.cif,peptide-anything,100,10
 
 **Required columns:**
 - `sample_id`: Unique identifier for the design
-- `design_yaml`: Path to Boltzgen design YAML specification
+- `design_yaml`: Path to Complexa design YAML specification
 
 **Optional columns:**
 - `structure_files`: Additional structure files (comma-separated if multiple)
-- `protocol`: Boltzgen protocol (protein-anything, peptide-anything, nanobody-anything, protein-small_molecule)
+- `protocol`: Complexa protocol (protein-anything, peptide-anything, nanobody-anything, protein-small_molecule)
 - `num_designs`: Number of intermediate designs (default: 100)
 - `budget`: Number of final diversity-optimized designs (default: 10)
 
@@ -51,7 +51,7 @@ design2,designs/another_design.yaml,data/target.cif,peptide-anything,100,10
 |-----------|-------------|---------|---------|
 | `--input` | Samplesheet path | Required | `samplesheet.csv` |
 | `--outdir` | Output directory | `./results` | `results/` |
-| `--protocol` | Boltzgen protocol | `protein-anything` | `peptide-anything` |
+| `--protocol` | Complexa protocol | `protein-anything` | `peptide-anything` |
 
 ### Design Parameters
 
@@ -135,13 +135,13 @@ nextflow run seqeralabs/nf-proteindesign \
 ```
 results/
 ├── {sample}/
-│   ├── boltzgen/
+│   ├── complexa/
 │   │   ├── final_ranked_designs/    ← Your final designs
 │   │   │   ├── design_1.cif
 │   │   │   ├── design_2.cif
 │   │   │   └── ...
 │   │   ├── intermediate_designs/
-│   │   └── boltzgen.log
+│   │   └── complexa.log
 │   ├── prodigy/
 │   │   ├── design_1_prodigy_summary.csv
 │   │   └── ...
@@ -190,14 +190,14 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ```bash
 # Pre-pull containers
-docker pull ghcr.io/flouwuenne/boltzgen:latest
+docker pull cr.seqera.io/scidev/complexa:latest
 docker pull ghcr.io/flouwuenne/prodigy:latest
 ```
 
 ## :material-file-code: Design YAML Template
 
 ```yaml title="design_template.yaml"
-# Boltzgen design specification
+# Complexa design specification
 entities:
   # Designed protein entity
   - protein:
@@ -212,7 +212,7 @@ entities:
             id: A  # Target chain to bind
 ```
 
-See the [Boltzgen documentation](https://github.com/generatebio/boltz#-design-specification) for complete YAML specification details.
+See the [Complexa documentation](https://github.com/Proteina-AI/complexa) for complete YAML specification details.
 
 ## :material-chart-line: Performance Estimates
 
