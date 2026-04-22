@@ -1,12 +1,12 @@
 # Implementation Details
 
-## :material-code-tags: Technical Overview
+## Technical Overview
 
 This document provides technical details about the nf-proteindesign pipeline implementation, including design decisions, container specifications, and development guidelines.
 
 ---
 
-## :material-clock-outline: Development Log (Seqera AI-Assisted)
+## Development Log (Seqera AI-Assisted)
 
 This pipeline was developed iteratively using **Seqera AI** as a proof of principle. Below is a chronological record of major implementation steps, what was done, and approximate time spent.
 
@@ -115,7 +115,7 @@ Renamed the generative design engine throughout the entire codebase after the to
 
 ---
 
-## :material-docker: Container Strategy
+## Container Strategy
 
 ### Base Images
 
@@ -138,7 +138,7 @@ FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 RUN pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 ```
 
-## :material-file-code: Code Organization
+## Code Organization
 
 ### Directory Structure
 
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     validate_samplesheet(sys.argv[1])
 ```
 
-## :material-test-tube: Testing
+## Testing
 
 ### Test Configuration
 
@@ -253,7 +253,7 @@ nextflow run main.nf -profile test,docker
 nextflow run tests/ -profile test,docker
 ```
 
-## :material-format-list-checks: Best Practices
+## Best Practices
 
 ### Process Definition
 
@@ -338,7 +338,7 @@ Channel
     .set { all_inputs }
 ```
 
-## :material-cog: Configuration Management
+## Configuration Management
 
 ### Parameter Validation
 
@@ -406,7 +406,7 @@ nextflow run main.nf -resume
 nextflow clean -f
 ```
 
-## :material-bug: Debugging
+## Debugging
 
 ### Enable Debug Mode
 
@@ -448,7 +448,7 @@ process PROTEINA_COMPLEXA_DESIGN {
 }
 ```
 
-## :material-source-branch: Version Control
+## Version Control
 
 ### Release Process
 
@@ -464,7 +464,7 @@ git tag -a v1.0.0 -m "Release version 1.0.0"
 git push origin v1.0.0
 ```
 
-## :material-arrow-right: Further Reading
+## Further Reading
 
 - [Pipeline Architecture](design.md)
 - [Nextflow Patterns](https://nextflow-io.github.io/patterns/)
