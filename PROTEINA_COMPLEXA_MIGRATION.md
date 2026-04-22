@@ -15,7 +15,8 @@
 ## Step 1: Audit BoltzGen Process (the module being replaced) ✅
 
 **Status**: Complete  
-**Date**: 2026-04-22
+**Date**: 2026-04-22  
+**⏱ Seqera AI time**: ~5 min (read all pipeline files, traced channels, mapped inputs/outputs/downstream impacts)
 
 ### What's being replaced
 
@@ -79,6 +80,7 @@ After:   PROTEINA_COMPLEXA_DESIGN → (PDB, no conversion) → PROTEINMPNN → B
 
 **Status**: Complete  
 **Date**: 2026-04-22  
+**⏱ Seqera AI time**: ~8 min (cloned Complexa repo, read source configs, verified defaults, built parameter mapping)  
 **Source**: https://github.com/NVIDIA-Digital-Bio/Proteina-Complexa
 
 This step documents only what differs between BoltzGen and Complexa that affects the swap.
@@ -138,7 +140,8 @@ inference/{run_name}_{task_name}/
 ## Step 3: Replace BoltzGen Module with Complexa
 
 **Status**: Config complete, module file not yet written  
-**Date**: 2026-04-22
+**Date**: 2026-04-22  
+**⏱ Seqera AI time**: ~3 min so far (updated nextflow.config and base.config with verified params + container URI)
 
 This step replaces `modules/local/boltzgen_run.nf` with a new `PROTEINA_COMPLEXA_DESIGN` process that has compatible inputs/outputs so the rest of the pipeline works unchanged.
 
