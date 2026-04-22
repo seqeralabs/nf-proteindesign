@@ -137,43 +137,59 @@ inference/{run_name}_{task_name}/
 
 ---
 
-## Step 3: Replace BoltzGen Module with Complexa
+## Step 3: Replace BoltzGen Module with Complexa ✅
 
-**Status**: Config complete, module file not yet written  
+**Status**: Complete  
 **Date**: 2026-04-22  
-**⏱ Seqera AI time**: ~3 min so far (updated nextflow.config and base.config with verified params + container URI)
+**⏱ Seqera AI time**: ~5 min (wrote module process, updated configs, matched input/output interface to downstream)
 
-This step replaces `modules/local/boltzgen_run.nf` with a new `PROTEINA_COMPLEXA_DESIGN` process that has compatible inputs/outputs so the rest of the pipeline works unchanged.
+Replaced `modules/local/boltzgen_run.nf` with `modules/local/proteina_complexa_design.nf`.
 
-### Completed
-- ✅ `conf/base.config` — renamed process label from `COMPLEXA_RUN` to `PROTEINA_COMPLEXA_DESIGN`
-- ✅ `nextflow.config` — added verified Complexa params with defaults and ECR container URI
+### What changed
+- ✅ `modules/local/proteina_complexa_design.nf` — new process definition
+  - Accepts `tuple val(meta), path(target_pdb), path(pipeline_config)` + checkpoint dir
+  - Runs `complexa design` with Hydra overrides mapped from pipeline params
+  - Emits `design_pdbs` (PDB files), `eval_csvs`, `analysis_csvs`, `success_pdbs`, `versions`
+  - Includes `stub:` block for dry-run testing
+- ✅ `conf/base.config` — process resource config for `PROTEINA_COMPLEXA_DESIGN`
+- ✅ `nextflow.config` — Complexa params with defaults and ECR container URI
 
-### Remaining
-- [ ] Write `modules/local/proteina_complexa_design.nf` — the replacement process definition
-  - Must accept same meta map + structure inputs as `BOLTZGEN_RUN`
-  - Must emit PDB outputs compatible with downstream `PROTEINMPNN_OPTIMIZE`
-  - Must emit metrics CSVs compatible with `CONSOLIDATE_METRICS`
-
----
-
-## Step 4: Update Workflow Wiring
-
-**Status**: Not started
-
-Update `workflows/protein_design.nf` to:
-- [ ] Replace `include { BOLTZGEN_RUN }` with `include { PROTEINA_COMPLEXA_DESIGN }`
-- [ ] Update process call and channel references
-- [ ] Handle PDB output (may bypass `CONVERT_CIF_TO_PDB`)
+### Key interface change: CIF → PDB
+BoltzGen emitted CIF files that required `CONVERT_CIF_TO_PDB` before ProteinMPNN.  
+Complexa emits PDB directly — `CONVERT_CIF_TO_PDB` is no longer needed in the pipeline path.
 
 ---
 
-## Step 5: Update Schema and Documentation
+## Step 4: Update Workflow Wiring ✅
 
-**Status**: Not started
+**Status**: Complete  
+**Date**: 2026-04-22  
+**⏱ Seqera AI time**: ~5 min (rewired workflow includes, channels, removed CIF→PDB conversion step)
 
-- [ ] Update `nextflow_schema.json` with new Complexa params
-- [ ] Update README/docs to reflect the tool swap
+Updated `workflows/protein_design.nf` to use `PROTEINA_COMPLEXA_DESIGN` instead of `BOLTZGEN_RUN`.
+
+### What changed
+- ✅ `include { PROTEINA_COMPLEXA_DESIGN }` replaces `include { BOLTZGEN_RUN }`
+- ✅ Input channel maps `[meta, target_pdb, pipeline_config]` (drops `design_yaml` + CIF structure files)
+- ✅ `CONVERT_CIF_TO_PDB` step bypassed — Complexa PDB outputs feed directly to ProteinMPNN
+- ✅ ProteinMPNN parallelization updated to iterate over `design_pdbs` emit
+- ✅ Downstream pipeline (BOLTZ2_REFOLD → IPSAE → PRODIGY → FOLDSEEK → CONSOLIDATE_METRICS) unchanged
+
+---
+
+## Step 5: Update Schema and Documentation ✅
+
+**Status**: Complete  
+**Date**: 2026-04-22  
+**⏱ Seqera AI time**: ~5 min (schema rewrite, README samplesheet + params update)
+
+### What changed
+
+- ✅ `nextflow_schema.json` — replaced stale `complexa_options` block (`cache_dir`, `complexa_config`, `steps`) with actual params: `complexa_ckpt_dir`, `complexa_container`, `complexa_search_algorithm`, `complexa_nsteps`, `complexa_replicas`, `complexa_batch_size`, `complexa_extra_args`
+- ✅ `nextflow_schema.json` — updated `input` help_text to list correct samplesheet columns (`sample_id`, `target_pdb`, `pipeline_config`, `target_sequence`)
+- ✅ `README.md` — replaced BoltzGen samplesheet example with Complexa columns + table of required/optional fields
+- ✅ `README.md` — updated Key Parameters section with `--complexa_*` flags and `--run_foldseek`
+- ✅ `assets/schema_input_design.json` — already correct (updated in earlier step)
 
 ---
 

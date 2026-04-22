@@ -22,7 +22,7 @@
                     "mimetype": "text/csv",
                     "pattern": "^\\S+\\.csv$",
                     "description": "Path to comma-separated samplesheet file.",
-                    "help_text": "The samplesheet must contain: `sample_id`, `design_yaml`, `target_sequence`, and optionally: `structure_files`, `protocol`, `num_designs`, `budget`, `reuse`, `target_msa`, `target_template`\n\nSee schema file in assets/schema_input_design.json for detailed specifications.",
+                    "help_text": "The samplesheet must contain: `sample_id`, `target_pdb`, `pipeline_config`, `target_sequence`, and optionally: `target_msa`, `target_template`.\n\nSee assets/schema_input_design.json for detailed specifications and assets/test_data/ for examples.",
                     "fa_icon": "fas fa-file-csv"
                 },
                 "outdir": {
@@ -37,28 +37,62 @@
         "complexa_options": {
             "title": "Proteina-Complexa design parameters",
             "type": "object",
-            "description": "Core parameters for Proteina-Complexa protein design execution.",
+            "description": "Parameters for the Proteina-Complexa generative design step. The pipeline config YAML and target PDB are specified per-sample in the samplesheet.",
             "default": "",
             "fa_icon": "fas fa-cogs",
             "properties": {
-                "cache_dir": {
+                "complexa_ckpt_dir": {
                     "type": "string",
                     "format": "directory-path",
-                    "description": "Cache directory for model weights (~6GB).",
-                    "help_text": "If not specified, defaults to ~/.cache. The cache directory stores downloaded model weights for faster execution.",
+                    "description": "Path to Complexa checkpoint directory containing model weights.",
+                    "help_text": "Required for GPU inference. Download with: complexa download --complexa-all",
                     "fa_icon": "fas fa-database"
                 },
-                "complexa_config": {
+                "complexa_container": {
                     "type": "string",
-                    "format": "file-path",
-                    "description": "Optional path to custom Complexa config YAML to override defaults.",
-                    "fa_icon": "fas fa-file-code"
+                    "default": "307946633589.dkr.ecr.eu-west-2.amazonaws.com/rashmi/proteina-complexa:latest",
+                    "description": "Container image for Proteina-Complexa.",
+                    "help_text": "Private ECR image. Compute environment needs ECR pull permissions for account 307946633589.",
+                    "fa_icon": "fas fa-docker"
                 },
-                "steps": {
+                "complexa_search_algorithm": {
                     "type": "string",
-                    "description": "Optional comma-separated list of steps to run (e.g., 'filtering' to rerun only filtering).",
-                    "help_text": "Advanced option for rerunning specific Complexa pipeline steps.",
-                    "fa_icon": "fas fa-tasks"
+                    "default": "best-of-n",
+                    "description": "Search algorithm for design generation.",
+                    "help_text": "Options: best-of-n, single-pass, beam-search, fk-steering, mcts",
+                    "enum": ["best-of-n", "single-pass", "beam-search", "fk-steering", "mcts"],
+                    "fa_icon": "fas fa-search"
+                },
+                "complexa_nsteps": {
+                    "type": "integer",
+                    "default": 400,
+                    "description": "Number of diffusion sampling steps.",
+                    "help_text": "Maps to generation.args.nsteps. Higher values may improve quality but increase runtime.",
+                    "fa_icon": "fas fa-shoe-prints",
+                    "minimum": 1
+                },
+                "complexa_replicas": {
+                    "type": "integer",
+                    "default": 2,
+                    "description": "Number of replicas for best-of-n search.",
+                    "help_text": "Maps to generation.search.best_of_n.replicas. Total samples = nsamples × replicas × batch_size.",
+                    "fa_icon": "fas fa-clone",
+                    "minimum": 1
+                },
+                "complexa_batch_size": {
+                    "type": "integer",
+                    "default": 16,
+                    "description": "Dataloader batch size for generation.",
+                    "help_text": "Maps to generation.dataloader.batch_size. Reduce if running out of GPU memory.",
+                    "fa_icon": "fas fa-layer-group",
+                    "minimum": 1
+                },
+                "complexa_extra_args": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Additional Hydra overrides passed to complexa design.",
+                    "help_text": "Space-separated Hydra overrides, e.g., '++seed=42 ++generation.args.guidance_w=2.0'",
+                    "fa_icon": "fas fa-terminal"
                 }
             }
         },

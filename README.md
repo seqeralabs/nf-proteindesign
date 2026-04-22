@@ -55,18 +55,32 @@ nextflow run main.nf \
 The pipeline requires a CSV samplesheet with design specifications. See `assets/test_data/` for examples:
 
 ```csv
-sample,design_yaml,protocol,num_designs,budget
-my_design,design.yaml,protein-anything,10,5
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+my_design,target.pdb,configs/search_binder_local_pipeline.yaml,target.fasta,,
 ```
+
+| Column | Required | Description |
+|--------|----------|-------------|
+| `sample_id` | ✅ | Unique sample identifier |
+| `target_pdb` | ✅ | Target structure (PDB or CIF) |
+| `pipeline_config` | ✅ | Complexa Hydra pipeline config YAML |
+| `target_sequence` | ✅ | Target sequence FASTA (for Boltz-2 refolding) |
+| `target_msa` | | Pre-computed MSA for target (e.g., `.a3m`) |
+| `target_template` | | Template structure for Boltz-2 (PDB/CIF) |
 
 ## ⚙️ Key Parameters
 
 - `--input`: Path to samplesheet CSV
 - `--outdir`: Output directory (default: `./results`)
+- `--complexa_ckpt_dir`: Path to Complexa model checkpoint directory
+- `--complexa_search_algorithm`: Search algorithm (`best-of-n`, `beam-search`, etc.)
+- `--complexa_nsteps`: Diffusion sampling steps (default: 400)
+- `--complexa_batch_size`: Generation batch size (default: 16)
 - `--run_proteinmpnn`: Enable ProteinMPNN sequence optimization
 - `--run_boltz2_refold`: Enable Boltz-2 structure prediction
 - `--run_ipsae`: Enable IPSAE interface scoring
 - `--run_prodigy`: Enable PRODIGY affinity prediction
+- `--run_foldseek`: Enable Foldseek structural similarity search
 - `--run_consolidation`: Generate consolidated metrics report
 
 See `nextflow.config` for all available parameters.
