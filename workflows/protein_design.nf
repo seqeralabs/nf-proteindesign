@@ -3,15 +3,15 @@
     PROTEIN_DESIGN: Workflow for protein design using YAML specifications
 ========================================================================================
     Backbone design is delegated to a subworkflow selected via params.design_tool:
-      'boltzgen'        -> DESIGN_BOLTZGEN  (default)
-      'rfdiffusion_v3'  -> DESIGN_RFDIFFUSION -> RFDIFFUSION_V3_RUN
+      'boltzgen'           -> DESIGN_BOLTZGEN  (default)
+      'proteina_complexa'  -> DESIGN_PROTEINA_COMPLEXA -> PROTEINA_COMPLEXA_RUN
 
     All downstream steps (ProteinMPNN, Boltz-2, analysis) are tool-agnostic and
     consume the normalised budget_design_cifs channel regardless of which tool ran.
 ----------------------------------------------------------------------------------------
 */
-include { DESIGN_BOLTZGEN    } from '../subworkflows/local/design_boltzgen'
-include { DESIGN_RFDIFFUSION } from '../subworkflows/local/design_rfdiffusion'
+include { DESIGN_BOLTZGEN           } from '../subworkflows/local/design_boltzgen'
+include { DESIGN_PROTEINA_COMPLEXA  } from '../subworkflows/local/design_proteina_complexa'
 include { CONVERT_CIF_TO_PDB } from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
 include { PREPARE_BOLTZ2_SEQUENCES } from '../modules/local/prepare_boltz2_sequences'
@@ -31,7 +31,7 @@ workflow PROTEIN_DESIGN {
     main:
 
     // ========================================================================
-    // Backbone design: Boltzgen or RFdiffusion3
+    // Backbone design: Boltzgen or Proteina-Complexa
     // ========================================================================
 
     if (params.design_tool == 'boltzgen') {
@@ -41,14 +41,14 @@ workflow PROTEIN_DESIGN {
         ch_design_results     = DESIGN_BOLTZGEN.out.results
         ch_budget_design_cifs = DESIGN_BOLTZGEN.out.budget_design_cifs
     } else {
-        // RFdiffusion3: strip fields not consumed by the subworkflow
-        ch_rfd_input = ch_input
+        // Proteina-Complexa: strip fields not consumed by the subworkflow
+        ch_complexa_input = ch_input
             .map { meta, design_yaml, structure_files, target_msa, target_sequence, target_template, boltzgen_output_dir ->
                 [meta, design_yaml, structure_files]
             }
-        DESIGN_RFDIFFUSION(ch_rfd_input, ch_cache)
-        ch_design_results     = DESIGN_RFDIFFUSION.out.results
-        ch_budget_design_cifs = DESIGN_RFDIFFUSION.out.budget_design_cifs
+        DESIGN_PROTEINA_COMPLEXA(ch_complexa_input, ch_cache)
+        ch_design_results     = DESIGN_PROTEINA_COMPLEXA.out.results
+        ch_budget_design_cifs = DESIGN_PROTEINA_COMPLEXA.out.budget_design_cifs
     }
     
     // ========================================================================
@@ -437,7 +437,7 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Design tool outputs (Boltzgen or RFdiffusion3)
+    // Design tool outputs (Boltzgen or Proteina-Complexa)
     design_results = ch_design_results
     final_designs  = ch_budget_design_cifs
     

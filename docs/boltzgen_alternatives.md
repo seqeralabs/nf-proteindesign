@@ -18,6 +18,8 @@ Candidate tools were assessed against three criteria:
 | **RFdiffusion3** | BSD-3-Clause (RosettaCommons) | Yes — Hydra-based via RosettaCommons Foundry framework, compatible with v1 contig syntax | Strong — all-atom successor to v1; expanded capabilities (protein binders, small molecules, DNA, enzymes); substantially faster; same PDB output paradigm | **Selected** |
 | **Genie 2** | Apache 2.0 | No — CLI arguments via argparse (`--name`, `--epoch`, `--scale`, `--outdir`) | Strong — SE(3) diffusion model generating novel backbones; multi-motif scaffolding; PDB output compatible with ProteinMPNN; more diverse and novel designs than RFdiffusion v1 | **Candidate** |
 | **salad** | MIT | No — CLI arguments; `--config` takes a preset name, not a file path | Strong for large proteins — sparse SE(3) denoising model; up to 100x faster than RFdiffusion v1 for proteins >500 residues; PDB output | **Candidate** |
+| **PXDesign** | Apache 2.0 (ByteDance) | Yes — `pxdesign pipeline --preset <mode>` with YAML config file | Strong — diffusion-based de novo binder design; YAML in, ranked PDB out, confidence CSV (ipAE, ipTM, pLDDT); Docker container included; mirrors Boltzgen input/output pattern closely | **Candidate** |
+| **Proteina-Complexa** | Apache 2.0 (NVIDIA) | Yes — `complexa design configs/<name>.yaml` with Hydra-style YAML | Strong — flow-based generative model; generates sequence + structure simultaneously (no separate ProteinMPNN step required); PDB output; Docker container; supports protein and ligand binder targets | **Candidate** |
 | ~~**FrameFlow**~~ | ~~MIT~~ | ~~Yes — Hydra-based YAML configs with per-run CLI overrides (`-cn inference_scaffolding.yaml`), same framework as RFdiffusion~~ | ~~SE(3) flow-matching backbone generator; PDB output; does not clearly surpass RFdiffusion v1 on designability or quality metrics; limited wet-lab validation; no meaningful capability gain over v1~~ | ~~Eliminated~~ |
 | ~~**BinderFlow**~~ | ~~Yes~~ | ~~No — uses JSON config (`--json input.json`)~~ | ~~Orchestration wrapper around RFdiffusion's `run_inference.py`; PyRosetta licence required for its scoring step; built around SLURM batch job submission, making it architecturally incompatible with an existing Nextflow pipeline~~ | ~~Eliminated~~ |
 | ~~**EvoPro**~~ | ~~Yes (Kuhlman Lab, GitHub)~~ | ~~Yes — `evopro_basic.yaml` in run directory~~ | ~~Genetic algorithm/evolutionary optimizer, not a generative diffusion model; iterates over existing sequences rather than generating novel backbones; closer in role to ProteinMPNN than Boltzgen~~ | ~~Eliminated~~ |
@@ -174,6 +176,26 @@ Two further candidates remain under consideration (Genie 2 and salad) but requir
 - **Output:** PDB backbone files — compatible with ProteinMPNN downstream.
 - **Limitation:** CLI-only invocation requires a config adapter layer. Newer and less experimentally validated than RFdiffusion v1.
 
+### PXDesign
+
+- **GitHub:** [bytedance/PXDesign](https://github.com/bytedance/PXDesign)
+- **Published:** bioRxiv August 2025
+- **License:** Apache 2.0 — fully permissive, presentable at external summits
+- **What it does:** Diffusion-based de novo protein binder design (PXDesign-d) with an optional hallucination variant (PXDesign-h). Takes a target structure (CIF or PDB) and a YAML design spec specifying binder length and optional hotspot residues. Outputs ranked binder backbone structures as PDB files plus a `summary.csv` with confidence metrics (ipAE, ipTM, pLDDT).
+- **Why it stands out:** Nearly identical input/output pattern to Boltzgen — YAML config in, ranked PDBs out, metrics CSV. Has a `pxdesign pipeline` CLI and a Dockerfile in the repo. Of the two new candidates this is the more direct drop-in swap for Boltzgen.
+- **Output:** Ranked PDB backbone files in categorised directories (AF2-IG-easy, AF2-IG, Protenix-basic, Protenix) + `summary.csv` — compatible with ProteinMPNN and Boltz-2 downstream.
+- **Limitation:** Very new (August 2025); limited independent wet-lab validation published to date. No official pre-built container image — Dockerfile must be built locally.
+
+### Proteina-Complexa
+
+- **GitHub:** [NVIDIA-Digital-Bio/Proteina-Complexa](https://github.com/NVIDIA-Digital-Bio/Proteina-Complexa)
+- **Published:** ICLR 2026 (accepted oral); GitHub released March 2026
+- **License:** Apache 2.0 — fully permissive, presentable at external summits
+- **What it does:** Flow-based latent generative model (160M parameters) that designs protein backbones and sequences simultaneously. Unlike Boltzgen, RFdiffusion, and PXDesign — which design backbone only and require ProteinMPNN as a separate downstream step — Proteina-Complexa co-designs sequence and structure in a single pass. Supports protein binders, ligand binders, and motif scaffolding. Offers test-time optimisation strategies: best-of-N sampling, beam search, Feynman–Kac steering, and Monte Carlo tree search.
+- **Why it stands out:** Most capable and most recent tool in the list (ICLR 2026). Removing the separate ProteinMPNN step could substantially simplify the pipeline. Model weights available on Hugging Face and NVIDIA NGC. Pre-built Docker container available.
+- **Output:** Full-atom PDB files (sequence + structure) — compatible with Boltz-2 refolding and downstream analysis steps.
+- **Limitation:** Most complex to integrate of the candidates — simultaneous sequence/structure generation means the pipeline's ProteinMPNN step would need to be bypassed or made optional for this tool specifically. Very new (March 2026); community adoption still early.
+
 ---
 ## LICENSE INFO
 **BSD 3-Clause (RFdiffusion v1)**
@@ -181,7 +203,7 @@ Freely permitted in any setting (commercial, public, academic). The only constra
 and don't imply the original authors endorse your work. 
 Standard slide citation "RFdiffusion — Baker Lab / RosettaCommons" satisfies this fully.    
                                                             
-**Apache 2.0 (Genie2 and SALAD code)**                                                                                                                
+**Apache 2.0 (Genie2, SALAD code, PXDesign, Proteina-Complexa)**
 Grants a patent licence from contributors, which actually protects you as a user. For a presentation you just need attribution; no requirement to share your own code or modifications.              
    
 **CC-BY 4.0 (SALAD model weights)**                                                                                                                    

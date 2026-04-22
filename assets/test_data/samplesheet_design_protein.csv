@@ -1,2 +1,0 @@
-sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
-design1_prot,assets/test_data/nipah_protein_design.yaml,assets/test_data/nipah_virus_Glycoprotein_competition_structure.cif,protein-anything,3,2,,assets/test_data/nipah_glycoprotein_msa_Uniref30_2302.a3m,assets/test_data/nipah_virus_target_sequence_glycoproteinG.fasta,
