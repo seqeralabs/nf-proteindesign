@@ -7,118 +7,110 @@ Complete guide to understanding pipeline outputs.
 ```
 results/
 ├── {sample_id}/
-│   ├── complexa/
-│   ├── prodigy/
-│   └── ipsae/
+│   ├── boltzgen/ or complexa/    # Design outputs (depends on tool)
+│   ├── proteinmpnn/              # Sequence optimization
+│   ├── boltz2/                   # Structure prediction (refolding)
+│   ├── ipsae/                    # Interface scoring
+│   ├── prodigy/                  # Affinity prediction
+│   ├── foldseek/                 # Structural search
+│   └── consolidated/            # Combined metrics report
 └── pipeline_info/
 ```
 
-## :material-dna: Complexa Outputs
+## :material-dna: Design Tool Outputs
 
-### Final Ranked Designs
+### BoltzGen Outputs (default)
 
 ```
-results/{sample}/complexa/final_ranked_designs/
-├── design_1.cif
-├── design_2.cif
+results/{sample}/boltzgen/
+├── design_1.pdb
+├── design_2.pdb
 └── ...
 ```
 
-**Description**: Top-ranked protein designs in CIF format.
+**Description**: Generated protein designs in PDB format from BoltzGen.
 
-**Contents**: Complete atomic coordinates for designed complexes.
-
-### Intermediate Designs
+### Complexa Outputs
 
 ```
-results/{sample}/complexa/intermediate_designs/
-├── generation_*.cif
-├── inverse_fold_*.cif
-└── refold_*.cif
+results/{sample}/complexa/
+├── design_1.pdb
+├── design_2.pdb
+└── ...
 ```
 
-**Description**: Intermediate structures from design pipeline.
+**Description**: Generated protein designs from Proteina-Complexa.
 
-### Log Files
+## :material-protein: ProteinMPNN Outputs
 
 ```
-results/{sample}/complexa/complexa.log
+results/{sample}/proteinmpnn/
+├── sequences/                   # Optimized FASTA sequences
+│   ├── design_1.fa
+│   └── ...
+└── scores/                      # ProteinMPNN scores
+    ├── design_1_scores.txt
+    └── ...
 ```
 
-**Description**: Complete execution log with design metrics.
+**Description**: Sequence optimization results — optimized amino acid sequences for each generated structure.
+
+## :material-molecule: Boltz-2 Outputs
+
+```
+results/{sample}/boltz2/
+├── structures/                  # Predicted CIF structures
+│   ├── design_1.cif
+│   └── ...
+├── confidence/                  # Confidence scores (JSON)
+│   ├── design_1_confidence.json
+│   └── ...
+└── npz/                         # PAE NPZ files
+    ├── design_1.npz
+    └── ...
+```
+
+**Description**: Structure prediction (refolding) results from Boltz-2, validating whether optimized sequences fold into the intended structure.
 
 ## :material-chart-box: PRODIGY Outputs
 
-### Summary CSV
-
 ```
-results/{sample}/prodigy/design_1_prodigy_summary.csv
-```
-
-**Format**:
-```csv
-sample_id,design_file,delta_g,kd,temperature,bsa,ics,charged_residues,charged_percentage,apolar_residues,apolar_percentage
-sample1,design_1.cif,-11.2,5.4e-09,25.0,1543.21,89,15,16.85,48,53.93
+results/{sample}/prodigy/
+├── design_1_prodigy_results.txt
+└── ...
 ```
 
-### Full Results
-
-```
-results/{sample}/prodigy/design_1_prodigy_results.txt
-```
-
-**Description**: Complete PRODIGY output with all metrics.
+**Description**: Complete PRODIGY output with binding affinity predictions including ΔG and Kd values.
 
 ## :material-chart-line: ipSAE Outputs
 
 ```
-results/{sample}/ipsae/design_1_ipsae_scores.csv
-```
-
-**Format**:
-```csv
-design_id,interface_area,shape_comp,contact_density,h_bonds,salt_bridges,hydrophobic
-design_1,1543.2,0.68,0.045,12,3,28
-```
-
-```
-├── pockets/
-│   ├── {sample}_pocket1.pdb
-│   ├── {sample}_pocket2.pdb
-│   └── ...
-├── visualizations/
-│   └── {sample}_pockets.pml
-└── {sample}_predictions.csv
-```
-
-### Predictions CSV
-
-**Format**:
-```csv
-rank,score,size,center_x,center_y,center_z,residues
-1,0.85,42,12.3,45.6,78.9,"10,11,12,45,46,47"
-2,0.72,38,23.4,56.7,89.0,"20,21,22,65,66,67"
-```
-
-## :material-file-multiple: Target Mode Outputs
-
-### Generated Designs
-
-```
-results/{sample}/design_variants/
-├── {sample}_len60_v1.yaml
-├── {sample}_len60_v2.yaml
-├── {sample}_len80_v1.yaml
+results/{sample}/ipsae/
+├── design_1_ipsae_scores.txt
 └── ...
 ```
 
-### Design Info
+**Description**: Interface scoring results measuring quality of the protein-protein interface.
+
+## :material-magnify: Foldseek Outputs
 
 ```
-results/{sample}/design_info.txt
+results/{sample}/foldseek/
+├── design_1_foldseek_summary.tsv
+└── ...
 ```
 
-**Contents**: Summary of generated design variants.
+**Description**: Structural similarity search results against known protein structures.
+
+## :material-table: Consolidated Outputs
+
+```
+results/{sample}/consolidated/
+├── consolidated_metrics.csv     # Combined metrics for all designs
+└── consolidated_report.html     # Interactive HTML report
+```
+
+**Description**: Combined report merging all analysis module scores into a single ranked table for easy comparison.
 
 ## :material-information: Pipeline Info
 
@@ -226,17 +218,16 @@ Within each sample, organized by analysis:
 ### Command Line
 
 ```bash
-# List all final designs
-find results/ -name "*.cif" -path "*/final_ranked_designs/*"
+# List all design structures
+find results/ -name "*.pdb" -path "*/boltzgen/*"
+# or for Complexa:
+find results/ -name "*.pdb" -path "*/complexa/*"
 
-# Get best PRODIGY scores
-cat results/*/prodigy/*_summary.csv | \
-    grep -v "sample_id" | \
-    sort -t',' -k3,3n | \
-    head -5
+# View consolidated metrics
+cat results/*/consolidated/consolidated_metrics.csv | column -t -s,
 
 # Count successful designs
-find results/ -name "design_*.cif" | wc -l
+find results/ -name "design_*.pdb" | wc -l
 ```
 
 ### Python
@@ -245,14 +236,14 @@ find results/ -name "design_*.cif" | wc -l
 from pathlib import Path
 import pandas as pd
 
-# Load all PRODIGY results
+# Load consolidated metrics
 results = []
-for csv in Path('results').rglob('*_prodigy_summary.csv'):
+for csv in Path('results').rglob('consolidated_metrics.csv'):
     df = pd.read_csv(csv)
     results.append(df)
 
 combined = pd.concat(results)
-print(combined.nsmallest(10, 'delta_g'))
+print(combined.nsmallest(10, 'prodigy_delta_g'))
 ```
 
 ### R
@@ -260,18 +251,18 @@ print(combined.nsmallest(10, 'delta_g'))
 ```r
 library(tidyverse)
 
-# Load PRODIGY results
+# Load consolidated metrics
 results <- list.files(
     "results", 
-    pattern = "*_summary.csv",
+    pattern = "consolidated_metrics.csv",
     recursive = TRUE,
     full.names = TRUE
 ) %>%
     map_df(read_csv)
 
-# Analyze
+# Analyze — find top designs by binding affinity
 results %>%
-    arrange(delta_g) %>%
+    arrange(prodigy_delta_g) %>%
     head(10)
 ```
 
@@ -291,10 +282,10 @@ grep "FAILED" results/pipeline_info/execution_trace.txt
 ### Validate Outputs
 
 ```bash
-# Ensure all expected files exist
+# Ensure all expected output directories exist
 for sample in sample1 sample2; do
-    if [ ! -d "results/${sample}/complexa/final_ranked_designs" ]; then
-        echo "Missing designs for ${sample}"
+    if [ ! -d "results/${sample}/consolidated" ]; then
+        echo "Missing consolidated results for ${sample}"
     fi
 done
 ```

@@ -12,13 +12,30 @@
 
 ## :material-test-tube: Overview
 
-**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Complexa](https://github.com/Proteina-AI/complexa), an all-atom generative diffusion model. Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules.
+**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design supporting two generative backends:
+
+- **[BoltzGen](https://github.com/jostorge/boltz)** (default) — a flow-matching generative model that uses design YAML specifications
+- **[Proteina-Complexa](https://github.com/Proteina-AI/complexa)** — an all-atom generative diffusion model that uses pipeline config YAMLs
+
+Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules. Both design backends converge into the same shared downstream pipeline.
 
 !!! tip "Modular Analysis Pipeline"
-    The pipeline combines Complexa design with optional sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
-## :material-package-variant-closed: Analysis Modules
+    The pipeline combines generative protein design (BoltzGen or Complexa) with sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
+## :material-package-variant-closed: Design Backends & Analysis Modules
 
 <div class="feature-grid">
+  <div class="feature-card">
+    <h3>🎯 BoltzGen</h3>
+    <p>Flow-matching generative model for protein design (default backend).</p>
+    <code>--protein_design_tool boltzgen</code>
+  </div>
+
+  <div class="feature-card">
+    <h3>🏗️ Proteina-Complexa</h3>
+    <p>All-atom generative diffusion model using pipeline config YAMLs.</p>
+    <code>--protein_design_tool complexa</code>
+  </div>
+
   <div class="feature-card">
     <h3>🧬 ProteinMPNN</h3>
     <p>Sequence optimization for designed structures with configurable sampling temperature.</p>
@@ -33,7 +50,7 @@
   
   <div class="feature-card">
     <h3>📊 ipSAE</h3>
-    <p>Interface quality scoring for Complexa and Boltz-2 structures.</p>
+    <p>Interface quality scoring for Boltz-2 refolded structures.</p>
     <code>--run_ipsae</code>
   </div>
   
@@ -58,11 +75,12 @@
 
 ## :material-lightning-bolt: Key Features
 
+- **:material-swap-horizontal: Dual Design Backends**: Choose BoltzGen (default) or Proteina-Complexa
 - **:material-parallel: Parallel Processing**: Run multiple design specifications simultaneously
 - **:material-file-code: YAML-Based Design**: Complete control with custom design specifications
 - **:material-chart-line: Comprehensive Analysis**: Six optional analysis modules for quality assessment
 - **:material-refresh: Sequence Optimization**: ProteinMPNN + Boltz-2 validation workflow
-- **:material-docker: Container Support**: Full Docker compatibility
+- **:material-docker: Container Support**: Full Docker and Singularity compatibility
 - **:material-gpu: GPU Acceleration**: Optimized for NVIDIA GPU execution
 - **:material-file-tree: Organized Outputs**: Structured results with unified reporting
 
@@ -70,14 +88,15 @@
 
 ```mermaid
 graph TB
-    A[Samplesheet<br/>Design YAMLs] --> B{Complexa<br/>Precomputed?}
-    B -->|No| C[Run Complexa Design]
-    B -->|Yes| D[Use Precomputed]
-    C --> E[Budget Designs<br/>CIF + NPZ]
+    A[Samplesheet] --> B{Design Tool?}
+    B -->|boltzgen| C[BoltzGen Design<br/>Flow-matching inference]
+    B -->|complexa| D[Complexa Design<br/>Diffusion generation]
+    
+    C --> E[Budget Designs<br/>PDB Files]
     D --> E
     
     E --> F{ProteinMPNN<br/>Enabled?}
-    F -->|No| Z[Complexa Outputs Only]
+    F -->|No| Z[Design Outputs Only]
     F -->|Yes| G[Sequence Optimization<br/>Parallel per Design]
     
     G --> H{Boltz-2<br/>Enabled?}
@@ -102,7 +121,8 @@ graph TB
     Z --> R
     Y --> R
     
-    style C fill:#9C27B0,stroke:#9C27B0,color:#fff
+    style C fill:#1565C0,stroke:#1565C0,color:#fff
+    style D fill:#9C27B0,stroke:#9C27B0,color:#fff
     style G fill:#8E24AA,stroke:#8E24AA,color:#fff
     style J fill:#7B1FA2,stroke:#7B1FA2,color:#fff
     style Q fill:#6A1B9A,stroke:#6A1B9A,color:#fff
@@ -112,7 +132,7 @@ graph TB
 ```
 
 !!! info "Analysis Requirements"
-    **IPSAE, PRODIGY, and Foldseek** require **both** `--run_proteinmpnn` and `--run_boltz2_refold` to be enabled. These modules analyze only the Boltz-2 refolded structures, not the original Complexa designs.
+    **IPSAE, PRODIGY, and Foldseek** require **both** `--run_proteinmpnn` and `--run_boltz2_refold` to be enabled. These modules analyze only the Boltz-2 refolded structures, not the original design outputs.
 
 ## :material-rocket-launch: Quick Start
 
@@ -122,10 +142,18 @@ Get started with nf-proteindesign in minutes:
 # 1. Install Nextflow (>=23.04.0)
 curl -s https://get.nextflow.io | bash
 
-# 2. Run the pipeline
+# 2a. Run with BoltzGen (default)
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
+    --outdir results
+
+# 2b. Or run with Complexa
+nextflow run seqeralabs/nf-proteindesign \
+    -profile docker \
+    --protein_design_tool complexa \
+    --input samplesheet_complexa.csv \
+    --complexa_ckpt_dir /path/to/checkpoints \
     --outdir results
 ```
 
@@ -134,7 +162,7 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## :material-chemical-weapon: What Can You Design?
 
-The pipeline leverages Complexa's capabilities to design:
+The pipeline leverages BoltzGen or Complexa to design:
 
 - **Proteins**: Full-length protein binders targeting specific interfaces
 - **Peptides**: Short peptide sequences for tight binding

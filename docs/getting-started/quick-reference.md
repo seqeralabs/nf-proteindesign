@@ -4,18 +4,18 @@ Fast reference for common commands and configurations.
 
 ## :material-flash: One-Line Commands
 
-### Basic Run
+### Basic Run (BoltzGen, default)
 
 ```bash
-# Simplest possible run (auto-detects mode)
+# Simplest possible run — uses BoltzGen with all analysis modules enabled by default
 nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results
 ```
 
-### With Analysis
+### Run with Complexa
 
 ```bash
-# Include affinity prediction and scoring
-nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results --run_prodigy --run_ipsae
+# Use Proteina-Complexa backend
+nextflow run seqeralabs/nf-proteindesign -profile docker --protein_design_tool complexa --input samplesheet_complexa.csv --complexa_ckpt_dir /path/to/ckpts --outdir results
 ```
 
 ### Resume Failed Run
@@ -25,23 +25,29 @@ nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv
 nextflow run seqeralabs/nf-proteindesign -profile docker --input samplesheet.csv --outdir results -resume
 ```
 
-## :material-file-table: Samplesheet Template
+## :material-file-table: Samplesheet Templates
+
+### BoltzGen (default)
 
 ```csv
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-design1,designs/my_design.yaml,data/target.pdb,protein-anything,100,10
-design2,designs/another_design.yaml,data/target.cif,peptide-anything,100,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+design1,designs/my_design.yaml,data/target.cif,protein-anything,3,2,,target.a3m,data/target.fasta,
 ```
 
-**Required columns:**
-- `sample_id`: Unique identifier for the design
-- `design_yaml`: Path to Complexa design YAML specification
+**Required:** `sample_id`, `design_yaml`, `target_sequence`
 
-**Optional columns:**
-- `structure_files`: Additional structure files (comma-separated if multiple)
-- `protocol`: Complexa protocol (protein-anything, peptide-anything, nanobody-anything, protein-small_molecule)
-- `num_designs`: Number of intermediate designs (default: 100)
-- `budget`: Number of final diversity-optimized designs (default: 10)
+**Optional:** `structure_files`, `protocol`, `num_designs`, `budget`, `reuse`, `target_msa`, `target_template`
+
+### Complexa
+
+```csv
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+design1,target.cif,configs/pipeline.yaml,target.fasta,target.a3m,
+```
+
+**Required:** `sample_id`, `target_pdb`, `pipeline_config`, `target_sequence`
+
+**Optional:** `target_msa`, `target_template`
 
 ## :material-cog: Common Parameters
 
@@ -51,32 +57,42 @@ design2,designs/another_design.yaml,data/target.cif,peptide-anything,100,10
 |-----------|-------------|---------|---------|
 | `--input` | Samplesheet path | Required | `samplesheet.csv` |
 | `--outdir` | Output directory | `./results` | `results/` |
-| `--protocol` | Complexa protocol | `protein-anything` | `peptide-anything` |
+| `--protein_design_tool` | Design backend | `boltzgen` | `complexa` |
 
-### Design Parameters
-
-| Parameter | Description | Default | Example |
-|-----------|-------------|---------|---------|
-| `--num_designs` | Intermediate designs | 100 | `50` |
-| `--budget` | Final optimized designs | 10 | `20` |
-| `--cache_dir` | Model cache directory | `null` | `/cache` |
-
-### Analysis Parameters
+### BoltzGen Parameters
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--run_proteinmpnn` | Enable ProteinMPNN | false | `true` |
-| `--run_ipsae` | Enable IPSAE scoring | false | `true` |
-| `--run_prodigy` | Enable PRODIGY | false | `true` |
-| `--run_consolidation` | Consolidated report | false | `true` |
+| `--cache_dir` | BoltzGen model cache | `null` | `/cache` |
+
+### Complexa Parameters
+
+| Parameter | Description | Default | Example |
+|-----------|-------------|---------|---------|
+| `--complexa_ckpt_dir` | Checkpoint directory | `null` | `/path/to/ckpts` |
+| `--complexa_search_algorithm` | Search algorithm | `best-of-n` | `beam-search` |
+| `--complexa_nsteps` | Diffusion steps | `400` | `200` |
+| `--complexa_batch_size` | Batch size | `16` | `8` |
+
+### Analysis Parameters (all enabled by default)
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--run_proteinmpnn` | ProteinMPNN optimization | `true` |
+| `--run_boltz2_refold` | Boltz-2 structure prediction | `true` |
+| `--run_ipsae` | IPSAE interface scoring | `true` |
+| `--run_prodigy` | PRODIGY affinity prediction | `true` |
+| `--run_foldseek` | Foldseek structural search | `true` |
+| `--run_consolidation` | Consolidated report | `true` |
 
 ### Resource Parameters
 
 | Parameter | Description | Default | Example |
 |-----------|-------------|---------|---------|
-| `--max_cpus` | Maximum CPUs | 16 | `32` |
-| `--max_memory` | Maximum memory | 128.GB | `256.GB` |
-| `--max_time` | Maximum time | 240.h | `72.h` |
+| `--max_cpus` | Maximum CPUs | `16` | `32` |
+| `--max_memory` | Maximum memory | `128.GB` | `256.GB` |
+| `--max_time` | Maximum time | `240.h` | `72.h` |
+| `--max_gpus` | Maximum GPUs per process | `1` | `2` |
 
 ## :material-play: Command Recipes
 
@@ -88,7 +104,7 @@ nextflow run seqeralabs/nf-proteindesign \
     --outdir test_results
 ```
 
-### Standard Run
+### Standard Run (BoltzGen)
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
@@ -97,37 +113,25 @@ nextflow run seqeralabs/nf-proteindesign \
     --outdir results
 ```
 
-### With Analysis Tools
+### Standard Run (Complexa)
+
+```bash
+nextflow run seqeralabs/nf-proteindesign \
+    -profile docker \
+    --protein_design_tool complexa \
+    --input samplesheet_complexa.csv \
+    --complexa_ckpt_dir /path/to/checkpoints \
+    --outdir results
+```
+
+### Design Only (skip analysis)
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samplesheet.csv \
     --outdir results \
-    --run_proteinmpnn \
-    --run_ipsae \
-    --run_prodigy \
-    --run_consolidation
-```
-
-### Peptide Design
-
-```bash
-nextflow run seqeralabs/nf-proteindesign \
-    -profile docker \
-    --input peptide_samplesheet.csv \
-    --protocol peptide-anything \
-    --outdir peptide_designs
-```
-
-### Nanobody Design
-
-```bash
-nextflow run seqeralabs/nf-proteindesign \
-    -profile docker \
-    --input nanobody_samplesheet.csv \
-    --protocol nanobody-anything \
-    --outdir nanobody_designs
+    --run_proteinmpnn false
 ```
 
 ## :material-folder-open: Output Structure
@@ -135,20 +139,15 @@ nextflow run seqeralabs/nf-proteindesign \
 ```
 results/
 ├── {sample}/
-│   ├── complexa/
-│   │   ├── final_ranked_designs/    ← Your final designs
-│   │   │   ├── design_1.cif
-│   │   │   ├── design_2.cif
-│   │   │   └── ...
-│   │   ├── intermediate_designs/
-│   │   └── complexa.log
-│   ├── prodigy/
-│   │   ├── design_1_prodigy_summary.csv
-│   │   └── ...
-│   └── ipsae/
-│       └── design_1_ipsae_scores.csv
+│   ├── boltzgen/ or complexa/       ← Design outputs (depends on tool)
+│   ├── proteinmpnn/                  ← Optimized sequences
+│   ├── boltz2/                       ← Refolded structures
+│   ├── ipsae/                        ← Interface scores
+│   ├── prodigy/                      ← Affinity predictions
+│   ├── foldseek/                     ← Structural search results
+│   └── consolidated/                 ← Combined metrics report
 └── pipeline_info/
-    ├── execution_report.html        ← Check this first
+    ├── execution_report.html         ← Check this first
     ├── execution_timeline.html
     └── execution_trace.txt
 ```
@@ -189,15 +188,14 @@ nextflow run seqeralabs/nf-proteindesign \
 ### Container Pull Issues
 
 ```bash
-# Pre-pull containers
-docker pull cr.seqera.io/scidev/complexa:latest
-docker pull ghcr.io/flouwuenne/prodigy:latest
+# Pre-pull containers — check nextflow.config for exact URIs
+# for each process in conf/base.config
 ```
 
-## :material-file-code: Design YAML Template
+## :material-file-code: Design YAML Template (BoltzGen)
 
 ```yaml title="design_template.yaml"
-# Complexa design specification
+# BoltzGen design specification
 entities:
   # Designed protein entity
   - protein:
@@ -212,7 +210,7 @@ entities:
             id: A  # Target chain to bind
 ```
 
-See the [Complexa documentation](https://github.com/Proteina-AI/complexa) for complete YAML specification details.
+See the [BoltzGen documentation](https://github.com/jostorge/boltz) and [Complexa documentation](https://github.com/Proteina-AI/complexa) for complete specification details.
 
 ## :material-chart-line: Performance Estimates
 

@@ -7,6 +7,7 @@ This guide covers the fundamental concepts for using nf-proteindesign.
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile <PROFILE> \
+    --protein_design_tool <boltzgen|complexa> \
     --input <SAMPLESHEET> \
     --outdir <OUTPUT_DIR> \
     [OPTIONS]
@@ -14,46 +15,59 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ### Components
 
-- **`-profile`**: Execution profile (`docker`, `test`)
-- **`--input`**: Path to samplesheet CSV file
+- **`-profile`**: Execution profile (`docker`, `singularity`, `test_design_protein`, etc.)
+- **`--protein_design_tool`**: Design backend — `boltzgen` (default) or `complexa`
+- **`--input`**: Path to samplesheet CSV file (format depends on design tool)
 - **`--outdir`**: Output directory path
 - **`[OPTIONS]`**: Additional pipeline parameters
 
 ## :material-file-table: Samplesheet Format
 
-The pipeline uses a CSV samplesheet to specify design jobs. Each row represents a separate design run.
+The samplesheet format depends on the chosen design tool. Each row represents a separate design run.
 
-### Required Columns
+### BoltzGen Samplesheet (default)
 
-| Column | Required | Description |
-|--------|----------|-------------|
-| `sample` | ✅ | Unique sample identifier |
-| `design_yaml` | ✅ | Path to design YAML file (see below) |
-
-### Optional Columns
-
-Additional columns can override default parameters per sample:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `num_designs` | Integer | Number of designs to generate (overrides `--num_designs`) |
-| `budget` | Integer | Number of final designs to keep (overrides `--budget`) |
-
-### Example Samplesheet
+| Column | Required | Type | Description |
+|--------|----------|------|-------------|
+| `sample_id` | ✅ | string | Unique sample identifier |
+| `design_yaml` | ✅ | string | Path to BoltzGen design YAML file |
+| `target_sequence` | ✅ | string | Path to target protein FASTA sequence |
+| `structure_files` | | string | Comma-separated structure files (PDB/CIF) |
+| `protocol` | | string | Design protocol (`protein-anything`, `peptide-anything`, `nanobody-anything`, `protein-small_molecule`) |
+| `num_designs` | | integer | Number of intermediate designs |
+| `budget` | | integer | Number of final diversity-optimized designs |
+| `reuse` | | boolean | Reuse previous results |
+| `target_msa` | | string | Pre-computed MSA for target (`.a3m`) |
+| `target_template` | | string | Template structure for Boltz-2 (CIF) |
 
 ```csv
-sample,design_yaml,num_designs,budget
-protein_binder,designs/egfr_binder.yaml,10000,50
-nanobody_design,designs/spike_nanobody.yaml,5000,20
-peptide_binder,designs/il6_peptide.yaml,3000,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+protein_binder,designs/egfr_binder.yaml,egfr.cif,protein-anything,3,2,,target.a3m,egfr.fasta,
+nanobody_design,designs/spike_nanobody.yaml,spike.cif,nanobody-anything,3,2,,,spike.fasta,
 ```
 
-## :material-file-document: Design YAML Format
+### Complexa Samplesheet
 
-For Design mode, create YAML files following this structure:
+| Column | Required | Type | Description |
+|--------|----------|------|-------------|
+| `sample_id` | ✅ | string | Unique sample identifier |
+| `target_pdb` | ✅ | string | Target structure (PDB or CIF) |
+| `pipeline_config` | ✅ | string | Complexa Hydra pipeline config YAML |
+| `target_sequence` | ✅ | string | Target sequence FASTA |
+| `target_msa` | | string | Pre-computed MSA for target |
+| `target_template` | | string | Template structure for Boltz-2 |
+
+```csv
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+protein_binder,target.cif,configs/pipeline.yaml,target.fasta,target.a3m,
+```
+
+## :material-file-document: Design YAML Format (BoltzGen)
+
+For BoltzGen, create design YAML files following this structure:
 
 ```yaml
-# Complexa design specification
+# BoltzGen design specification
 entities:
   # Designed protein entity
   - protein:
@@ -73,24 +87,36 @@ entities:
 ### Essential Parameters
 
 ```bash
---input            # Path to samplesheet CSV (required)
---outdir           # Output directory (required)
---mode             # Explicit mode: design, target, binder (optional, auto-detected)
+--input                  # Path to samplesheet CSV (required)
+--outdir                 # Output directory (required)
+--protein_design_tool    # Design backend: 'boltzgen' (default) or 'complexa'
 ```
 
-### Design Parameters
+### BoltzGen Parameters
 
 ```bash
---n_samples        # Number of designs per specification (default: 10)
---timesteps        # Diffusion timesteps (default: 100)
---save_traj        # Save trajectory files (default: false)
+--cache_dir              # Cache directory for BoltzGen model weights
 ```
 
-### Analysis Options
+### Complexa Parameters
 
 ```bash
---run_ipsae        # Enable IPSAE scoring (default: false)
---run_prodigy      # Enable PRODIGY affinity prediction (default: false)
+--complexa_ckpt_dir      # Complexa checkpoint directory (required for Complexa)
+--complexa_search_algorithm  # Search algorithm (default: 'best-of-n')
+--complexa_nsteps        # Diffusion sampling steps (default: 400)
+--complexa_replicas      # Replicas for best-of-n (default: 2)
+--complexa_batch_size    # Batch size (default: 16)
+```
+
+### Analysis Options (all enabled by default)
+
+```bash
+--run_proteinmpnn        # ProteinMPNN sequence optimization (default: true)
+--run_boltz2_refold      # Boltz-2 structure prediction (default: true)
+--run_ipsae              # IPSAE interface scoring (default: true)
+--run_prodigy            # PRODIGY affinity prediction (default: true)
+--run_foldseek           # Foldseek structural search (default: true)
+--run_consolidation      # Consolidated metrics report (default: true)
 ```
 
 ### Resource Management
@@ -98,7 +124,8 @@ entities:
 ```bash
 --max_cpus         # Maximum CPUs (default: 16)
 --max_memory       # Maximum memory (default: 128.GB)
---max_time         # Maximum time per job (default: 48.h)
+--max_time         # Maximum time per job (default: 240.h)
+--max_gpus         # Maximum GPUs per process (default: 1)
 ```
 
 ## :material-folder-open: Output Structure
@@ -108,113 +135,99 @@ The pipeline creates an organized output directory:
 ```
 results/
 ├── {sample_id}/
-│   ├── complexa/
-│   │   ├── final_ranked_designs/    # Your final designs ⭐
-│   │   │   ├── design_1.cif
-│   │   │   ├── design_2.cif
-│   │   │   └── ...
-│   │   ├── intermediate_designs/    # Intermediate outputs
-│   │   │   └── ...
-│   │   └── complexa.log            # Execution log
-│   │
-│   ├── prodigy/                     # If --run_prodigy enabled
-│   │   ├── design_1_prodigy_results.txt
-│   │   ├── design_1_prodigy_summary.csv
+│   ├── boltzgen/ or complexa/       # Design outputs (depends on tool)
+│   │   ├── design_*.pdb / *.cif     # Generated structures
 │   │   └── ...
 │   │
-│   └── ipsae/                       # If --run_ipsae enabled
-│       └── design_1_ipsae_scores.csv
+│   ├── proteinmpnn/                  # If --run_proteinmpnn enabled
+│   │   ├── sequences/               # Optimized FASTA sequences
+│   │   └── scores/                  # ProteinMPNN scores
+│   │
+│   ├── boltz2/                       # If --run_boltz2_refold enabled
+│   │   ├── structures/              # Predicted CIF structures
+│   │   ├── confidence/              # Confidence scores (JSON)
+│   │   └── npz/                     # PAE NPZ files
+│   │
+│   ├── ipsae/                        # If --run_ipsae enabled
+│   │   └── *_ipsae_scores.txt
+│   │
+│   ├── prodigy/                      # If --run_prodigy enabled
+│   │   └── *_prodigy_results.txt
+│   │
+│   ├── foldseek/                     # If --run_foldseek enabled
+│   │   └── *_foldseek_summary.tsv
+│   │
+│   └── consolidated/                 # If --run_consolidation enabled
+│       ├── consolidated_metrics.csv
+│       └── consolidated_report.html
 │
 └── pipeline_info/
-    ├── execution_report.html        # Execution summary
-    ├── execution_timeline.html      # Timeline visualization
-    └── execution_trace.txt          # Detailed trace
+    ├── execution_report.html         # Execution summary
+    ├── execution_timeline.html       # Timeline visualization
+    └── execution_trace.txt           # Detailed trace
 ```
 
 ### Key Output Files
 
 !!! tip "Most Important Files"
-    - **Final designs**: `complexa/{sample}/final_ranked_designs/*.cif`
+    - **Design structures**: `{sample}/boltzgen/*.pdb` or `{sample}/complexa/*.pdb`
+    - **Consolidated report**: `{sample}/consolidated/consolidated_metrics.csv`
     - **Execution report**: `pipeline_info/execution_report.html`
-    - **Affinity predictions**: `prodigy/{sample}/design_*_summary.csv`
 
 ## :material-play-circle: Example Workflows
 
-### Example 1: Basic Protein Design
+### Example 1: Basic Protein Design (BoltzGen)
 
 ```bash
 # 1. Create design YAML
 cat > protein_design.yaml << EOF
-name: egfr_binder
-target:
-  structure: data/egfr.pdb
-  residues: [10, 11, 12, 45, 46]
-designed:
-  chain_type: protein
-  length: [60, 100]
-global:
-  n_samples: 20
+entities:
+  - protein:
+      id: C
+      sequence: 60..100
+  - file:
+      path: egfr.cif
+      include:
+        - chain:
+            id: A
 EOF
 
 # 2. Create samplesheet
 cat > samples.csv << EOF
-sample,design_yaml
-egfr_binder,protein_design.yaml
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+egfr_binder,protein_design.yaml,egfr.cif,protein-anything,3,2,,,egfr_sequence.fasta,
 EOF
 
-# 3. Run pipeline
+# 3. Run pipeline (all analysis modules enabled by default)
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input samples.csv \
     --outdir results
 ```
 
-### Example 2: Multiple Designs with Analysis
+### Example 2: Multiple Designs with Complexa
 
 ```bash
-# 1. Create design YAMLs for different targets
-cat > egfr_design.yaml << EOF
-name: egfr_binder
-target:
-  structure: data/egfr.pdb
-  residues: [10, 11, 12, 45, 46]
-designed:
-  chain_type: protein
-  length: [60, 120]
+# 1. Create samplesheet for Complexa
+cat > samples_complexa.csv << EOF
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+egfr_binder,data/egfr.cif,configs/egfr_pipeline.yaml,data/egfr.fasta,,
+spike_nanobody,data/spike.cif,configs/spike_pipeline.yaml,data/spike.fasta,,
 EOF
 
-cat > spike_design.yaml << EOF
-name: spike_nanobody
-target:
-  structure: data/spike.cif
-  residues: [417, 484, 501]
-designed:
-  chain_type: nanobody
-  length: [110, 130]
-EOF
-
-# 2. Create samplesheet
-cat > samples.csv << EOF
-sample,design_yaml,num_designs,budget
-egfr_binder,egfr_design.yaml,10000,50
-spike_nanobody,spike_design.yaml,5000,20
-EOF
-
-# 3. Run with analysis modules
+# 2. Run with Complexa backend
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --input samples.csv \
-    --outdir results \
-    --run_proteinmpnn \
-    --run_protenix_refold \
-    --run_prodigy \
-    --run_consolidation
+    --protein_design_tool complexa \
+    --input samples_complexa.csv \
+    --complexa_ckpt_dir /path/to/checkpoints \
+    --outdir results
 ```
 
 ### Example 3: Test Run
 
 ```bash
-# Use built-in test profile
+# Use built-in test profile (BoltzGen by default)
 nextflow run seqeralabs/nf-proteindesign \
     -profile test_design_protein,docker
 ```

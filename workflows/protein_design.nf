@@ -1,50 +1,72 @@
 /*
 ========================================================================================
-    PROTEIN_DESIGN: Workflow for protein binder design using Proteina-Complexa
+    PROTEIN_DESIGN: Workflow for protein binder design
 ========================================================================================
-    This workflow runs the Proteina-Complexa design pipeline (generate → filter →
-    evaluate → analyze) and optional downstream analysis modules.
+    Supports two design backends:
+      - proteina-complexa  (generate → filter → evaluate → analyze, outputs PDB)
+      - boltzgen            (flow-matching inference, outputs CIF → converted to PDB)
+
+    Both converge into a shared downstream pipeline:
+      ProteinMPNN → Boltz-2 refold → IPSAE / PRODIGY / Foldseek → Consolidation
 ----------------------------------------------------------------------------------------
 */
 include { PROTEINA_COMPLEXA_DESIGN } from '../modules/local/proteina_complexa_design'
-include { PROTEINMPNN_OPTIMIZE } from '../modules/local/proteinmpnn_optimize'
+include { BOLTZGEN_RUN }             from '../modules/local/boltzgen_run'
+include { CONVERT_CIF_TO_PDB }      from '../modules/local/convert_cif_to_pdb'
+include { PROTEINMPNN_OPTIMIZE }     from '../modules/local/proteinmpnn_optimize'
 include { PREPARE_BOLTZ2_SEQUENCES } from '../modules/local/prepare_boltz2_sequences'
-include { BOLTZ2_REFOLD } from '../modules/local/boltz2_refold'
-include { IPSAE_CALCULATE } from '../modules/local/ipsae_calculate'
-include { PRODIGY_PREDICT } from '../modules/local/prodigy_predict'
-include { FOLDSEEK_SEARCH } from '../modules/local/foldseek_search'
-include { CONSOLIDATE_METRICS } from '../modules/local/consolidate_metrics'
+include { BOLTZ2_REFOLD }            from '../modules/local/boltz2_refold'
+include { IPSAE_CALCULATE }          from '../modules/local/ipsae_calculate'
+include { PRODIGY_PREDICT }          from '../modules/local/prodigy_predict'
+include { FOLDSEEK_SEARCH }          from '../modules/local/foldseek_search'
+include { CONSOLIDATE_METRICS }      from '../modules/local/consolidate_metrics'
 
 workflow PROTEIN_DESIGN {
 
     take:
-    ch_input         // channel: [meta, target_pdb, pipeline_config, target_sequence]
-    ch_ckpt_dir      // channel: path to Complexa checkpoint directory
-    ch_boltz2_cache  // channel: path to Boltz-2 cache directory or EMPTY_BOLTZ2_CACHE placeholder
+    ch_input         // channel: tool-dependent shape (see main.nf)
+                     //   complexa : [meta, target_pdb, pipeline_config, target_sequence]
+                     //   boltzgen : [meta, design_yaml, structure_files, target_sequence]
+    ch_design_cache  // channel: checkpoint / cache directory (or EMPTY placeholder)
+    ch_boltz2_cache  // channel: Boltz-2 cache directory (or EMPTY placeholder)
 
     main:
 
     // ========================================================================
-    // STAGE 1: Proteina-Complexa Design (generate → filter → evaluate → analyze)
+    // STAGE 1: Protein design — generate structures
     // ========================================================================
-    // Proteina-Complexa runs the full binder design pipeline internally:
-    //   - generate: Flow-matching inference to create binder structures
-    //   - filter:   Top-N selection by reward score + sequence deduplication
-    //   - evaluate: AF2/RF3 refolding + confidence metrics (i_pAE, pLDDT, scRMSD)
-    //   - analyze:  Aggregate results, success filtering
-    //
-    // Output: PDB files directly (no CIF→PDB conversion needed)
+    // Both paths produce:
+    //   ch_design_results : [meta, results_dir]   — full output directory
+    //   ch_design_pdbs    : [meta, pdb_files]      — PDB files for downstream
 
-    ch_complexa_input = ch_input
-        .map { meta, target_pdb, pipeline_config, target_sequence ->
-            [meta, target_pdb, pipeline_config]
-        }
+    if (params.protein_design_tool == 'boltzgen') {
+        // ── BoltzGen path ──────────────────────────────────────────────
+        ch_boltzgen_input = ch_input
+            .map { meta, design_yaml, structure_files, target_sequence ->
+                [meta, design_yaml, structure_files]
+            }
 
-    PROTEINA_COMPLEXA_DESIGN(ch_complexa_input, ch_ckpt_dir)
+        BOLTZGEN_RUN(ch_boltzgen_input, ch_design_cache)
 
-    // Primary outputs for downstream processing
-    ch_complexa_results = PROTEINA_COMPLEXA_DESIGN.out.results
-    ch_design_pdbs      = PROTEINA_COMPLEXA_DESIGN.out.design_pdbs
+        ch_design_results = BOLTZGEN_RUN.out.results
+
+        // BoltzGen outputs CIF files — convert to PDB for downstream modules
+        CONVERT_CIF_TO_PDB(BOLTZGEN_RUN.out.budget_design_cifs)
+
+        ch_design_pdbs = CONVERT_CIF_TO_PDB.out.pdb_files_all
+
+    } else {
+        // ── Complexa path ──────────────────────────────────────────────
+        ch_complexa_input = ch_input
+            .map { meta, target_pdb, pipeline_config, target_sequence ->
+                [meta, target_pdb, pipeline_config]
+            }
+
+        PROTEINA_COMPLEXA_DESIGN(ch_complexa_input, ch_design_cache)
+
+        ch_design_results = PROTEINA_COMPLEXA_DESIGN.out.results
+        ch_design_pdbs    = PROTEINA_COMPLEXA_DESIGN.out.design_pdbs
+    }
 
     // ========================================================================
     // STAGE 2: ProteinMPNN — Optimize sequences for designed structures
@@ -85,9 +107,11 @@ workflow PROTEIN_DESIGN {
         // 2. Process target sequence FASTA (from samplesheet) to clean format
         // ====================================================================
         if (params.run_boltz2_refold) {
-            // Get target sequence FASTA from the input channel
+            // Get target sequence FASTA from the input channel (last element for both tools)
             ch_target_fasta = ch_input
-                .map { meta, target_pdb, pipeline_config, target_sequence ->
+                .map { tuple ->
+                    def meta = tuple[0]
+                    def target_sequence = tuple[-1]
                     [meta.id, target_sequence]
                 }
 
@@ -115,7 +139,8 @@ workflow PROTEIN_DESIGN {
             // ================================================================
             // Use actual placeholder files in assets/ for k8s compatibility (avoids staging non-existent files)
             ch_target_msa = ch_input
-                .map { meta, target_pdb, pipeline_config, target_sequence ->
+                .map { tuple ->
+                    def meta = tuple[0]
                     def msa_file = meta.target_msa ? file(meta.target_msa, checkIfExists: true) : file("${projectDir}/assets/NO_MSA", checkIfExists: true)
                     [meta.id, msa_file]
                 }
@@ -124,7 +149,8 @@ workflow PROTEIN_DESIGN {
             // Prepare Target Template from Samplesheet
             // ================================================================
             ch_target_template = ch_input
-                .map { meta, target_pdb, pipeline_config, target_sequence ->
+                .map { tuple ->
+                    def meta = tuple[0]
                     def template_file = meta.target_template ? file(meta.target_template, checkIfExists: true) : file("${projectDir}/assets/NO_TEMPLATE", checkIfExists: true)
                     [meta.id, template_file]
                 }
@@ -180,8 +206,8 @@ workflow PROTEIN_DESIGN {
             BOLTZ2_REFOLD(ch_boltz2_input, ch_boltz2_cache)
         }
     } else {
-        // Use Complexa outputs directly if ProteinMPNN is disabled
-        ch_final_designs_for_analysis = ch_complexa_results
+        // Use design outputs directly if ProteinMPNN is disabled
+        ch_final_designs_for_analysis = ch_design_results
     }
     
     // ========================================================================
@@ -424,9 +450,9 @@ workflow PROTEIN_DESIGN {
     }
 
     emit:
-    // Proteina-Complexa outputs
-    complexa_results = ch_complexa_results
-    design_pdbs      = ch_design_pdbs
+    // Design outputs (generic — works for both tools)
+    design_results = ch_design_results
+    design_pdbs    = ch_design_pdbs
 
     // ProteinMPNN outputs (will be empty if not run)
     mpnn_optimized = params.run_proteinmpnn ? PROTEINMPNN_OPTIMIZE.out.optimized_designs : Channel.empty()

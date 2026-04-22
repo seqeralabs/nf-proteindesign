@@ -8,7 +8,7 @@
 
 **Pipeline**: nf-proteindesign pipeline parameters
 
-Nextflow pipeline for Complexa protein design using pre-made design YAML specifications
+Nextflow pipeline for computational protein design using BoltzGen (default) or Proteina-Complexa as the design backend, with a full analysis suite including ProteinMPNN, Boltz-2, ipSAE, PRODIGY, Foldseek, and consolidated reporting.
 
 ## Input/output options
 
@@ -29,30 +29,65 @@ Define where the pipeline should find input data and save output data.
 - **Type**: `string`
 - **Default**: `"./results"`
 
-## Complexa design parameters
+## Design tool selection
 
-Core parameters for Complexa protein design execution.
+### `--protein_design_tool`
+
+Which design backend to use: `boltzgen` (default) or `complexa`.
+
+- **Type**: `string`
+- **Default**: `"boltzgen"`
+- **Allowed values**: `boltzgen`, `complexa`
+
+## BoltzGen parameters
+
+Parameters specific to the BoltzGen design backend.
 
 ### `--cache_dir`
 
-Cache directory for model weights (~6GB).
+Cache directory for BoltzGen model weights.
 
 - **Type**: `string`
 - **Default**: `"null"`
 
-### `--complexa_config`
+## Complexa parameters
 
-Optional path to custom Complexa config YAML to override defaults.
+Parameters specific to the Proteina-Complexa design backend.
 
-- **Type**: `string`
-- **Default**: `"null"`
+### `--complexa_ckpt_dir`
 
-### `--steps`
-
-Optional comma-separated list of steps to run (e.g., 'filtering' to rerun only filtering).
+Directory containing Complexa model checkpoints (required when using Complexa).
 
 - **Type**: `string`
 - **Default**: `"null"`
+
+### `--complexa_search_algorithm`
+
+Search algorithm for Complexa design sampling.
+
+- **Type**: `string`
+- **Default**: `"best-of-n"`
+
+### `--complexa_nsteps`
+
+Number of diffusion sampling steps for Complexa.
+
+- **Type**: `integer`
+- **Default**: `400`
+
+### `--complexa_replicas`
+
+Number of replicas for best-of-n search.
+
+- **Type**: `integer`
+- **Default**: `2`
+
+### `--complexa_batch_size`
+
+Batch size for Complexa inference.
+
+- **Type**: `integer`
+- **Default**: `16`
 
 ## ProteinMPNN sequence optimization
 
