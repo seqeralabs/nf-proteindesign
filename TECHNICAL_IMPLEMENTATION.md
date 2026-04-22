@@ -12,7 +12,7 @@ This pipeline was developed iteratively using **Seqera AI** as a proof of princi
 
 ### Step 1 — Initial Pipeline Scaffolding (~15 min)
 
-Created the foundational Nextflow DSL2 pipeline structure from scratch:
+Initial Investigation and Understanding of current nf-proteindesign pipeline
 
 - `main.nf` entry point with parameter validation and input parsing
 - `workflows/protein_design.nf` main workflow orchestrating all modules
