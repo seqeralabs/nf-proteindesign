@@ -269,7 +269,7 @@ workflow NFPROTEINDESIGN {
                 .fromPath(params.cache_dir, type: 'dir', checkIfExists: true)
                 .first()
         } else {
-            ch_design_cache = Channel.value(file('EMPTY_CACHE'))
+            ch_design_cache = Channel.value([])
         }
     } else if (params.protein_design_tool == 'complexa') {
         if (params.complexa_ckpt_dir) {
@@ -277,7 +277,7 @@ workflow NFPROTEINDESIGN {
                 .fromPath(params.complexa_ckpt_dir, type: 'dir', checkIfExists: true)
                 .first()
         } else {
-            ch_design_cache = Channel.value(file('EMPTY_CKPT'))
+            ch_design_cache = Channel.value([])
         }
     } else {
         // RFdiffusion v3
@@ -286,7 +286,7 @@ workflow NFPROTEINDESIGN {
                 .fromPath(params.rfdiffusion_v3_ckpt_dir, type: 'dir', checkIfExists: true)
                 .first()
         } else {
-            ch_design_cache = Channel.value(file('EMPTY_CACHE'))
+            ch_design_cache = Channel.value([])
         }
     }
 
@@ -383,7 +383,7 @@ workflow {
 
             def ch_cache = params.cache_dir ?
                 Channel.fromPath(params.cache_dir, type: 'dir', checkIfExists: true).first() :
-                Channel.value(file('EMPTY_CACHE'))
+                Channel.value([])
 
             TEST_BOLTZGEN(ch_input, ch_cache)
 
@@ -444,7 +444,7 @@ workflow {
 
             def ch_cache = params.rfdiffusion_v3_ckpt_dir ?
                 Channel.fromPath(params.rfdiffusion_v3_ckpt_dir, type: 'dir', checkIfExists: true).first() :
-                Channel.value(file('EMPTY_CACHE'))
+                Channel.value([])
 
             TEST_RFDV3(ch_input, ch_cache)
         }

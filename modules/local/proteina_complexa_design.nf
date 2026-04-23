@@ -12,7 +12,7 @@ process PROTEINA_COMPLEXA_DESIGN {
 
     input:
     tuple val(meta), path(target_pdb), path(pipeline_config)
-    path ckpt_dir, stageAs: 'checkpoints'
+    path(ckpt_dir, stageAs: 'checkpoints', arity: '0..*')
 
     output:
     // Full results directory

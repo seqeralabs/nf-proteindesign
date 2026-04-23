@@ -30,7 +30,7 @@ process RFDIFFUSION_V3_RUN {
 
     input:
     tuple val(meta), path(design_yaml), path(structure_files)
-    path cache_dir, stageAs: 'input_cache'
+    path(cache_dir, stageAs: 'input_cache', arity: '0..*')
 
     output:
     // Full results directory
@@ -42,7 +42,7 @@ process RFDIFFUSION_V3_RUN {
     path "versions.yml",                                                                          emit: versions
 
     script:
-    def model_cache = cache_dir.name != 'EMPTY_CACHE' ? "\${PWD}/input_cache" : "\${HOME}/.foundry/checkpoints"
+    def model_cache = cache_dir ? "\${PWD}/input_cache" : "\${HOME}/.foundry/checkpoints"
     def num_designs = meta.num_designs ?: 10
     def budget      = meta.budget ?: 4
     """
