@@ -452,7 +452,6 @@ All processes submitted successfully in the expected order:
 | 3 | Wrote Complexa process module, added resource config, added pipeline params with defaults | `modules/local/proteina_complexa_design.nf` (new), `conf/base.config`, `nextflow.config` | ~5 min |
 | 4 | Added Complexa include + if/else-if branch in workflow, wired output channels to ProteinMPNN | `workflows/protein_design.nf`, `main.nf` | ~5 min |
 | 5 | Rewrote `complexa_options` in schema, updated samplesheet columns in README, validated schema file | `nextflow_schema.json`, `README.md`, `assets/schema_input_design.json` | ~5 min |
-| 6 | Test and validate Complexa on GPU | — | Not started |
 | 7 | Verified existing `rfdiffusion_v3_run.nf` module, confirmed input/output interface compatibility | `modules/local/rfdiffusion_v3_run.nf` (read-only) | ~3 min |
 | 8 | Added 3rd samplesheet branch in `main.nf`, wrote samplesheet schema + test CSV, added banner labels | `main.nf`, `assets/schema_input_rfdiffusion_v3.json` (new), `assets/test_data/samplesheet_design_rfdiffusion_v3.csv` (new) | ~3 min |
 | 9 | Added `RFDIFFUSION_V3_RUN` import + else branch in Stage 1 design block | `workflows/protein_design.nf` | ~2 min |
