@@ -69,16 +69,16 @@ workflow PROTEIN_DESIGN {
                 def pdb_list = pdb_files instanceof List ? new ArrayList(pdb_files) : [pdb_files]
 
                 // Create a separate channel entry for each PDB file
-                pdb_list.collect { pdb_file ->
-                    // Extract rank number from filename (e.g., "rank1_2VSM_protein_design_1" -> "1")
-                    def rank_num = pdb_file.baseName.replaceAll(/^rank(\d+)_.*/, '$1')
+                pdb_list.withIndex().collect { pdb_file, idx ->
+                    // Prefer rank from filename prefix (Boltzgen: "rank1_..."); fall back to list index
+                    def match = (pdb_file.baseName =~ /^rank(\d+)_/)
+                    def rank_num = match ? match[0][1] : (idx + 1).toString()
 
-                    // Simplified naming: {sample}_r{rank}
                     def design_meta = [
                         id: "${meta.id}_r${rank_num}",
                         parent_id: meta.id,
                         rank_num: rank_num,
-                        design_name: pdb_file.baseName  // Keep original for reference
+                        design_name: pdb_file.baseName
                     ]
 
                     [design_meta, pdb_file]

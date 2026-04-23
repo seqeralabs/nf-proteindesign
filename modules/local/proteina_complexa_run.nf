@@ -12,9 +12,9 @@
         model:          Model variant — "protein" (default), "ligand", or "ame"
 
     The module constructs the full Proteina-Complexa Hydra config from this spec,
-    stages the target structure, runs all four pipeline stages (generate → filter →
-    evaluate → analyze), and organises the top <budget> ranked PDB outputs into the
-    same directory structure used by BOLTZGEN_RUN so downstream modules are unaffected.
+    stages the target structure, and runs all four pipeline stages (generate → filter →
+    evaluate → analyze). Raw PDB outputs are collected via a glob in the output block;
+    budget-limiting and ranking are handled by Nextflow channel operators in the subworkflow.
 
     Input structure files may be PDB or CIF; CIF files are converted automatically.
 ========================================================================================
@@ -26,7 +26,7 @@ process PROTEINA_COMPLEXA_RUN {
 
     publishDir "${params.outdir}/${meta.id}/proteina_complexa", mode: params.publish_dir_mode
 
-    container 'proteina-complexa:latest'
+    container '307946633589.dkr.ecr.eu-west-2.amazonaws.com/rashmi/proteina-complexa:latest'
 
     accelerator 1, type: 'nvidia-gpu'
 
@@ -36,14 +36,16 @@ process PROTEINA_COMPLEXA_RUN {
 
     output:
     tuple val(meta), path("${meta.id}_output"),                                                                   emit: results
-    tuple val(meta), path("${meta.id}_output/final_ranked_designs/final_*_designs/*.pdb"), optional: true,        emit: budget_design_cifs
+    tuple val(meta), path("${meta.id}_output/complexa_raw/**/generated_pdbs/*.pdb"), optional: true,              emit: raw_pdbs
     path "versions.yml",                                                                                           emit: versions
 
     script:
     def model_cache = cache_dir.name != 'EMPTY_CACHE' ? "\${PWD}/input_cache" : "\${HOME}/.cache/proteina_complexa"
     """
     mkdir -p ${meta.id}_output/complexa_raw
-    mkdir -p ${meta.id}_output/final_ranked_designs/final_${meta.budget}_designs
+
+    # Resolve cache path (shell expands ${PWD}/${HOME} here; Python reads it via env var)
+    export COMPLEXA_CACHE_ROOT="${model_cache}"
 
     # Resolve target structure — convert CIF to PDB if needed
     STRUCT_FILES=(${structure_files})
@@ -77,7 +79,7 @@ binder_len   = spec.get('binder_length', [60, 80])
 hotspot_res  = spec.get('hotspot_res', [])
 model        = spec.get('model', 'protein')
 target_pdb   = os.environ.get('RESOLVED_PDB', '')
-cache_root   = '${model_cache}'
+cache_root   = os.environ.get('COMPLEXA_CACHE_ROOT', os.path.join(os.path.expanduser('~'), '.cache', 'proteina_complexa'))
 n_samples    = ${meta.num_designs}
 
 ckpt_names = {
@@ -85,7 +87,13 @@ ckpt_names = {
     'ligand':  'complexa_ligand.ckpt',
     'ame':     'complexa_ame.ckpt',
 }
+ae_names = {
+    'protein': 'complexa_ae.ckpt',
+    'ligand':  'complexa_ligand_ae.ckpt',
+    'ame':     'complexa_ame_ae.ckpt',
+}
 ckpt_name = ckpt_names.get(model, 'complexa.ckpt')
+ae_name   = ae_names.get(model, 'complexa_ae.ckpt')
 
 task_cfg = {
     'target_pdb':    target_pdb,
@@ -95,9 +103,9 @@ if hotspot_res:
     task_cfg['hotspot_res'] = hotspot_res
 
 config = {
-    'ckpt_path':             os.path.join(cache_root, 'checkpoints'),
+    'ckpt_path':             cache_root,
     'ckpt_name':             ckpt_name,
-    'autoencoder_ckpt_path': os.path.join(cache_root, 'checkpoints', 'autoencoder.ckpt'),
+    'autoencoder_ckpt_path': os.path.join(cache_root, ae_name),
     'gen_njobs':  1,
     'eval_njobs': 1,
     'output_dir': '${meta.id}_output/complexa_raw',
@@ -122,14 +130,6 @@ PYEOF
         ++run_name=${meta.id} \\
         ++generation.task_name=\${TASK_NAME}
 
-    # Collect ranked PDBs: search all expected output locations robustly
-    RANK=1
-    while IFS= read -r pdb; do
-        DESIGN_NAME=\$(basename "\${pdb}" .pdb)
-        cp "\${pdb}" "${meta.id}_output/final_ranked_designs/final_${meta.budget}_designs/rank\${RANK}_\${DESIGN_NAME}.pdb"
-        RANK=\$((RANK + 1))
-    done < <(find . -path "*/\${TASK_NAME}/generated_pdbs/*.pdb" 2>/dev/null | sort -V | head -n ${meta.budget})
-
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         proteina_complexa: \$(complexa --version 2>&1 || echo "proteina-complexa")
@@ -139,11 +139,9 @@ PYEOF
 
     stub:
     """
-    mkdir -p ${meta.id}_output/complexa_raw
-    mkdir -p ${meta.id}_output/final_ranked_designs/final_${meta.budget}_designs
-    touch ${meta.id}_output/complexa_raw/design_0.pdb
-    touch ${meta.id}_output/final_ranked_designs/final_${meta.budget}_designs/rank1_design_0.pdb
-    touch ${meta.id}_output/final_ranked_designs/final_${meta.budget}_designs/rank2_design_1.pdb
+    mkdir -p ${meta.id}_output/complexa_raw/${meta.id}_task/generated_pdbs
+    touch ${meta.id}_output/complexa_raw/${meta.id}_task/generated_pdbs/design_0.pdb
+    touch ${meta.id}_output/complexa_raw/${meta.id}_task/generated_pdbs/design_1.pdb
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         proteina_complexa: "proteina-complexa"

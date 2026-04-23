@@ -34,20 +34,29 @@ Before running the pipeline, ensure you have:
 
 ### 1. Design YAML Files (Design Mode)
 
-Create a design specification file following Boltzgen format:
+The YAML format depends on the `--design_tool` selected.
 
-```yaml title="my_design.yaml"
-name: antibody_design_example
-target:
-  structure: data/target_protein.pdb
-  residues: [10, 11, 12, 45, 46, 47, 89]  # Binding site residues
-designed:
-  chain_type: protein
-  length: [50, 80]  # Range of acceptable lengths
-global:
-  n_samples: 10
-  save_traj: true
-```
+=== "Boltzgen (default)"
+    ```yaml title="my_design.yaml"
+    name: antibody_design_example
+    target:
+      structure: data/target_protein.pdb
+      residues: [10, 11, 12, 45, 46, 47, 89]  # Binding site residues
+    designed:
+      chain_type: protein
+      length: [50, 80]  # Range of acceptable lengths
+    global:
+      n_samples: 10
+      save_traj: true
+    ```
+
+=== "Proteina-Complexa"
+    ```yaml title="my_design.yaml"
+    task_name: "my_binder_task"
+    binder_length: [60, 80]       # [min, max] residues
+    hotspot_res: []               # Optional: e.g. ["A30", "A50"]
+    model: "protein"              # "protein", "ligand", or "ame"
+    ```
 
 ### 2. Create Samplesheet
 
@@ -72,7 +81,7 @@ design3,/path/to/design3.yaml,15000,30
 
 Choose the appropriate profile for your system:
 
-=== "Docker"
+=== "Boltzgen (default)"
     ```bash
     nextflow run seqeralabs/nf-proteindesign \
         -profile docker \
@@ -80,13 +89,18 @@ Choose the appropriate profile for your system:
         --outdir results
     ```
 
-=== "Local (with Docker)"
+=== "Proteina-Complexa"
     ```bash
     nextflow run seqeralabs/nf-proteindesign \
-        -profile docker,local \
+        -profile docker \
         --input samplesheet.csv \
-        --outdir results
+        --outdir results \
+        --design_tool proteina_complexa \
+        --cache_dir /path/to/proteina_complexa_weights
     ```
+    !!! note "Container required"
+        Proteina-Complexa requires a locally built Docker image. See the
+        [Proteina-Complexa Integration Guide](proteina_complexa_integration.md) for build instructions.
 
 ### With Analysis Modules
 

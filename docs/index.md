@@ -12,10 +12,15 @@
 
 ## :material-test-tube: Overview
 
-**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design using [Boltzgen](https://github.com/HannesStark/boltzgen), an all-atom generative diffusion model. Design proteins, peptides, and nanobodies to bind various biomolecular targets with a comprehensive suite of downstream analysis modules.
+**nf-proteindesign** is a Nextflow pipeline for high-throughput protein design. The backbone design step is performed by a user-selectable generative AI tool:
+
+- **[Boltzgen](https://github.com/HannesStark/boltzgen)** *(default)* — Seqera's all-atom generative diffusion model
+- **[Proteina-Complexa](https://github.com/NVIDIA-Digital-Bio/Proteina-Complexa)** *(NVIDIA, ICLR 2026)* — flow-based model that co-designs sequence and backbone structure in a single pass
+
+Select the tool with `--design_tool boltzgen` (default) or `--design_tool proteina_complexa`.
 
 !!! tip "Modular Analysis Pipeline"
-    The pipeline combines Boltzgen design with optional sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
+    The pipeline combines backbone design with optional sequence optimization (ProteinMPNN + Boltz-2), quality assessment (ipSAE, PRODIGY, Foldseek), and unified reporting (metrics consolidation).
 ## :material-package-variant-closed: Analysis Modules
 
 <div class="feature-grid">
@@ -70,10 +75,13 @@
 
 ```mermaid
 graph TB
-    A[Samplesheet<br/>Design YAMLs] --> B{Boltzgen<br/>Precomputed?}
+    A[Samplesheet<br/>Design YAMLs] --> T{design_tool?}
+    T -->|boltzgen| B{Precomputed?}
+    T -->|proteina_complexa| C2[Run Proteina-Complexa]
     B -->|No| C[Run Boltzgen Design]
     B -->|Yes| D[Use Precomputed]
-    C --> E[Budget Designs<br/>CIF + NPZ]
+    C --> E[Budget Designs<br/>CIF / PDB]
+    C2 --> E
     D --> E
     
     E --> F{ProteinMPNN<br/>Enabled?}
