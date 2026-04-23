@@ -403,35 +403,59 @@ All processes submitted successfully in the expected order:
 
 ## Summary of All Files Changed/Added
 
+### Proteina-Complexa Integration (Steps 1–6)
+
+| File | Action | Description |
+|------|--------|-------------|
+| `modules/local/proteina_complexa_design.nf` | **New** | Complexa process: `complexa design` CLI with Hydra overrides, PDB output, stub block |
+| `workflows/protein_design.nf` | **Modified** | Added `include { PROTEINA_COMPLEXA_DESIGN }`, added `else if` branch in Stage 1 |
+| `main.nf` | **Modified** | Added Complexa samplesheet parsing branch, banner labels, cache channel logic |
+| `nextflow.config` | **Modified** | Added `complexa_*` params, `protein_design_tool` enum, `test_design_proteina_complexa` profile |
+| `conf/base.config` | **Modified** | Added `withName:PROTEINA_COMPLEXA_DESIGN` resource block (72h, 40GB, 1 GPU) |
+| `conf/test_design_proteina_complexa.config` | **New** | Test profile for Complexa stub/GPU runs |
+| `assets/schema_input_design.json` | **Modified** | Updated samplesheet columns for Complexa inputs |
+| `assets/test_data/samplesheet_design_proteina_complexa.csv` | **New** | Test samplesheet with Nipah target PDB + pipeline config |
+| `assets/test_data/proteina_complexa_design.yaml` | **New** | Complexa pipeline config YAML for Nipah binder design |
+| `nextflow_schema.json` | **Modified** | Added `complexa_options` definition with 7 params, updated `input` help text |
+| `README.md` | **Modified** | Updated samplesheet examples, key parameters, usage instructions |
+
 ### RFdiffusion v3 Integration (Steps 7–11)
 
-| File | Action | Lines Changed |
-|------|--------|---------------|
-| `modules/local/rfdiffusion_v3_run.nf` | **Already existed** (from earlier branch) | Unchanged — reused as-is |
-| `main.nf` | **Modified** | +40 lines (3rd samplesheet branch, banner labels, cache logic, validation) |
-| `workflows/protein_design.nf` | **Modified** | +15 lines (import + Stage 1 else branch) |
-| `nextflow.config` | **Modified** | +10 lines (params, profile, manifest) |
-| `conf/base.config` | **Modified** | +7 lines (process resource block) |
-| `conf/test_design_rfdiffusion_v3.config` | **New** | 39 lines |
-| `assets/schema_input_rfdiffusion_v3.json` | **New** | 56 lines |
-| `assets/test_data/samplesheet_design_rfdiffusion_v3.csv` | **New** | 2 lines |
-| `nextflow_schema.json` | **Modified** | +20 lines (definition + allOf ref) |
+| File | Action | Description |
+|------|--------|-------------|
+| `modules/local/rfdiffusion_v3_run.nf` | **Already existed** | Reused from earlier branch — `rfd3 design` CLI, YAML→JSON conversion, CIF→PDB auto-conversion, ranked output |
+| `main.nf` | **Modified** | Added 3rd samplesheet branch for `rfdiffusion_v3`, `rfdiffusion_v3` banner labels, `rfdiffusion_v3_ckpt_dir` cache channel |
+| `workflows/protein_design.nf` | **Modified** | Added `include { RFDIFFUSION_V3_RUN }`, added `else` branch (3rd path) in Stage 1 |
+| `nextflow.config` | **Modified** | Added `rfdiffusion_v3_ckpt_dir` + `rfdiffusion_v3_container` params, `test_design_rfdiffusion_v3` profile, updated manifest |
+| `conf/base.config` | **Modified** | Added `withName:RFDIFFUSION_V3_RUN` resource block (24h, 40GB, 1 GPU) |
+| `conf/test_design_rfdiffusion_v3.config` | **New** | Test profile for RFdiffusion v3 stub/GPU runs |
+| `assets/schema_input_rfdiffusion_v3.json` | **New** | nf-schema v2 samplesheet validation (sample_id, design_yaml, structure_files, num_designs, budget, target_sequence + optional fields) |
+| `assets/test_data/samplesheet_design_rfdiffusion_v3.csv` | **New** | Test samplesheet with Nipah target CIF + contig YAML |
+| `nextflow_schema.json` | **Modified** | Added `rfdiffusion_v3_options` definition (2 params), added `$ref` in `allOf` |
 
-### Total Seqera AI time for RFdiffusion v3 integration: ~11 min
+### Documentation
+
+| File | Action | Description |
+|------|--------|-------------|
+| `PROTEINA_COMPLEXA_MIGRATION.md` | **New → Updated** | This file — technical implementation log for both integrations |
+| `docs/proteina_complexa_integration.md` | **New** | Detailed Complexa integration guide (architecture, usage, parameters) |
+| `docs/boltzgen_alternatives.md` | **Modified** | Candidate evaluation matrix, licence info, eliminated candidates |
+
+---
 
 ### Cumulative timeline
 
-| Step | Task | Time |
-|------|------|------|
-| 1 | Audit BoltzGen process | ~5 min |
-| 2 | Map BoltzGen → Complexa interface | ~8 min |
-| 3 | Replace BoltzGen module with Complexa | ~5 min |
-| 4 | Update workflow wiring for Complexa | ~5 min |
-| 5 | Update schema and documentation for Complexa | ~5 min |
-| 6 | Test and validate Complexa | Not started |
-| 7 | Add RFdiffusion v3 module | ~3 min |
-| 8 | Update samplesheet parsing in main.nf | ~3 min |
-| 9 | Update workflow wiring for RFdiffusion v3 | ~2 min |
-| 10 | Update configuration for RFdiffusion v3 | ~2 min |
-| 11 | Verify stub test for RFdiffusion v3 | ~1 min |
-| **Total** | | **~39 min** |
+| Step | Task | Files Touched | Time |
+|------|------|---------------|------|
+| 1 | Read all pipeline files, traced channels, mapped BoltzGen inputs/outputs/downstream impacts | `modules/local/boltzgen_run.nf`, `workflows/protein_design.nf`, `main.nf`, `nextflow.config` (read-only) | ~5 min |
+| 2 | Cloned Complexa repo, read source configs, verified defaults, built parameter mapping table | Proteina-Complexa source (external), `configs/` (read-only) | ~8 min |
+| 3 | Wrote Complexa process module, added resource config, added pipeline params with defaults | `modules/local/proteina_complexa_design.nf` (new), `conf/base.config`, `nextflow.config` | ~5 min |
+| 4 | Added Complexa include + if/else-if branch in workflow, wired output channels to ProteinMPNN | `workflows/protein_design.nf`, `main.nf` | ~5 min |
+| 5 | Rewrote `complexa_options` in schema, updated samplesheet columns in README, validated schema file | `nextflow_schema.json`, `README.md`, `assets/schema_input_design.json` | ~5 min |
+| 6 | Test and validate Complexa on GPU | — | Not started |
+| 7 | Verified existing `rfdiffusion_v3_run.nf` module, confirmed input/output interface compatibility | `modules/local/rfdiffusion_v3_run.nf` (read-only) | ~3 min |
+| 8 | Added 3rd samplesheet branch in `main.nf`, wrote samplesheet schema + test CSV, added banner labels | `main.nf`, `assets/schema_input_rfdiffusion_v3.json` (new), `assets/test_data/samplesheet_design_rfdiffusion_v3.csv` (new) | ~3 min |
+| 9 | Added `RFDIFFUSION_V3_RUN` import + else branch in Stage 1 design block | `workflows/protein_design.nf` | ~2 min |
+| 10 | Added params + test profile + resource block + schema definition | `nextflow.config`, `conf/test_design_rfdiffusion_v3.config` (new), `conf/base.config`, `nextflow_schema.json` | ~2 min |
+| 11 | Ran `nextflow run main.nf -profile test_design_rfdiffusion_v3 -stub-run`, verified all 11 processes | — (execution only) | ~1 min |
+| **Total** | | | **~39 min** |
