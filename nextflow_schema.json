@@ -96,6 +96,28 @@
                 }
             }
         },
+        "rfdiffusion_v3_options": {
+            "title": "RFdiffusion v3 design parameters",
+            "type": "object",
+            "description": "Parameters for the RFdiffusion3 all-atom diffusion design step. Design YAML and structure files are specified per-sample in the samplesheet.",
+            "default": "",
+            "fa_icon": "fas fa-atom",
+            "properties": {
+                "rfdiffusion_v3_ckpt_dir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "Path to RFdiffusion3 checkpoint directory.",
+                    "help_text": "If null, checkpoints are auto-downloaded by the Foundry framework to ~/.foundry/checkpoints.",
+                    "fa_icon": "fas fa-database"
+                },
+                "rfdiffusion_v3_container": {
+                    "type": "string",
+                    "default": "rosettacommons/foundry:latest",
+                    "description": "Container image for RFdiffusion3 (rfd3 CLI via RosettaCommons Foundry).",
+                    "fa_icon": "fas fa-docker"
+                }
+            }
+        },
         "proteinmpnn_options": {
             "title": "ProteinMPNN sequence optimization",
             "type": "object",
@@ -434,6 +456,9 @@
         },
         {
             "$ref": "#/definitions/complexa_options"
+        },
+        {
+            "$ref": "#/definitions/rfdiffusion_v3_options"
         },
         {
             "$ref": "#/definitions/proteinmpnn_options"

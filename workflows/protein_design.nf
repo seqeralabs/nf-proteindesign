@@ -2,16 +2,18 @@
 ========================================================================================
     PROTEIN_DESIGN: Workflow for protein binder design
 ========================================================================================
-    Supports two design backends:
-      - proteina-complexa  (generate → filter → evaluate → analyze, outputs PDB)
+    Supports three design backends:
       - boltzgen            (flow-matching inference, outputs CIF → converted to PDB)
+      - proteina-complexa   (generate → filter → evaluate → analyze, outputs PDB)
+      - rfdiffusion_v3      (all-atom diffusion via RosettaCommons Foundry, outputs PDB)
 
-    Both converge into a shared downstream pipeline:
+    All converge into a shared downstream pipeline:
       ProteinMPNN → Boltz-2 refold → IPSAE / PRODIGY / Foldseek → Consolidation
 ----------------------------------------------------------------------------------------
 */
 include { PROTEINA_COMPLEXA_DESIGN } from '../modules/local/proteina_complexa_design'
 include { BOLTZGEN_RUN }             from '../modules/local/boltzgen_run'
+include { RFDIFFUSION_V3_RUN }      from '../modules/local/rfdiffusion_v3_run'
 include { CONVERT_CIF_TO_PDB }      from '../modules/local/convert_cif_to_pdb'
 include { PROTEINMPNN_OPTIMIZE }     from '../modules/local/proteinmpnn_optimize'
 include { PREPARE_BOLTZ2_SEQUENCES } from '../modules/local/prepare_boltz2_sequences'
@@ -25,8 +27,9 @@ workflow PROTEIN_DESIGN {
 
     take:
     ch_input         // channel: tool-dependent shape (see main.nf)
-                     //   complexa : [meta, target_pdb, pipeline_config, target_sequence]
-                     //   boltzgen : [meta, design_yaml, structure_files, target_sequence]
+                     //   boltzgen        : [meta, design_yaml, structure_files, target_sequence]
+                     //   complexa        : [meta, target_pdb, pipeline_config, target_sequence]
+                     //   rfdiffusion_v3  : [meta, design_yaml, structure_files, target_sequence]
     ch_design_cache  // channel: checkpoint / cache directory (or EMPTY placeholder)
     ch_boltz2_cache  // channel: Boltz-2 cache directory (or EMPTY placeholder)
 
@@ -35,7 +38,7 @@ workflow PROTEIN_DESIGN {
     // ========================================================================
     // STAGE 1: Protein design — generate structures
     // ========================================================================
-    // Both paths produce:
+    // All paths produce:
     //   ch_design_results : [meta, results_dir]   — full output directory
     //   ch_design_pdbs    : [meta, pdb_files]      — PDB files for downstream
 
@@ -55,7 +58,7 @@ workflow PROTEIN_DESIGN {
 
         ch_design_pdbs = CONVERT_CIF_TO_PDB.out.pdb_files_all
 
-    } else {
+    } else if (params.protein_design_tool == 'complexa') {
         // ── Complexa path ──────────────────────────────────────────────
         ch_complexa_input = ch_input
             .map { meta, target_pdb, pipeline_config, target_sequence ->
@@ -66,6 +69,18 @@ workflow PROTEIN_DESIGN {
 
         ch_design_results = PROTEINA_COMPLEXA_DESIGN.out.results
         ch_design_pdbs    = PROTEINA_COMPLEXA_DESIGN.out.design_pdbs
+
+    } else {
+        // ── RFdiffusion v3 path ────────────────────────────────────────
+        ch_rfdiffusion_input = ch_input
+            .map { meta, design_yaml, structure_files, target_sequence ->
+                [meta, design_yaml, structure_files]
+            }
+
+        RFDIFFUSION_V3_RUN(ch_rfdiffusion_input, ch_design_cache)
+
+        ch_design_results = RFDIFFUSION_V3_RUN.out.results
+        ch_design_pdbs    = RFDIFFUSION_V3_RUN.out.design_pdbs
     }
 
     // ========================================================================
