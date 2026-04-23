@@ -30,6 +30,11 @@ include { samplesheetToList } from 'plugin/nf-schema'
 
 include { PROTEIN_DESIGN } from './workflows/protein_design'
 
+// Individual design-tool modules (used for test_design_only mode)
+include { PROTEINA_COMPLEXA_DESIGN as TEST_COMPLEXA }  from './modules/local/proteina_complexa_design'
+include { BOLTZGEN_RUN             as TEST_BOLTZGEN }   from './modules/local/boltzgen_run'
+include { RFDIFFUSION_V3_RUN       as TEST_RFDV3 }     from './modules/local/rfdiffusion_v3_run'
+
 workflow NFPROTEINDESIGN {
 
     // ========================================================================
@@ -307,153 +312,149 @@ workflow NFPROTEINDESIGN {
 
 /*
 ========================================================================================
-    TEST ENTRY: Run ONLY the design tool (no downstream analysis)
+    RUN MAIN WORKFLOW
 ========================================================================================
-    Usage:
-      nextflow run main.nf -entry TEST_DESIGN_ONLY -profile test_design_proteina_complexa
-      nextflow run main.nf -entry TEST_DESIGN_ONLY -profile test_design_rfdiffusion_v3
-      nextflow run main.nf -entry TEST_DESIGN_ONLY -profile test_design_boltzgen
+    When test_design_only = true, runs ONLY the design tool process (no downstream
+    analysis). Use this to smoke-test that the container starts, finds GPU/checkpoints,
+    and produces output structures.
 
-    Validates that the design tool container starts, finds GPU/checkpoints, and
-    produces output structures. Exits immediately after — no ProteinMPNN, Boltz-2,
-    IPSAE, PRODIGY, or consolidation.
+    Usage:
+      # Full pipeline (default)
+      nextflow run main.nf -profile test_design_rfdiffusion_v3
+      # Design-tool-only smoke test
+      nextflow run main.nf -profile test_design_rfdiffusion_v3 --test_design_only
 ----------------------------------------------------------------------------------------
 */
 
-include { PROTEINA_COMPLEXA_DESIGN as TEST_COMPLEXA }  from './modules/local/proteina_complexa_design'
-include { BOLTZGEN_RUN             as TEST_BOLTZGEN }   from './modules/local/boltzgen_run'
-include { RFDIFFUSION_V3_RUN      as TEST_RFDV3 }      from './modules/local/rfdiffusion_v3_run'
+workflow {
+    if (params.test_design_only) {
+        // ================================================================
+        // TEST_DESIGN_ONLY mode — single design-tool process, then exit
+        // ================================================================
 
-workflow TEST_DESIGN_ONLY {
+        if (!params.input) {
+            error "ERROR: Please provide a samplesheet with --input"
+        }
 
-    if (!params.input) {
-        error "ERROR: Please provide a samplesheet with --input"
-    }
+        def valid_tools = ['boltzgen', 'complexa', 'rfdiffusion_v3']
+        if (!valid_tools.contains(params.protein_design_tool)) {
+            error "ERROR: --protein_design_tool must be one of: ${valid_tools.join(', ')}. Got: '${params.protein_design_tool}'"
+        }
 
-    def valid_tools = ['boltzgen', 'complexa', 'rfdiffusion_v3']
-    if (!valid_tools.contains(params.protein_design_tool)) {
-        error "ERROR: --protein_design_tool must be one of: ${valid_tools.join(', ')}. Got: '${params.protein_design_tool}'"
-    }
+        def tool_labels = ['boltzgen': 'BoltzGen', 'complexa': 'Proteina-Complexa', 'rfdiffusion_v3': 'RFdiffusion v3']
+        log.info """
+        ┌────────────────────────────────────────────────────┐
+        │  TEST_DESIGN_ONLY — ${tool_labels[params.protein_design_tool].padRight(30)}│
+        │  Design tool smoke test (no downstream analysis)   │
+        └────────────────────────────────────────────────────┘
+        """.stripIndent()
 
-    def tool_labels = ['boltzgen': 'BoltzGen', 'complexa': 'Proteina-Complexa', 'rfdiffusion_v3': 'RFdiffusion v3']
-    log.info """
-    ┌────────────────────────────────────────────────────┐
-    │  TEST_DESIGN_ONLY — ${tool_labels[params.protein_design_tool].padRight(30)}│
-    │  Design tool smoke test (no downstream analysis)   │
-    └────────────────────────────────────────────────────┘
-    """.stripIndent()
+        def project_dir = projectDir
 
-    def project_dir = projectDir
+        if (params.protein_design_tool == 'boltzgen') {
+            def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_boltzgen.json")
 
-    // ── Parse samplesheet (same logic as NFPROTEINDESIGN) ──────────────
+            ch_input = Channel.fromList(samplesheet).map { tuple ->
+                def sample_id            = tuple[0]
+                def design_yaml_path     = tuple[1]
+                def structure_files_str  = tuple[2]
+                def protocol             = tuple[3]
+                def num_designs          = tuple[4]
+                def budget               = tuple[5]
 
-    if (params.protein_design_tool == 'boltzgen') {
-        def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_boltzgen.json")
+                def design_yaml = design_yaml_path.startsWith('/') || design_yaml_path.contains('://') ?
+                    file(design_yaml_path, checkIfExists: true) :
+                    (file(design_yaml_path).exists() ? file(design_yaml_path) : file("${project_dir}/${design_yaml_path}", checkIfExists: true))
 
-        ch_input = Channel.fromList(samplesheet).map { tuple ->
-            def sample_id            = tuple[0]
-            def design_yaml_path     = tuple[1]
-            def structure_files_str  = tuple[2]
-            def protocol             = tuple[3]
-            def num_designs          = tuple[4]
-            def budget               = tuple[5]
-
-            def design_yaml = design_yaml_path.startsWith('/') || design_yaml_path.contains('://') ?
-                file(design_yaml_path, checkIfExists: true) :
-                (file(design_yaml_path).exists() ? file(design_yaml_path) : file("${project_dir}/${design_yaml_path}", checkIfExists: true))
-
-            def structure_files = []
-            if (structure_files_str) {
-                structure_files_str.split(',').each { p ->
-                    def trimmed = p.trim()
-                    def resolved = trimmed.startsWith('/') || trimmed.contains('://') ?
-                        file(trimmed, checkIfExists: true) :
-                        (file(trimmed).exists() ? file(trimmed) : file("${project_dir}/${trimmed}", checkIfExists: true))
-                    structure_files.add(resolved)
+                def structure_files = []
+                if (structure_files_str) {
+                    structure_files_str.split(',').each { p ->
+                        def trimmed = p.trim()
+                        def resolved = trimmed.startsWith('/') || trimmed.contains('://') ?
+                            file(trimmed, checkIfExists: true) :
+                            (file(trimmed).exists() ? file(trimmed) : file("${project_dir}/${trimmed}", checkIfExists: true))
+                        structure_files.add(resolved)
+                    }
                 }
+
+                def meta = [id: sample_id, protocol: protocol, num_designs: num_designs, budget: budget]
+                [meta, design_yaml, structure_files]
             }
 
-            def meta = [id: sample_id, protocol: protocol, num_designs: num_designs, budget: budget]
-            [meta, design_yaml, structure_files]
+            def ch_cache = params.cache_dir ?
+                Channel.fromPath(params.cache_dir, type: 'dir', checkIfExists: true).first() :
+                Channel.value(file('EMPTY_CACHE'))
+
+            TEST_BOLTZGEN(ch_input, ch_cache)
+
+        } else if (params.protein_design_tool == 'complexa') {
+            def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_complexa.json")
+
+            ch_input = Channel.fromList(samplesheet).map { tuple ->
+                def sample_id            = tuple[0]
+                def target_pdb_path      = tuple[1]
+                def pipeline_config_path = tuple[2]
+
+                def target_pdb = target_pdb_path.startsWith('/') || target_pdb_path.contains('://') ?
+                    file(target_pdb_path, checkIfExists: true) :
+                    (file(target_pdb_path).exists() ? file(target_pdb_path) : file("${project_dir}/${target_pdb_path}", checkIfExists: true))
+
+                def pipeline_config = pipeline_config_path.startsWith('/') || pipeline_config_path.contains('://') ?
+                    file(pipeline_config_path, checkIfExists: true) :
+                    (file(pipeline_config_path).exists() ? file(pipeline_config_path) : file("${project_dir}/${pipeline_config_path}", checkIfExists: true))
+
+                def meta = [id: sample_id]
+                [meta, target_pdb, pipeline_config]
+            }
+
+            def ch_ckpt = params.complexa_ckpt_dir ?
+                Channel.fromPath(params.complexa_ckpt_dir, type: 'dir', checkIfExists: true).first() :
+                Channel.value(file('EMPTY_CKPT'))
+
+            TEST_COMPLEXA(ch_input, ch_ckpt)
+
+        } else {
+            def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_rfdiffusion_v3.json")
+
+            ch_input = Channel.fromList(samplesheet).map { tuple ->
+                def sample_id            = tuple[0]
+                def design_yaml_path     = tuple[1]
+                def structure_files_str  = tuple[2]
+                def num_designs          = tuple[3]
+                def budget               = tuple[4]
+
+                def design_yaml = design_yaml_path.startsWith('/') || design_yaml_path.contains('://') ?
+                    file(design_yaml_path, checkIfExists: true) :
+                    (file(design_yaml_path).exists() ? file(design_yaml_path) : file("${project_dir}/${design_yaml_path}", checkIfExists: true))
+
+                def structure_files = []
+                if (structure_files_str) {
+                    structure_files_str.split(',').each { p ->
+                        def trimmed = p.trim()
+                        def resolved = trimmed.startsWith('/') || trimmed.contains('://') ?
+                            file(trimmed, checkIfExists: true) :
+                            (file(trimmed).exists() ? file(trimmed) : file("${project_dir}/${trimmed}", checkIfExists: true))
+                        structure_files.add(resolved)
+                    }
+                }
+
+                def meta = [id: sample_id, num_designs: num_designs, budget: budget]
+                [meta, design_yaml, structure_files]
+            }
+
+            def ch_cache = params.rfdiffusion_v3_ckpt_dir ?
+                Channel.fromPath(params.rfdiffusion_v3_ckpt_dir, type: 'dir', checkIfExists: true).first() :
+                Channel.value(file('EMPTY_CACHE'))
+
+            TEST_RFDV3(ch_input, ch_cache)
         }
-
-        def ch_cache = params.cache_dir ?
-            Channel.fromPath(params.cache_dir, type: 'dir', checkIfExists: true).first() :
-            Channel.value(file('EMPTY_CACHE'))
-
-        TEST_BOLTZGEN(ch_input, ch_cache)
-
-    } else if (params.protein_design_tool == 'complexa') {
-        def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_complexa.json")
-
-        ch_input = Channel.fromList(samplesheet).map { tuple ->
-            def sample_id            = tuple[0]
-            def target_pdb_path      = tuple[1]
-            def pipeline_config_path = tuple[2]
-
-            def target_pdb = target_pdb_path.startsWith('/') || target_pdb_path.contains('://') ?
-                file(target_pdb_path, checkIfExists: true) :
-                (file(target_pdb_path).exists() ? file(target_pdb_path) : file("${project_dir}/${target_pdb_path}", checkIfExists: true))
-
-            def pipeline_config = pipeline_config_path.startsWith('/') || pipeline_config_path.contains('://') ?
-                file(pipeline_config_path, checkIfExists: true) :
-                (file(pipeline_config_path).exists() ? file(pipeline_config_path) : file("${project_dir}/${pipeline_config_path}", checkIfExists: true))
-
-            def meta = [id: sample_id]
-            [meta, target_pdb, pipeline_config]
-        }
-
-        def ch_ckpt = params.complexa_ckpt_dir ?
-            Channel.fromPath(params.complexa_ckpt_dir, type: 'dir', checkIfExists: true).first() :
-            Channel.value(file('EMPTY_CKPT'))
-
-        TEST_COMPLEXA(ch_input, ch_ckpt)
 
     } else {
-        def samplesheet = samplesheetToList(params.input, "${projectDir}/assets/schema_input_rfdiffusion_v3.json")
-
-        ch_input = Channel.fromList(samplesheet).map { tuple ->
-            def sample_id            = tuple[0]
-            def design_yaml_path     = tuple[1]
-            def structure_files_str  = tuple[2]
-            def num_designs          = tuple[3]
-            def budget               = tuple[4]
-
-            def design_yaml = design_yaml_path.startsWith('/') || design_yaml_path.contains('://') ?
-                file(design_yaml_path, checkIfExists: true) :
-                (file(design_yaml_path).exists() ? file(design_yaml_path) : file("${project_dir}/${design_yaml_path}", checkIfExists: true))
-
-            def structure_files = []
-            if (structure_files_str) {
-                structure_files_str.split(',').each { p ->
-                    def trimmed = p.trim()
-                    def resolved = trimmed.startsWith('/') || trimmed.contains('://') ?
-                        file(trimmed, checkIfExists: true) :
-                        (file(trimmed).exists() ? file(trimmed) : file("${project_dir}/${trimmed}", checkIfExists: true))
-                    structure_files.add(resolved)
-                }
-            }
-
-            def meta = [id: sample_id, num_designs: num_designs, budget: budget]
-            [meta, design_yaml, structure_files]
-        }
-
-        def ch_cache = params.rfdiffusion_v3_ckpt_dir ?
-            Channel.fromPath(params.rfdiffusion_v3_ckpt_dir, type: 'dir', checkIfExists: true).first() :
-            Channel.value(file('EMPTY_CACHE'))
-
-        TEST_RFDV3(ch_input, ch_cache)
+        // ================================================================
+        // Normal mode — full pipeline
+        // ================================================================
+        NFPROTEINDESIGN()
     }
-}
-
-/*
-========================================================================================
-    RUN MAIN WORKFLOW
-========================================================================================
-*/
-
-workflow {
-    NFPROTEINDESIGN()
 }
 
 /*
