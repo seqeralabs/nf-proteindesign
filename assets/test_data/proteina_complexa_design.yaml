@@ -1,0 +1,14 @@
+# Proteina-Complexa design specification — Nipah Glycoprotein binder
+#
+# Fields:
+#   task_name:     Identifier for this design run
+#   binder_length: [min, max] residues for the designed binder
+#   hotspot_res:   Optional list of target residues to bias the binder towards
+#   model:         Model variant — "protein" (binder), "ligand", or "ame" (enzyme)
+#
+# Target: Nipah Glycoprotein, Chain A residues 1-532
+
+task_name: "nipah_binder"
+binder_length: [60, 80]
+hotspot_res: []
+model: "protein"
