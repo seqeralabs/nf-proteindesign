@@ -14,7 +14,8 @@
     organises outputs into the same directory structure as the other design tools
     so all downstream modules are unaffected.
 
-    Input structure files may be PDB or CIF; CIF files are converted automatically.
+    Input structure files must be PDB format. CIF→PDB conversion should be done
+    upstream (e.g. via CONVERT_CIF_TO_PDB) before calling this module.
 ========================================================================================
 */
 
@@ -57,34 +58,12 @@ process RFDIFFUSION_V3_RUN {
     mkdir -p ${meta.id}_output/rfd3_raw
     mkdir -p ${meta.id}_output/designs
 
-    # ── Convert input structure to PDB if CIF ──
-    # RFdiffusion3 requires PDB input
+    # ── Resolve input PDB structure ──
+    # CIF→PDB conversion is handled upstream by CONVERT_CIF_TO_PDB
     STRUCT_FILES=(${structure_files})
     RESOLVED_PDB=""
     if [ \${#STRUCT_FILES[@]} -gt 0 ]; then
-        FIRST_STRUCT="\${STRUCT_FILES[0]}"
-        if [[ "\${FIRST_STRUCT}" == *.cif ]]; then
-            # Use gemmi (bundled in foundry) for CIF→PDB conversion; fall back to pip-installed biopython
-            python3 -c "
-try:
-    import gemmi
-    doc = gemmi.cif.read('\${FIRST_STRUCT}')
-    st = gemmi.make_structure_from_block(doc.sole_block())
-    st.write_pdb('target_structure.pdb')
-except ImportError:
-    import subprocess, sys
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'biopython'])
-    from Bio.PDB import MMCIFParser, PDBIO
-    parser = MMCIFParser(QUIET=True)
-    structure = parser.get_structure('target', '\${FIRST_STRUCT}')
-    io = PDBIO()
-    io.set_structure(structure)
-    io.save('target_structure.pdb')
-"
-            RESOLVED_PDB="\${PWD}/target_structure.pdb"
-        else
-            RESOLVED_PDB="\${PWD}/\${FIRST_STRUCT}"
-        fi
+        RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
     fi
 
     # ── Convert design YAML to rfd3 JSON input ──

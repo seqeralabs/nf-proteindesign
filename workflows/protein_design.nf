@@ -72,9 +72,25 @@ workflow PROTEIN_DESIGN {
 
     } else {
         // ── RFdiffusion v3 path ────────────────────────────────────────
+        // RFdiffusion3 requires PDB input; convert CIF structures upstream
+        ch_rfd_structures = ch_input
+            .map { meta, design_yaml, structure_files, target_sequence ->
+                [meta, structure_files]
+            }
+
+        CONVERT_CIF_TO_PDB(ch_rfd_structures)
+
+        // Rejoin converted PDB files with design YAML for rfd3 input
         ch_rfdiffusion_input = ch_input
             .map { meta, design_yaml, structure_files, target_sequence ->
-                [meta, design_yaml, structure_files]
+                [meta.id, meta, design_yaml]
+            }
+            .join(
+                CONVERT_CIF_TO_PDB.out.pdb_files_all
+                    .map { meta, pdbs -> [meta.id, pdbs] }
+            )
+            .map { id, meta, design_yaml, pdbs ->
+                [meta, design_yaml, pdbs]
             }
 
         RFDIFFUSION_V3_RUN(ch_rfdiffusion_input, ch_design_cache)
