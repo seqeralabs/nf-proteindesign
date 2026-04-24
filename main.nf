@@ -34,6 +34,7 @@ include { PROTEIN_DESIGN } from './workflows/protein_design'
 include { PROTEINA_COMPLEXA_DESIGN as TEST_COMPLEXA }  from './modules/local/proteina_complexa_design'
 include { BOLTZGEN_RUN             as TEST_BOLTZGEN }   from './modules/local/boltzgen_run'
 include { RFDIFFUSION_V3_RUN       as TEST_RFDV3 }     from './modules/local/rfdiffusion_v3_run'
+include { CONVERT_CIF_TO_PDB       as TEST_CIF2PDB }   from './modules/local/convert_cif_to_pdb'
 
 workflow NFPROTEINDESIGN {
 
@@ -442,11 +443,21 @@ workflow {
                 [meta, design_yaml, structure_files]
             }
 
+            // Convert CIF structures to PDB (rfd3 requires PDB input)
+            ch_structures = ch_input.map { meta, design_yaml, structure_files -> [meta, structure_files] }
+            TEST_CIF2PDB(ch_structures)
+
+            // Rejoin converted PDBs with design YAML
+            ch_rfd_input = ch_input
+                .map { meta, design_yaml, structure_files -> [meta.id, meta, design_yaml] }
+                .join(TEST_CIF2PDB.out.pdb_files_all.map { meta, pdbs -> [meta.id, pdbs] })
+                .map { id, meta, design_yaml, pdbs -> [meta, design_yaml, pdbs] }
+
             def ch_cache = params.rfdiffusion_v3_ckpt_dir ?
                 Channel.fromPath(params.rfdiffusion_v3_ckpt_dir, type: 'dir', checkIfExists: true).first() :
                 Channel.value([])
 
-            TEST_RFDV3(ch_input, ch_cache)
+            TEST_RFDV3(ch_rfd_input, ch_cache)
         }
 
     } else {

@@ -61,9 +61,9 @@ process RFDIFFUSION_V3_RUN {
     # ── Resolve input PDB structure ──
     # CIF→PDB conversion is handled upstream by CONVERT_CIF_TO_PDB
     STRUCT_FILES=(${structure_files})
-    RESOLVED_PDB=""
+    export RESOLVED_PDB=""
     if [ \${#STRUCT_FILES[@]} -gt 0 ]; then
-        RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
+        export RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
     fi
 
     # ── Convert design YAML to rfd3 JSON input ──
