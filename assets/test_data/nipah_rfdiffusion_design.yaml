@@ -1,16 +1,19 @@
 # RFdiffusion3 design specification — Nipah Glycoprotein binder
 #
-# contig syntax (comma-separated segments):
-#   "80-120,/0,A1-100"
+# contig syntax (rfd3 uses "/" as chain break, NOT "/0"):
+#   "80-120/A1-100"
 #   80-120       = design a binder of 80-120 residues
-#   /0           = chain break (separates binder from target)
+#   /            = chain break (separates binder from target)
 #   A1-100       = fix target chain A residues 1-100 in place
+#
+# Note: v1 used "/0" for chain breaks; the converter auto-normalises
+#       "/0" → "/" for backwards compatibility.
 #
 # select_hotspots: optional dict of target residues → atom names for
 #                  hotspot biasing, e.g. {"A42": "CA,CB"}
 #                  (empty string "" means all atoms)
 # is_non_loopy:    recommended true for PPI binder design
 
-contig: "80-120,/0,A1-100"
+contig: "80-120/A1-100"
 is_non_loopy: true
 select_hotspots: {}

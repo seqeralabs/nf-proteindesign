@@ -98,23 +98,34 @@ import yaml, json, pathlib
 with open('${design_yaml}') as f:
     spec = yaml.safe_load(f)
 
-# Contig — rfd3 expects a JSON **list** of segment strings, e.g.
-#   ["80-120", "/0", "A1-100"]
-# Our YAML stores the contig as a single string with spaces or commas
-# as delimiters.  Normalise to a list of segments.
+# Contig — rfd3 expects a single contig **string**.
+# rfd3 uses "/" as chain break (NOT "/0" like RFdiffusion v1).
+# v1 syntax: "80-120/0 A1-100"  →  rfd3 syntax: "80-120/A1-100"
+#
+# Normalisation steps:
+#   1. Strip commas (our YAML may use "80-120,/0,A1-100")
+#   2. Convert v1 "/0" chain breaks to rfd3 "/" chain breaks
+#   3. Remove extraneous spaces around slashes
 raw_contig = spec.get('contig', '100-100')
+
+# If YAML provides a list, join back to a string
 if isinstance(raw_contig, list):
-    contig_list = raw_contig          # already a list
-elif ',' in raw_contig:
-    contig_list = [s.strip() for s in raw_contig.split(',') if s.strip()]
-else:
-    contig_list = raw_contig.split()  # space-delimited fallback
+    raw_contig = ' '.join(str(s) for s in raw_contig)
+
+# Normalise: remove commas → collapse spaces → convert /0 to /
+contig = raw_contig.replace(',', ' ')       # commas to spaces
+contig = ' '.join(contig.split())           # collapse whitespace
+# v1 chain break "/0" → rfd3 chain break "/"
+import re
+contig = re.sub(r'/0(?=\s|$)', '/', contig)
+# Remove spaces around slashes: "80-120 / A1-100" → "80-120/A1-100"
+contig = re.sub(r'\s*/\s*', '/', contig)
 
 # Build the rfd3 InputSpecification entry
 design_entry = {
     'dialect':              2,
     'input':                '${meta.id}_target.pdb',   # resolved PDB path (symlinked below)
-    'contig':               contig_list,
+    'contig':               contig,
     'is_non_loopy':         spec.get('is_non_loopy', True),
 }
 
