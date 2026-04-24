@@ -106,9 +106,10 @@ with open('rfd3_input.json', 'w') as f:
 PYEOF
 
     # ── Run RFdiffusion3 ──
-    # pdb= is provided at CLI level so the atom array is loaded before contig parsing
+    # Hydra CLI: use +key=value to *append* keys not in the default config schema
+    # pdb is not a pre-existing Hydra config key, so +pdb= is required
     rfd3 design \\
-        pdb=\${RESOLVED_PDB} \\
+        +pdb=\${RESOLVED_PDB} \\
         out_dir=${meta.id}_output/rfd3_raw \\
         inputs=rfd3_input.json \\
         skip_existing=False \\
