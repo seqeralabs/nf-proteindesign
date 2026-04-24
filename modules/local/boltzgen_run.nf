@@ -12,7 +12,7 @@ process BOLTZGEN_RUN {
 
     input:
     tuple val(meta), path(design_yaml), path(structure_files)
-    path cache_dir, stageAs: 'input_cache'
+    path(cache_dir, stageAs: 'input_cache', arity: '0..*')
 
     output:
     tuple val(meta), path("${meta.id}_output"), emit: results
@@ -47,17 +47,17 @@ process BOLTZGEN_RUN {
     def reuse_flag = meta.reuse ? '--reuse' : ''
     def config_arg = params.boltzgen_config ? "--config ${params.boltzgen_config}" : ''
     def steps_arg = params.steps ? "--steps ${params.steps}" : ''
-    def cache_arg = cache_dir.name != 'EMPTY_CACHE' ? "--cache input_cache" : "--cache cache"
+    def cache_arg = cache_dir ? "--cache input_cache" : "--cache cache"
     """
     export HF_HOME=\${PWD}/input_cache
     export NUMBA_CACHE_DIR=/tmp
     export MPLCONFIGDIR=/tmp/matplotlib
     export XET_LOG_DIR=/tmp/xet_logs
-    export TRITON_CACHE_DIR=/tmp/triton  # Add this line
+    export TRITON_CACHE_DIR=/tmp/triton
     export XDG_CACHE_HOME=/tmp/cache
 
     # Create cache directory if not using staged cache
-    if [ "${cache_dir.name}" == "EMPTY_CACHE" ]; then
+    if [ ! -d "input_cache" ]; then
         mkdir -p ./cache
     fi
 

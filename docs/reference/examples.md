@@ -2,14 +2,14 @@
 
 Complete examples for common protein design use cases.
 
-## :material-dna: Example 1: Protein Binder Design
+## :material-dna: Example 1: Protein Binder Design (BoltzGen)
 
-Design a protein to bind EGFR using a pre-made design specification.
+Design a protein to bind EGFR using BoltzGen (default design tool).
 
 ### Create Design YAML
 
 ```yaml title="egfr_protein_design.yaml"
-# Boltzgen design specification for protein binder
+# BoltzGen design specification for protein binder
 entities:
   # Designed protein entity
   - protein:
@@ -27,21 +27,19 @@ entities:
 ### Create Samplesheet
 
 ```csv title="egfr_samplesheet.csv"
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-egfr_binder,egfr_protein_design.yaml,egfr_structure.cif,protein-anything,100,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+egfr_binder,egfr_protein_design.yaml,egfr_structure.cif,protein-anything,3,2,,egfr.a3m,egfr_sequence.fasta,
 ```
 
 ### Run Pipeline
+
+All analysis modules are enabled by default:
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input egfr_samplesheet.csv \
-    --outdir egfr_designs \
-    --run_proteinmpnn \
-    --run_ipsae \
-    --run_prodigy \
-    --run_consolidation
+    --outdir egfr_designs
 ```
 
 ### Analyze Results
@@ -50,21 +48,21 @@ nextflow run seqeralabs/nf-proteindesign \
 import pandas as pd
 
 # Load consolidated metrics
-results = pd.read_csv('egfr_designs/egfr_binder/consolidated_metrics.csv')
+results = pd.read_csv('egfr_designs/egfr_binder/consolidated/consolidated_metrics.csv')
 
 # Find top 5 candidates by binding affinity
 top5 = results.nsmallest(5, 'prodigy_delta_g')
 print(top5[['design_file', 'prodigy_delta_g', 'prodigy_kd', 'ipsae_score']])
 ```
 
-## :material-flask: Example 2: Peptide Binder Design
+## :material-flask: Example 2: Peptide Binder Design (BoltzGen)
 
 Design peptide binders for a target protein.
 
 ### Create Design YAML
 
 ```yaml title="peptide_design.yaml"
-# Boltzgen design specification for peptide binder
+# BoltzGen design specification for peptide binder
 entities:
   # Designed peptide entity
   - protein:
@@ -82,8 +80,8 @@ entities:
 ### Create Samplesheet
 
 ```csv title="peptide_samplesheet.csv"
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-peptide_binder,peptide_design.yaml,target.cif,peptide-anything,100,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+peptide_binder,peptide_design.yaml,target.cif,peptide-anything,3,2,,,target.fasta,
 ```
 
 ### Run Pipeline
@@ -92,18 +90,17 @@ peptide_binder,peptide_design.yaml,target.cif,peptide-anything,100,10
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input peptide_samplesheet.csv \
-    --protocol peptide-anything \
     --outdir peptide_designs
 ```
 
-## :material-antibody: Example 3: Nanobody Design
+## :material-antibody: Example 3: Nanobody Design (BoltzGen)
 
 Design nanobodies to bind a specific target.
 
 ### Create Design YAML
 
 ```yaml title="nanobody_design.yaml"
-# Boltzgen design specification for nanobody
+# BoltzGen design specification for nanobody
 entities:
   # Designed nanobody entity
   - protein:
@@ -121,8 +118,8 @@ entities:
 ### Create Samplesheet
 
 ```csv title="nanobody_samplesheet.csv"
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-nanobody_binder,nanobody_design.yaml,antigen.cif,nanobody-anything,100,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+nanobody_binder,nanobody_design.yaml,antigen.cif,nanobody-anything,3,2,,,antigen.fasta,
 ```
 
 ### Run Pipeline
@@ -131,11 +128,32 @@ nanobody_binder,nanobody_design.yaml,antigen.cif,nanobody-anything,100,10
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input nanobody_samplesheet.csv \
-    --protocol nanobody-anything \
     --outdir nanobody_designs
 ```
 
-## :material-test-tube: Example 4: Multiple Targets
+## :material-molecule: Example 4: Protein Binder Design (Complexa)
+
+Design a protein binder using the Proteina-Complexa backend.
+
+### Create Samplesheet
+
+```csv title="complexa_samplesheet.csv"
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+egfr_binder,data/egfr.cif,configs/egfr_pipeline.yaml,data/egfr.fasta,data/egfr.a3m,
+```
+
+### Run Pipeline
+
+```bash
+nextflow run seqeralabs/nf-proteindesign \
+    -profile docker \
+    --protein_design_tool complexa \
+    --input complexa_samplesheet.csv \
+    --complexa_ckpt_dir /path/to/checkpoints \
+    --outdir complexa_designs
+```
+
+## :material-test-tube: Example 5: Multiple Targets
 
 Design binders for multiple targets in a single run.
 
@@ -168,9 +186,9 @@ entities:
 ### Create Samplesheet
 
 ```csv title="multi_target_samplesheet.csv"
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-target1_binder,target1_design.yaml,target1.cif,protein-anything,100,10
-target2_binder,target2_design.yaml,target2.cif,protein-anything,100,10
+sample_id,design_yaml,structure_files,protocol,num_designs,budget,reuse,target_msa,target_sequence,target_template
+target1_binder,target1_design.yaml,target1.cif,protein-anything,3,2,,,target1.fasta,
+target2_binder,target2_design.yaml,target2.cif,protein-anything,3,2,,,target2.fasta,
 ```
 
 ### Run Pipeline
@@ -179,53 +197,35 @@ target2_binder,target2_design.yaml,target2.cif,protein-anything,100,10
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
     --input multi_target_samplesheet.csv \
-    --outdir multi_designs \
-    --run_consolidation
+    --outdir multi_designs
 ```
 
-## :material-chart-bar: Example 5: Full Analysis Pipeline
+## :material-chart-bar: Example 6: Selective Analysis Modules
 
-Complete workflow with all analysis tools enabled.
-
-### Create Samplesheet
-
-```csv title="full_analysis_samplesheet.csv"
-sample_id,design_yaml,structure_files,protocol,num_designs,budget
-full_analysis,my_design.yaml,target.cif,protein-anything,200,20
-```
+By default all analysis modules are enabled. To disable specific modules:
 
 ### Run Pipeline
 
 ```bash
 nextflow run seqeralabs/nf-proteindesign \
     -profile docker \
-    --input full_analysis_samplesheet.csv \
-    --outdir full_analysis_results \
-    --num_designs 200 \
-    --budget 20 \
-    --run_proteinmpnn \
-    --mpnn_num_seq_per_target 10 \
-    --run_ipsae \
-    --ipsae_pae_cutoff 8 \
-    --run_prodigy \
-    --run_consolidation \
-    --report_top_n 20
+    --input samplesheet.csv \
+    --outdir selective_results \
+    --run_foldseek false \
+    --run_prodigy false
 ```
 
 ### Review Consolidated Report
 
 ```bash
 # View consolidated metrics
-cat full_analysis_results/full_analysis/consolidated_metrics.csv | column -t -s,
-
-# Count successful designs
-grep "SUCCESS" full_analysis_results/full_analysis/consolidated_metrics.csv | wc -l
+cat selective_results/{sample_id}/consolidated/consolidated_metrics.csv | column -t -s,
 
 # Find designs with best affinity
-sort -t',' -k3,3n full_analysis_results/full_analysis/consolidated_metrics.csv | head -10
+sort -t',' -k3,3n selective_results/{sample_id}/consolidated/consolidated_metrics.csv | head -10
 ```
 
-## :material-cog: Example 6: Using Test Profiles
+## :material-cog: Example 7: Using Test Profiles
 
 The pipeline includes built-in test profiles for quick validation.
 
@@ -253,7 +253,7 @@ nextflow run seqeralabs/nf-proteindesign \
     --outdir test_nanobody_results
 ```
 
-## :material-cloud: Example 7: Seqera Platform Deployment
+## :material-cloud: Example 8: Seqera Platform Deployment
 
 Run the pipeline on Seqera Platform with GPU compute.
 
@@ -266,8 +266,7 @@ Run the pipeline on Seqera Platform with GPU compute.
 5. Configure parameters:
    - `input`: Path to samplesheet in Data Link
    - `outdir`: Output Data Link path
-   - `num_designs`: 100
-   - `budget`: 10
+   - `protein_design_tool`: `boltzgen` or `complexa`
 6. Select GPU-enabled compute environment
 7. Click "Launch"
 
@@ -289,28 +288,31 @@ After pipeline completion, you'll find:
 ```
 results/
 └── {sample_id}/
-    ├── boltzgen/
-    │   ├── final_ranked_designs/
-    │   │   ├── design_1.cif          # Top ranked design
-    │   │   ├── design_2.cif
-    │   │   └── ...
-    │   └── intermediate_designs/
-    │       └── *.cif
-    ├── proteinmpnn/                   # If --run_proteinmpnn enabled
-    │   ├── design_1_sequences.fa
+    ├── boltzgen/ or complexa/         # Design structures (depends on tool)
+    │   ├── design_1.pdb
+    │   ├── design_2.pdb
     │   └── ...
-    ├── ipsae/                         # If --run_ipsae enabled
-    │   ├── design_1_ipsae_scores.csv
-    │   └── ...
-    ├── prodigy/                       # If --run_prodigy enabled
-    │   ├── design_1_prodigy_summary.csv
-    │   └── ...
-    └── consolidated_metrics.csv       # If --run_consolidation enabled
+    ├── proteinmpnn/                   # Optimized sequences & scores
+    │   ├── sequences/
+    │   └── scores/
+    ├── boltz2/                        # Refolded structures
+    │   ├── structures/
+    │   ├── confidence/
+    │   └── npz/
+    ├── ipsae/                         # Interface scores
+    │   └── *_ipsae_scores.txt
+    ├── prodigy/                       # Affinity predictions
+    │   └── *_prodigy_results.txt
+    ├── foldseek/                      # Structural search results
+    │   └── *_foldseek_summary.tsv
+    └── consolidated/                  # Combined metrics report
+        ├── consolidated_metrics.csv
+        └── consolidated_report.html
 ```
 
 ## :material-lightbulb: Tips and Best Practices
 
-### Design YAML Tips
+### Design YAML Tips (BoltzGen)
 
 - **Length ranges**: Use `80..120` syntax for flexible design lengths
 - **Multiple chains**: Specify multiple target chains for complex interfaces
@@ -318,24 +320,26 @@ results/
 
 ### Parameter Tuning
 
-- **Quick tests**: Start with `num_designs=10, budget=5` for fast validation
-- **Production runs**: Use `num_designs=100-200, budget=10-20` for quality results
-- **Large campaigns**: Increase to `num_designs=200+, budget=50+` for diversity
+- **Quick tests**: Use small `num_designs` and `budget` values for fast validation
+- **Production runs**: Increase `num_designs` and `budget` for diversity and quality
+- **Complexa tuning**: Adjust `--complexa_nsteps`, `--complexa_batch_size`, and `--complexa_replicas`
 
 ### Resource Optimization
 
 - **GPU memory**: Ensure 16GB+ VRAM for standard runs
-- **Caching**: Use `--cache_dir` to avoid re-downloading model weights
+- **Caching**: Use `--cache_dir` (BoltzGen) or `--complexa_ckpt_dir` (Complexa) for model weights
 - **Resume**: Always use `-resume` flag to recover from interruptions
 
 ### Analysis Workflow
 
-1. Run Boltzgen to generate initial designs
-2. Enable ProteinMPNN for sequence optimization
-3. Use IPSAE for interface quality scoring
-4. Apply PRODIGY for binding affinity prediction
-5. Review consolidated metrics for top candidates
-6. Select top designs for experimental validation
+1. Run BoltzGen or Complexa to generate initial designs
+2. ProteinMPNN optimizes sequences for generated structures
+3. Boltz-2 predicts structures from optimized sequences (refolding validation)
+4. ipSAE scores interface quality
+5. PRODIGY predicts binding affinity
+6. Foldseek searches for structural similarity
+7. Consolidation combines all metrics into a ranked report
+8. Select top designs for experimental validation
 
 ## :material-help: Troubleshooting
 
@@ -350,8 +354,8 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 
 **Out of memory:**
 ```bash
-# Reduce num_designs or use smaller length ranges in design YAML
-nextflow run ... --num_designs 50
+# For Complexa, reduce batch size
+nextflow run ... --complexa_batch_size 8
 ```
 
 **Pipeline fails:**

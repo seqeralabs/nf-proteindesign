@@ -1,9 +1,9 @@
-# Boltzgen design specification for nanobody against 2VSM
+# Complexa design specification for nanobody against 2VSM
 # Designs a nanobody to bind the 2VSM structure
 
 entities:
   # Specify a designed nanobody
-  # Boltzgen will use one of its default nanobody scaffolds
+  # Complexa will use one of its default nanobody scaffolds
   # and design the CDR regions
   - protein: 
       id: B

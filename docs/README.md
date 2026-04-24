@@ -148,7 +148,7 @@ flowchart TB
 ## Tips for Documentation Writers
 
 1. **Keep diagrams updated**: When you change the workflow, update ALL related diagrams
-2. **Use consistent terminology**: "Boltzgen" not "BoltzGen", "Boltz-2" not "Boltz2"
+2. **Use consistent terminology**: "Complexa" not "BoltzGen", "Boltz-2" not "Boltz2"
 3. **Add info boxes** for important notes:
    ```markdown
    !!! info "Title"

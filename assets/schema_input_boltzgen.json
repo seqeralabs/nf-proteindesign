@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_boltzgen.json",
+  "title": "seqeralabs/nf-proteindesign - BoltzGen samplesheet schema",
+  "description": "Schema for validating samplesheets when --protein_design_tool=boltzgen. Each row specifies a design YAML, structure files, and generation parameters.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "errorMessage": "Sample ID must be alphanumeric with underscores or hyphens only"
+      },
+      "design_yaml": {
+        "type": "string",
+        "pattern": "^\\S+\\.ya?ml$",
+        "errorMessage": "Design YAML must be a valid file path ending in .yaml or .yml"
+      },
+      "structure_files": {
+        "type": "string",
+        "errorMessage": "Structure files must be a comma-separated list of PDB/CIF file paths (e.g., '2VSM.cif' or 'protein1.pdb,protein2.cif')"
+      },
+      "protocol": {
+        "type": "string",
+        "enum": [
+          "protein-anything",
+          "peptide-anything",
+          "protein-small_molecule",
+          "nanobody-anything"
+        ],
+        "errorMessage": "Protocol must be one of: protein-anything, peptide-anything, protein-small_molecule, nanobody-anything"
+      },
+      "num_designs": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Number of designs must be a positive integer"
+      },
+      "budget": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Budget must be a positive integer"
+      },
+      "reuse": {
+        "type": "boolean",
+        "errorMessage": "Reuse must be true or false"
+      },
+      "target_msa": {
+        "type": "string",
+        "errorMessage": "Target MSA must be a valid file path to a pre-computed MSA file (e.g., 'target.a3m')"
+      },
+      "target_sequence": {
+        "type": "string",
+        "errorMessage": "Target sequence must be a valid file path to a FASTA file containing the target protein sequence"
+      },
+      "target_template": {
+        "type": "string",
+        "pattern": "^\\S+\\.cif$",
+        "errorMessage": "Target template must be a valid file path to a CIF file"
+      }
+    },
+    "required": [
+      "sample_id",
+      "design_yaml",
+      "target_sequence"
+    ]
+  }
+}
