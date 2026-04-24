@@ -1,0 +1,28 @@
+Boltz-2 Multimer Prediction Summary
+====================================
+
+Parent Design: design1_rfd
+Sequence ID: design1_rfd_d0_s0
+
+Input:
+  - ProteinMPNN sequences: design1_rfd_d0_s0.fa
+  - Target sequence file: design1_rfd_d0_target_sequence.txt
+  - Target sequence length: 532
+
+Parameters:
+  - Cache directory: default (~/.boltz)
+  - Recycling steps: 1
+  - Diffusion samples: 1
+  - Use MSA: false
+  - Predict affinity: false
+
+Output:
+  - Total structures predicted: 1
+  - Confidence scores: 1
+  - PAE NPZ files: 1
+  - Affinity predictions: 0
+
+Notes:
+  - NPZ files contain PAE, PDE, and pLDDT matrices
+  - No conversion needed for ipSAE (native NPZ format)
+  - Affinity values in log(IC50 µM) units

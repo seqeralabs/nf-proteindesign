@@ -1,0 +1,2 @@
+structure_id,buried_surface_area_A2,num_interface_contacts,num_noninteracting_surface,num_charged_residues,percent_charged_residues,num_apolar_residues,percent_apolar_residues,predicted_binding_affinity_kcal_mol,predicted_kd_M,kd_temperature_C
+design1_rfd_d1_s2,,,,,,,,,,

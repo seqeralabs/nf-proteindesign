@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protein Design Metrics Report</title>
+
+    <!-- AG Grid CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-alpine.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: #1a1a2e;
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .summary {
+            color: #666;
+            margin-bottom: 24px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: white;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .metric-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .metric-card {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-card dt {
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .metric-card dd {
+            margin: 0;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        #metricsGrid {
+            height: 600px;
+            width: 100%;
+        }
+
+        .ag-theme-alpine {
+            --ag-header-background-color: #667eea;
+            --ag-header-foreground-color: white;
+            --ag-row-hover-color: #f0f4ff;
+            --ag-selected-row-background-color: #e8f0fe;
+            --ag-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .ag-theme-alpine .ag-header-cell {
+            font-weight: 600;
+        }
+
+        .good-value {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .warning-value {
+            color: #ffc107;
+        }
+
+        .afdb-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .afdb-link:hover {
+            text-decoration: underline;
+        }
+
+        .sequence-cell {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .sequence-collapsed {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .sequence-collapsed:hover {
+            background: #e0e0e0;
+        }
+
+        .sequence-expanded {
+            word-break: break-all;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .expand-icon {
+            margin-left: 4px;
+            font-size: 0.7rem;
+            opacity: 0.6;
+        }
+
+        /* Modal for sequence */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 24px;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #1a1a2e;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .sequence-display {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            line-height: 1.6;
+        }
+
+        .copy-btn {
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Protein Design Metrics Report</h1>
+
+        <div class="summary">
+            <div class="summary-item">
+                <span class="summary-label">Total Designs</span>
+                <span class="summary-value">6</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">With Sequences</span>
+                <span class="summary-value">6</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">AFDB Matches</span>
+                <span class="summary-value">0</span>
+            </div>
+        </div>
+
+        <div class="metric-info">
+            <div class="metric-card">
+                <dl>
+                    <dt>ipSAE</dt>
+                    <dd>Interface interaction prediction Score from Aligned Errors. Higher is better.</dd>
+                </dl>
+            </div>
+            <div class="metric-card">
+                <dl>
+                    <dt>Binding Affinity</dt>
+                    <dd>Predicted from PRODIGY (kcal/mol). More negative is better; &lt;-10 indicates strong binding.</dd>
+                </dl>
+            </div>
+            <div class="metric-card">
+                <dl>
+                    <dt>Foldseek Distance</dt>
+                    <dd>AA differences to closest structural match. Lower = more similar to known structures.</dd>
+                </dl>
+            </div>
+            <div class="metric-card">
+                <dl>
+                    <dt>AFDB ID</dt>
+                    <dd>ID of closest AlphaFold DB match. Click to view entry.</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="search-box">
+                <input type="text" id="quickFilter" placeholder="Search all columns...">
+            </div>
+            <button class="btn btn-primary" onclick="exportToCsv()">Export CSV</button>
+            <button class="btn btn-secondary" onclick="resetFilters()">Reset Filters</button>
+        </div>
+
+        <div id="metricsGrid" class="ag-theme-alpine"></div>
+    </div>
+
+    <!-- Sequence Modal -->
+    <div id="sequenceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Sequence</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalSequence" class="sequence-display"></div>
+            <button class="btn btn-secondary copy-btn" onclick="copySequence()">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <!-- AG Grid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+
+    <script>
+        // Row data from Python
+        const rowData = [{"design_id": "design1_rfd_d0_s1", "ipsae": 0.012283, "binding_affinity": -23.4, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "AAAAYLAAGQAVADAAAEAAAADAAAAAASPVPAARRLARAEAVAAAVAAALDAAAAAAAARVAAIAAASAAPAADRAAAVALVTAALQALVDLRRAALAAALAAEKAA", "aa_length": 109}, {"design_id": "design1_rfd_d0_s0", "ipsae": 0.0, "binding_affinity": -18.8, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "GAAAFIAAGNAIADEAAATNAAALAALLASSTPLADLLADISAIAAGIIAAINAAIADLKAAITAIAAASTAPAATKAATVSIITAAATTLAATIASAIAAALAALAAA", "aa_length": 109}, {"design_id": "design1_rfd_d0_s2", "ipsae": 0.0, "binding_affinity": -15.3, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "PYAEELAKGQAVADENAKRAAEALAKRLASPLPAARRLRRDELVAAAIKAALDAALAAARARIAAIAAASDAPAADRAATVRLVTAAIEALVALRKARIDAALAAERAR", "aa_length": 109}, {"design_id": "design1_rfd_d1_s0", "ipsae": 0.0, "binding_affinity": -14.3, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "GAAAFAALVAAYAAAAKAAIDAAAAAIQAATSDAATQAAIAATAAILKAAVDALAAGIAALATATAAELAASAAAAAAAAPALAQAKAAAAKAAAALAAAIAAAEAAAA", "aa_length": 109}, {"design_id": "design1_rfd_d1_s1", "ipsae": 0.0, "binding_affinity": -8.8, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "GEAALAARVAAAAAAMKAAIDAAAATVKAATTDPAAKAAVDAAAAVLKAQVDALAAAVTATATATAEERAARRAAVAAARPALEARRAEAEARAAALAARIAAELAALA", "aa_length": 109}, {"design_id": "design1_rfd_d1_s2", "ipsae": 0.0, "binding_affinity": -18.0, "foldseek_target": null, "foldseek_distance": null, "afdb_id": null, "afdb_url": null, "sequence": "GKEELDKRVDAAAAKMKAAVDAAAAAVKAATTDAAAKAGVDAAAAKVKAAIDDLAAKVKAQATATEAEREAARAACAAARPALRAAAAAAAAAAEALRARIAAERARAA", "aa_length": 109}];
+
+        // Store current sequence for copying
+        let currentSequence = '';
+
+        // Store grid API reference
+        let gridApi = null;
+
+        // Custom cell renderer for sequence (collapsible)
+        function sequenceCellRenderer(params) {
+            if (!params.value) return '-';
+
+            const seq = params.value;
+            const preview = seq.length > 15 ? seq.substring(0, 15) + '...' : seq;
+
+            return `<span class="sequence-cell sequence-collapsed" onclick="showSequence('${params.data.design_id}', '${seq}')">${preview} <span class="expand-icon">&#x25BC;</span></span>`;
+        }
+
+        // Custom cell renderer for AFDB link
+        function afdbCellRenderer(params) {
+            if (!params.value) return '-';
+
+            const url = params.data.afdb_url;
+            if (url) {
+                return `<a href="${url}" target="_blank" class="afdb-link">${params.value}</a>`;
+            }
+            return params.value;
+        }
+
+        // Custom cell renderer for Foldseek target (clickable to copy)
+        function foldseekTargetCellRenderer(params) {
+            if (!params.value) return '-';
+
+            const target = params.value;
+            const preview = target.length > 20 ? target.substring(0, 20) + '...' : target;
+
+            return `<span class="sequence-cell sequence-collapsed" onclick="showFoldseekTarget('${params.data.design_id}', '${target}')">${preview} <span class="expand-icon">&#x25BC;</span></span>`;
+        }
+
+        // Custom cell renderer for ipSAE
+        function ipsaeCellRenderer(params) {
+            if (params.value === null || params.value === undefined) return '-';
+            return params.value.toFixed(4);
+        }
+
+        // Custom cell renderer for binding affinity
+        function affinityCellRenderer(params) {
+            if (params.value === null || params.value === undefined) return '-';
+            return params.value.toFixed(1);
+        }
+
+        // Column definitions
+        const columnDefs = [
+            {
+                headerName: '#',
+                valueGetter: 'node.rowIndex + 1',
+                pinned: 'left',
+                filter: false,
+                sortable: false,
+                minWidth: 60,
+                maxWidth: 70,
+                suppressSizeToFit: true
+            },
+            {
+                headerName: 'Design ID',
+                field: 'design_id',
+                pinned: 'left',
+                filter: 'agTextColumnFilter',
+                sortable: true,
+                minWidth: 140
+            },
+            {
+                headerName: 'ipSAE',
+                field: 'ipsae',
+                filter: 'agNumberColumnFilter',
+                sortable: true,
+                cellRenderer: ipsaeCellRenderer,
+                minWidth: 100
+            },
+            {
+                headerName: 'Binding Affinity (kcal/mol)',
+                field: 'binding_affinity',
+                filter: 'agNumberColumnFilter',
+                sortable: true,
+                cellRenderer: affinityCellRenderer,
+                minWidth: 160
+            },
+            {
+                headerName: 'AA Length',
+                field: 'aa_length',
+                filter: 'agNumberColumnFilter',
+                sortable: true,
+                minWidth: 100,
+                valueFormatter: params => params.value ? params.value : '-'
+            },
+            {
+                headerName: 'Sequence',
+                field: 'sequence',
+                filter: 'agTextColumnFilter',
+                sortable: false,
+                cellRenderer: sequenceCellRenderer,
+                minWidth: 150
+            },
+            {
+                headerName: 'AFDB ID',
+                field: 'afdb_id',
+                filter: 'agTextColumnFilter',
+                sortable: true,
+                cellRenderer: afdbCellRenderer,
+                minWidth: 120
+            },
+            {
+                headerName: 'Foldseek Distance',
+                field: 'foldseek_distance',
+                filter: 'agNumberColumnFilter',
+                sortable: true,
+                minWidth: 140,
+                valueFormatter: params => params.value !== null && params.value !== undefined ? params.value : '-'
+            },
+            {
+                headerName: 'Foldseek Target',
+                field: 'foldseek_target',
+                filter: 'agTextColumnFilter',
+                sortable: true,
+                minWidth: 200,
+                cellRenderer: foldseekTargetCellRenderer
+            }
+        ];
+
+        // Grid options
+        const gridOptions = {
+            columnDefs: columnDefs,
+            rowData: rowData,
+            defaultColDef: {
+                resizable: true,
+                floatingFilter: true
+            },
+            animateRows: true,
+            pagination: true,
+            paginationPageSize: 25,
+            paginationPageSizeSelector: [10, 25, 50, 100],
+            domLayout: 'normal'
+        };
+
+        // Initialize grid
+        document.addEventListener('DOMContentLoaded', function() {
+            const gridDiv = document.querySelector('#metricsGrid');
+            gridApi = agGrid.createGrid(gridDiv, gridOptions);
+
+            // Quick filter
+            document.getElementById('quickFilter').addEventListener('input', function(e) {
+                gridApi.setGridOption('quickFilterText', e.target.value);
+            });
+        });
+
+        // Export to CSV
+        function exportToCsv() {
+            gridApi.exportDataAsCsv({
+                fileName: 'protein_design_metrics.csv',
+                columnKeys: ['design_id', 'ipsae', 'binding_affinity', 'aa_length', 'sequence', 'afdb_id', 'foldseek_distance', 'foldseek_target']
+            });
+        }
+
+        // Reset filters
+        function resetFilters() {
+            gridApi.setFilterModel(null);
+            document.getElementById('quickFilter').value = '';
+            gridApi.setGridOption('quickFilterText', '');
+        }
+
+        // Show sequence modal
+        function showSequence(designId, sequence) {
+            currentSequence = sequence;
+            document.getElementById('modalTitle').textContent = `Sequence: ${designId} (${sequence.length} AA)`;
+            document.getElementById('modalSequence').textContent = sequence;
+            document.getElementById('sequenceModal').style.display = 'block';
+        }
+
+        // Show Foldseek target modal
+        function showFoldseekTarget(designId, target) {
+            currentSequence = target;
+            document.getElementById('modalTitle').textContent = `Foldseek Target: ${designId}`;
+            document.getElementById('modalSequence').textContent = target;
+            document.getElementById('sequenceModal').style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('sequenceModal').style.display = 'none';
+        }
+
+        // Copy sequence to clipboard
+        function copySequence() {
+            navigator.clipboard.writeText(currentSequence).then(function() {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = originalText, 2000);
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('sequenceModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

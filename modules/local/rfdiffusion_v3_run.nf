@@ -98,23 +98,20 @@ import yaml, json, pathlib
 with open('${design_yaml}') as f:
     spec = yaml.safe_load(f)
 
-# Contig — rfd3 expects a JSON **list** of segment strings, e.g.
-#   ["80-120", "/0", "A1-100"]
-# Our YAML stores the contig as a single string with spaces or commas
-# as delimiters.  Normalise to a list of segments.
+# Contig — rfd3 expects the contig as a **string**, e.g.
+#   "80-120,/0,A1-100"
+# Our YAML stores it as a string already; if it's a list, join it back.
 raw_contig = spec.get('contig', '100-100')
 if isinstance(raw_contig, list):
-    contig_list = raw_contig          # already a list
-elif ',' in raw_contig:
-    contig_list = [s.strip() for s in raw_contig.split(',') if s.strip()]
+    contig_str = ','.join(str(s) for s in raw_contig)
 else:
-    contig_list = raw_contig.split()  # space-delimited fallback
+    contig_str = str(raw_contig)
 
 # Build the rfd3 InputSpecification entry
 design_entry = {
     'dialect':              2,
     'input':                '${meta.id}_target.pdb',   # resolved PDB path (symlinked below)
-    'contig':               contig_list,
+    'contig':               contig_str,
     'is_non_loopy':         spec.get('is_non_loopy', True),
 }
 
@@ -165,9 +162,30 @@ PYEOF
         prevalidate_inputs=True
 
     # ── Rank and collect top designs ──
-    # rfd3 outputs PDB files into the out_dir. Collect the first <budget>.
+    # rfd3 outputs .cif.gz files (not PDB). Decompress and convert to PDB
+    # so downstream modules (ProteinMPNN, Boltz-2, etc.) can consume them.
     RANK=1
+    for cifgz in \$(find ${meta.id}_output/rfd3_raw -name "*.cif.gz" 2>/dev/null | sort -V | head -n ${budget}); do
+        DESIGN_NAME=\$(basename "\${cifgz}" .cif.gz)
+        # Decompress the .cif.gz
+        gunzip -k "\${cifgz}"
+        CIF_FILE="\${cifgz%.gz}"
+        # Convert CIF to PDB using biotite (available in the foundry container)
+        python3 - "\${CIF_FILE}" "${meta.id}_output/designs/rank\${RANK}_\${DESIGN_NAME}.pdb" <<'CIF2PDB'
+import sys
+from biotite.structure.io import pdbx, pdb
+
+cif_file = pdbx.CIFFile.read(sys.argv[1])
+atoms = pdbx.get_structure(cif_file, model=1)
+pdb_file = pdb.PDBFile()
+pdb.set_structure(pdb_file, atoms)
+pdb_file.write(sys.argv[2])
+CIF2PDB
+        RANK=\$((RANK + 1))
+    done
+    # Fallback: also check for any raw PDB outputs
     for pdb in \$(find ${meta.id}_output/rfd3_raw -name "*.pdb" 2>/dev/null | sort -V | head -n ${budget}); do
+        if [ \${RANK} -gt ${budget} ]; then break; fi
         DESIGN_NAME=\$(basename "\${pdb}" .pdb)
         cp "\${pdb}" "${meta.id}_output/designs/rank\${RANK}_\${DESIGN_NAME}.pdb"
         RANK=\$((RANK + 1))
@@ -176,7 +194,8 @@ PYEOF
     # ── Version information ──
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        rfdiffusion3: \$(pip show rc-foundry 2>/dev/null | grep Version | cut -d' ' -f2 || echo "unknown")
+        rfdiffusion3: \$(pip3 show rc-foundry 2>/dev/null | grep Version | cut -d' ' -f2 || echo "unknown")
+        biotite: \$(python3 -c 'import biotite; print(biotite.__version__)' 2>/dev/null || echo "unknown")
         python: \$(python3 --version 2>&1 | sed 's/Python //g')
     END_VERSIONS
     """
