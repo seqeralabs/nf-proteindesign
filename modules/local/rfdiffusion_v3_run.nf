@@ -66,7 +66,23 @@ process RFDIFFUSION_V3_RUN {
         export RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
     fi
 
+    if [ -z "\${RESOLVED_PDB}" ]; then
+        echo "ERROR: No input PDB structure found. RFdiffusion3 requires a target structure." >&2
+        echo "  structure_files input: ${structure_files}" >&2
+        exit 1
+    fi
+    if [ ! -f "\${RESOLVED_PDB}" ]; then
+        echo "ERROR: Input PDB not found at: \${RESOLVED_PDB}" >&2
+        ls -la \${PWD}/ >&2
+        exit 1
+    fi
+    echo "Using input structure: \${RESOLVED_PDB}"
+
     # ── Convert design YAML to rfd3 JSON input ──
+    # NOTE: The structure PDB is passed via the rfd3 CLI (pdb=<path>), NOT inside
+    # the JSON spec.  The Foundry DesignInputSpecification requires the atom array
+    # to be loaded before it can parse contig chain/residue selections like "A1-100".
+    # Providing the structure at the CLI level ensures it is loaded first.
     python3 - <<'PYEOF'
 import yaml, json, os
 
@@ -75,14 +91,11 @@ with open('${design_yaml}') as f:
 
 contig    = spec.get('contig', '100-100')
 hotspots  = spec.get('hotspot_res', [])
-input_pdb = os.environ.get('RESOLVED_PDB', '')
 
 design_entry = {
     'contig':      contig,
     'num_designs': ${num_designs},
 }
-if input_pdb:
-    design_entry['input_path'] = input_pdb
 if hotspots:
     design_entry['hotspot_res'] = hotspots
 
@@ -93,7 +106,9 @@ with open('rfd3_input.json', 'w') as f:
 PYEOF
 
     # ── Run RFdiffusion3 ──
+    # pdb= is provided at CLI level so the atom array is loaded before contig parsing
     rfd3 design \\
+        pdb=\${RESOLVED_PDB} \\
         out_dir=${meta.id}_output/rfd3_raw \\
         inputs=rfd3_input.json \\
         skip_existing=False \\
