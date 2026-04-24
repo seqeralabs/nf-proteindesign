@@ -64,13 +64,22 @@ process RFDIFFUSION_V3_RUN {
     if [ \${#STRUCT_FILES[@]} -gt 0 ]; then
         FIRST_STRUCT="\${STRUCT_FILES[0]}"
         if [[ "\${FIRST_STRUCT}" == *.cif ]]; then
+            # Use gemmi (bundled in foundry) for CIF→PDB conversion; fall back to pip-installed biopython
             python3 -c "
-from Bio.PDB import MMCIFParser, PDBIO
-parser = MMCIFParser(QUIET=True)
-structure = parser.get_structure('target', '\${FIRST_STRUCT}')
-io = PDBIO()
-io.set_structure(structure)
-io.save('target_structure.pdb')
+try:
+    import gemmi
+    doc = gemmi.cif.read('\${FIRST_STRUCT}')
+    st = gemmi.make_structure_from_block(doc.sole_block())
+    st.write_pdb('target_structure.pdb')
+except ImportError:
+    import subprocess, sys
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'biopython'])
+    from Bio.PDB import MMCIFParser, PDBIO
+    parser = MMCIFParser(QUIET=True)
+    structure = parser.get_structure('target', '\${FIRST_STRUCT}')
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save('target_structure.pdb')
 "
             RESOLVED_PDB="\${PWD}/target_structure.pdb"
         else
