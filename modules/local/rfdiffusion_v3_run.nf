@@ -98,16 +98,23 @@ import yaml, json, pathlib
 with open('${design_yaml}') as f:
     spec = yaml.safe_load(f)
 
-# Contig string — rfd3 uses comma-separated segments, e.g. "80-120,/0,A1-100"
-# Our YAML may use spaces; normalise to commas.
+# Contig — rfd3 expects a JSON **list** of segment strings, e.g.
+#   ["80-120", "/0", "A1-100"]
+# Our YAML stores the contig as a single string with spaces or commas
+# as delimiters.  Normalise to a list of segments.
 raw_contig = spec.get('contig', '100-100')
-contig = raw_contig.replace(' ', ',')
+if isinstance(raw_contig, list):
+    contig_list = raw_contig          # already a list
+elif ',' in raw_contig:
+    contig_list = [s.strip() for s in raw_contig.split(',') if s.strip()]
+else:
+    contig_list = raw_contig.split()  # space-delimited fallback
 
 # Build the rfd3 InputSpecification entry
 design_entry = {
     'dialect':              2,
     'input':                '${meta.id}_target.pdb',   # resolved PDB path (symlinked below)
-    'contig':               contig,
+    'contig':               contig_list,
     'is_non_loopy':         spec.get('is_non_loopy', True),
 }
 
