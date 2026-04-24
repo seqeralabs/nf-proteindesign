@@ -4,15 +4,23 @@
 ========================================================================================
     Runs RFdiffusion3 via the RosettaCommons Foundry framework (rfd3 CLI).
     Official container: rosettacommons/foundry
+    Docs: https://github.com/RosettaCommons/foundry/blob/production/models/rfd3/README.md
 
-    Design YAML schema (rfdiffusion-format):
-        contig:       Contig specification string, e.g. "80-120/0 A1-100"
-                      Syntax: "[binder_length/0 TargetChain_start-end]"
-        hotspot_res:  Optional list of hotspot residues on target, e.g. ["A42","A45"]
+    Design YAML schema (rfd3 format):
+        contig:            Contig specification string using comma-separated segments.
+                           e.g. "80-120,/0,A1-100"
+                           Syntax: "<binder_length>,/0,<TargetChain><start>-<end>"
+        select_hotspots:   Optional dict of target residues → atom names for hotspot
+                           biasing, e.g. {"A42": "CA,CB", "A45": "CG"}
+        is_non_loopy:      Recommended true for PPI binder design (more structured).
 
-    The module converts the YAML spec to the JSON format required by rfd3 and
-    organises outputs into the same directory structure as the other design tools
-    so all downstream modules are unaffected.
+    The rfd3 CLI takes two required arguments:
+        rfd3 design out_dir=<path> inputs=<path/to/json_or_yaml>
+    The input PDB path is specified INSIDE the JSON spec via the "input" field,
+    not as a separate CLI argument.
+
+    Number of designs is controlled via CLI args:
+        n_batches (default 1) × diffusion_batch_size (default 8) = total designs
 
     Input structure files must be PDB format. CIF→PDB conversion should be done
     upstream (e.g. via CONVERT_CIF_TO_PDB) before calling this module.
@@ -43,9 +51,12 @@ process RFDIFFUSION_V3_RUN {
     path "versions.yml",                                                                          emit: versions
 
     script:
-    def model_cache = cache_dir ? "\${PWD}/input_cache" : "\${HOME}/.foundry/checkpoints"
-    def num_designs = meta.num_designs ?: 10
-    def budget      = meta.budget ?: 4
+    def model_cache  = cache_dir ? "\${PWD}/input_cache" : "\${HOME}/.foundry/checkpoints"
+    def num_designs  = meta.num_designs ?: 10
+    def budget       = meta.budget ?: 4
+    // rfd3 controls total designs via n_batches × diffusion_batch_size (default 8).
+    // We set diffusion_batch_size = num_designs and n_batches = 1.
+    def batch_size   = num_designs
     """
     set -euo pipefail
 
@@ -61,9 +72,9 @@ process RFDIFFUSION_V3_RUN {
     # ── Resolve input PDB structure ──
     # CIF→PDB conversion is handled upstream by CONVERT_CIF_TO_PDB
     STRUCT_FILES=(${structure_files})
-    export RESOLVED_PDB=""
+    RESOLVED_PDB=""
     if [ \${#STRUCT_FILES[@]} -gt 0 ]; then
-        export RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
+        RESOLVED_PDB="\${PWD}/\${STRUCT_FILES[0]}"
     fi
 
     if [ -z "\${RESOLVED_PDB}" ]; then
@@ -78,45 +89,76 @@ process RFDIFFUSION_V3_RUN {
     fi
     echo "Using input structure: \${RESOLVED_PDB}"
 
-    # ── Convert design YAML to rfd3 JSON input ──
-    # NOTE: The structure PDB is passed via the rfd3 CLI (pdb=<path>), NOT inside
-    # the JSON spec.  The Foundry DesignInputSpecification requires the atom array
-    # to be loaded before it can parse contig chain/residue selections like "A1-100".
-    # Providing the structure at the CLI level ensures it is loaded first.
+    # ── Convert design YAML to rfd3 JSON InputSpecification ──
+    # The PDB path goes inside the JSON spec as the "input" field.
+    # Ref: https://github.com/RosettaCommons/foundry/blob/production/models/rfd3/docs/input.md
     python3 - <<'PYEOF'
-import yaml, json, os
+import yaml, json, pathlib
 
 with open('${design_yaml}') as f:
     spec = yaml.safe_load(f)
 
-contig    = spec.get('contig', '100-100')
-hotspots  = spec.get('hotspot_res', [])
+# Contig string — rfd3 uses comma-separated segments, e.g. "80-120,/0,A1-100"
+# Our YAML may use spaces; normalise to commas.
+raw_contig = spec.get('contig', '100-100')
+contig = raw_contig.replace(' ', ',')
 
+# Build the rfd3 InputSpecification entry
 design_entry = {
-    'contig':      contig,
-    'num_designs': ${num_designs},
+    'dialect':              2,
+    'input':                '${meta.id}_target.pdb',   # resolved PDB path (symlinked below)
+    'contig':               contig,
+    'is_non_loopy':         spec.get('is_non_loopy', True),
 }
+
+# Hotspots: rfd3 uses "select_hotspots" dict with atom selections.
+# Accept both the rfd3-native dict form and a simple residue list.
+hotspots = spec.get('select_hotspots', spec.get('hotspot_res', None))
 if hotspots:
-    design_entry['hotspot_res'] = hotspots
+    if isinstance(hotspots, dict):
+        # Already in rfd3 native format: {"A42": "CA,CB", ...}
+        design_entry['select_hotspots'] = hotspots
+        design_entry['infer_ori_strategy'] = 'hotspots'
+    elif isinstance(hotspots, list) and len(hotspots) > 0:
+        # Convert simple list ["A42", "A45"] → dict with empty atom selection
+        design_entry['select_hotspots'] = {r: '' for r in hotspots}
+        design_entry['infer_ori_strategy'] = 'hotspots'
+
+# Pass through any additional rfd3-native fields from the YAML
+for key in ('select_fixed_atoms', 'select_unfixed_sequence', 'ligand',
+            'length', 'unindex', 'partial_t', 'infer_ori_strategy',
+            'cif_parser_args'):
+    if key in spec and key not in design_entry:
+        design_entry[key] = spec[key]
 
 rfd3_input = {'${meta.id}': design_entry}
 
 with open('rfd3_input.json', 'w') as f:
     json.dump(rfd3_input, f, indent=2)
+
+print("Generated rfd3_input.json:")
+print(json.dumps(rfd3_input, indent=2))
 PYEOF
 
+    # ── Symlink PDB so the path in the JSON spec resolves ──
+    ln -sf "\${RESOLVED_PDB}" "${meta.id}_target.pdb"
+
     # ── Run RFdiffusion3 ──
-    # Hydra CLI: use +key=value to *append* keys not in the default config schema
-    # pdb is not a pre-existing Hydra config key, so +pdb= is required
+    # CLI reference: https://github.com/RosettaCommons/foundry/blob/production/models/rfd3/docs/input.md
+    # Required: out_dir, inputs
+    # Recommended PPI overrides: step_scale=3, gamma_0=0.2
     rfd3 design \\
-        +pdb=\${RESOLVED_PDB} \\
         out_dir=${meta.id}_output/rfd3_raw \\
         inputs=rfd3_input.json \\
+        n_batches=1 \\
+        diffusion_batch_size=${batch_size} \\
+        inference_sampler.step_scale=3 \\
+        inference_sampler.gamma_0=0.2 \\
         skip_existing=False \\
         prevalidate_inputs=True
 
     # ── Rank and collect top designs ──
-    # Take the first <budget> PDB files (sorted by name) into the designs/ directory
+    # rfd3 outputs PDB files into the out_dir. Collect the first <budget>.
     RANK=1
     for pdb in \$(find ${meta.id}_output/rfd3_raw -name "*.pdb" 2>/dev/null | sort -V | head -n ${budget}); do
         DESIGN_NAME=\$(basename "\${pdb}" .pdb)
@@ -127,7 +169,7 @@ PYEOF
     # ── Version information ──
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        rfdiffusion3: \$(rfd3 --version 2>&1 || echo "foundry-cli")
+        rfdiffusion3: \$(pip show rc-foundry 2>/dev/null | grep Version | cut -d' ' -f2 || echo "unknown")
         python: \$(python3 --version 2>&1 | sed 's/Python //g')
     END_VERSIONS
     """
