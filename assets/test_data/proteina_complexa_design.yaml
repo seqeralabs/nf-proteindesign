@@ -1,14 +1,240 @@
 # Proteina-Complexa design specification — Nipah Glycoprotein binder
 #
-# Fields:
-#   task_name:     Identifier for this design run
-#   binder_length: [min, max] residues for the designed binder
-#   hotspot_res:   Optional list of target residues to bias the binder towards
-#   model:         Model variant — "protein" (binder), "ligand", or "ame" (enzyme)
+# Full Hydra-compatible config for the 4-step design pipeline:
+#   generate → filter → evaluate → analyze
+#
+# Contains all required sections:
+#   - generation.*  (generate + filter stages)
+#   - protein_type, metric  (evaluate stage)
+#   - result_type, aggregation  (analyze stage)
 #
 # Target: Nipah Glycoprotein, Chain A residues 1-532
+
+seed: 42
 
 task_name: "nipah_binder"
 binder_length: [60, 80]
 hotspot_res: []
 model: "protein"
+
+# =============================================================================
+# Evaluate stage settings
+# =============================================================================
+protein_type: binder
+input_mode: generated
+dryrun: false
+show_progress: false
+
+# Explicit paths so evaluate finds generated samples even when binder eval is disabled
+# (without these, evaluate constructs a path without the task_name suffix)
+sample_storage_path: "./inference/proteina_complexa_design_nipah_binder"
+output_dir: "./evaluation_results/proteina_complexa_design_nipah_binder"
+
+# =============================================================================
+# Analyze stage settings
+# =============================================================================
+result_type: protein_binder
+
+aggregation:
+  limit: null
+  analysis_modes: [monomer]
+
+# =============================================================================
+# Metric configuration (evaluate stage)
+# =============================================================================
+metric:
+  # Binder refolding metrics (disabled — requires AF2 multimer params not bundled in container)
+  compute_binder_metrics: false
+  binder_folding_method: colabdesign
+  sequence_types: [self]
+  num_redesign_seqs: 1
+  interface_cutoff: 8.0
+  inverse_folding_model: soluble_mpnn
+  ranking_criteria: null
+  keep_folding_outputs: true
+
+  # Monomer metrics
+  compute_monomer_metrics: true
+  monomer_folding_models: [esmfold]
+  compute_designability: true
+  designability_modes: [ca]
+  compute_codesignability: true
+  codesignability_modes: [ca]
+  compute_co_sequence_recovery: false
+  compute_ss: true
+  compute_esm_metrics: false
+
+  # Novelty (disabled for smoke test)
+  compute_novelty_pdb: false
+  compute_novelty_afdb: false
+  compute_novelty_afdb_rep_v4: false
+  compute_novelty_afdb_rep_v4_geniefilters_maxlen512: false
+
+  # Interface metrics on generated structures (pre-refolding)
+  compute_pre_refolding_metrics: false
+  compute_refolded_structure_metrics: false
+
+# =============================================================================
+# Generation config — required by generate.py (Hydra struct mode)
+# =============================================================================
+generation:
+  # Top-level task_name referenced by dataset via Hydra interpolation
+  task_name: "nipah_binder"
+
+  # Target dictionary — maps task_name to target PDB info for evaluate stage.
+  # target_path is overridden at runtime by the Nextflow module to use the
+  # staged file, but the default here works for standalone runs.
+  target_dict_cfg:
+    nipah_binder:
+      source: custom
+      target_filename: nipah_virus_Glycoprotein_competition_structure
+      target_path: nipah_virus_Glycoprotein_competition_structure.cif
+      target_input: A1-532
+      hotspot_residues: []
+      binder_length: [60, 80]
+      pdb_id: null
+
+  # Diffusion sampling parameters
+  args:
+    nsteps: 400
+    self_cond: true
+    guidance_w: 1.0
+    ag_ratio: 0.0
+    ag_ckpt_path: null
+    save_trajectory_every: 0
+    fold_cond: false
+
+  # Model-specific sampling parameters
+  model:
+    bb_ca:
+      schedule:
+        mode: log
+        p: 2.0
+      gt:
+        mode: "1/t"
+        p: 1.0
+        clamp_val: null
+      simulation_step_params:
+        sampling_mode: sc
+        sc_scale_noise: 0.1
+        sc_scale_score: 1.0
+        t_lim_ode: 0.98
+        t_lim_ode_below: 0.02
+        tsr_k: 1.0
+        tsr_sigma: 1.0
+        center_every_step: false
+    local_latents:
+      schedule:
+        mode: power
+        p: 2.0
+      gt:
+        mode: tan
+        p: 1.0
+        clamp_val: null
+      simulation_step_params:
+        sampling_mode: sc
+        sc_scale_noise: 0.1
+        sc_scale_score: 1.0
+        t_lim_ode: 0.98
+        t_lim_ode_below: 0.02
+        tsr_k: 1.0
+        tsr_sigma: 1.0
+        center_every_step: false
+
+  # Dataloader / dataset
+  # task_name uses Hydra interpolation to reference generation.task_name
+  # so CLI override ++generation.task_name=X propagates everywhere
+  dataloader:
+    _target_: torch.utils.data.DataLoader
+    batch_size: 16
+    shuffle: false
+    collate_fn:
+      _target_: proteinfoundation.datasets.gen_dataset.collate_fn
+      _partial_: true
+      padding_values:
+        target_chains: -1
+        chains: -1
+    dataset:
+      _target_: proteinfoundation.datasets.gen_dataset.GenDataset
+      task_name: ${...task_name}
+      nres:
+        _target_: proteinfoundation.datasets.gen_dataset.UniformInt
+        low: 60
+        high: 80
+        nsamples: 4
+        endpoint: true
+      nrepeat_per_sample: 1
+      conditional_features:
+        - _target_: proteinfoundation.datasets.gen_dataset.TargetFeatures
+          task_name: ${...task_name}
+          binder_gen_only: true
+          pdb_path: ${oc.select:.....target_dict_cfg.${.task_name}.target_path,null}
+          input_spec: ${.....target_dict_cfg.${.task_name}.target_input}
+          target_hotspots: ${.....target_dict_cfg.${.task_name}.hotspot_residues}
+          binder_center: null
+          pdb_id: ${.....target_dict_cfg.${.task_name}.pdb_id}
+      transforms:
+        - _target_: proteinfoundation.datasets.transforms.CoordsTensorCenteringTransform
+          tensor_name: "x_target"
+          mask_name: "target_mask"
+          data_mode: "all-atom"
+
+  # Search algorithm
+  search:
+    algorithm: best-of-n
+    max_batch_size: 16
+    reward_threshold: null
+    step_checkpoints: [0, 100, 200, 300, 400]
+    best_of_n:
+      replicas: 2
+    beam_search:
+      n_branch: 4
+      beam_width: 4
+      keep_lookahead_samples: true
+      save_intermediate_states: false
+    fk_steering:
+      n_branch: 4
+      beam_width: 4
+      temperature: 0.1
+      keep_lookahead_samples: true
+    mcts:
+      n_simulations: 20
+      exploration_prob: 0.5
+      exploration_constant: 1.0
+      keep_lookahead_samples: true
+
+  # Post-generation filtering
+  filter:
+    filter_samples_limit: 1000
+    delete_non_top_n_samples: false
+    dedup_sequence: true
+    reward_threshold: null
+
+  # Refinement (disabled for binder design test)
+  refinement:
+    algorithm: null
+    refine_targets: final
+    save_pre_refinement: none
+    enable_soft_optimization: false
+    enable_greedy_optimization: true
+    n_temp_iters: 45
+    n_hard_iters: 5
+    n_recycles: 3
+    n_greedy_iters: 15
+    greedy_percentage: 1
+    loss_weights:
+      pae: 0.4
+      plddt: 0.1
+      i_pae: 0.1
+      con: 1.0
+      i_con: 1.0
+      dgram_cce: 0.0
+      rg: 0.3
+      i_ptm: 0.05
+      helix_binder: -0.3
+
+  # Reward model — disabled for smoke test (AF2 multimer params not available)
+  # To enable: download AF2 multimer params and set AF2_DIR env var
+  reward_model: null
+
+  n_recycle: 0

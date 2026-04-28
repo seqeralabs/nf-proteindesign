@@ -44,6 +44,8 @@ process PROTEINA_COMPLEXA_DESIGN {
     def replicas       = params.complexa_replicas ?: 2
     def batch_size     = params.complexa_batch_size ?: 16
     def extra_args     = params.complexa_extra_args ?: ''
+    // Only override task_name and target_path when explicitly provided
+    def task_name_arg  = task_name ? "++generation.task_name=${task_name} ++generation.target_dict_cfg.${task_name}.target_path=${target_pdb}" : ''
 
     """
     set -euo pipefail
@@ -55,14 +57,31 @@ process PROTEINA_COMPLEXA_DESIGN {
     export TRITON_CACHE_DIR=/tmp/triton
     mkdir -p /tmp/numba /tmp/matplotlib /tmp/cache /tmp/triton
 
+    # ── Initialize Proteina-Complexa environment (Docker runtime) ──
+    # Set tool paths for the Docker container (normally set by 'complexa init docker && source env.sh')
+    export COMPLEXA_INIT=1
+    export FOLDSEEK_EXEC=/workspace/.venv/bin/foldseek
+    export RF3_EXEC_PATH=/workspace/.venv/bin/rf3
+    export SC_EXEC=/usr/local/bin/sc
+    export MMSEQS_EXEC=/workspace/.venv/bin/mmseqs
+    export DSSP_EXEC=/usr/local/bin/dssp
+    export TMOL_PATH=/workspace/.venv/lib/python3.12/site-packages/tmol
+    export PYTHONPATH=/workspace/protein-foundation-models/src:\${PYTHONPATH:-}
+    export PATH=/workspace/.venv/bin:\$PATH
+
     # ── Resolve checkpoint paths ──
     export CKPT_DIR=\$(realpath checkpoints)
+    export CKPT_PATH=\${CKPT_DIR}
+
+    # ── Ensure the staged target PDB is visible as an absolute path ──
+    # The YAML config's target_dict_cfg.*.target_path is resolved relative to CWD.
+    # Copy the staged target PDB to the working directory root so the default
+    # relative path in the YAML ("target_name.pdb") resolves correctly.
+    TARGET_PDB=\$(realpath ${target_pdb})
 
     # ── Run Proteina-Complexa full design pipeline ──
     # The 'complexa design' command runs: generate → filter → evaluate → analyze
     complexa design ${pipeline_config} \\
-        ++run_name=${run_name} \\
-        ++generation.task_name=${task_name} \\
         ++ckpt_path=\${CKPT_DIR} \\
         ++ckpt_name=${meta.ckpt_name ?: 'complexa.ckpt'} \\
         ++autoencoder_ckpt_path=\${CKPT_DIR}/${meta.ae_ckpt_name ?: 'complexa_ae.ckpt'} \\
@@ -72,6 +91,7 @@ process PROTEINA_COMPLEXA_DESIGN {
         ++generation.dataloader.dataset.nres.nsamples=${nsamples} \\
         ++generation.search.best_of_n.replicas=${replicas} \\
         ++generation.filter.filter_samples_limit=${filter_limit} \\
+        ${task_name_arg} \\
         ${extra_args}
 
     # ── Organize outputs into standardized directory structure ──

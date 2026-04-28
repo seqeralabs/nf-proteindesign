@@ -23,6 +23,8 @@ process BOLTZ2_REFOLD {
 
     container 'giosbiostructures/boltz2:latest'
     
+    errorStrategy 'ignore'
+    
     // GPU acceleration - Boltz-2 benefits from GPU for efficient prediction
     accelerator 1, type: 'nvidia-gpu'
 
@@ -53,6 +55,10 @@ process BOLTZ2_REFOLD {
 
     # Fix for Numba caching error in containers
     export NUMBA_CACHE_DIR="\${PWD}/numba_cache"
+
+    # Disable CUDA shader cache to prevent root-owned .nv directory
+    # that causes AccessDeniedException when Nextflow collects outputs
+    export CUDA_CACHE_DISABLE=1
     mkdir -p "\${NUMBA_CACHE_DIR}"
     
     # Fix for Boltz caching error (tries to write to /.boltz)

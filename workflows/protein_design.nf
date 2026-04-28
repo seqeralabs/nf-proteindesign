@@ -257,47 +257,85 @@ workflow PROTEIN_DESIGN {
         if (params.run_proteinmpnn && params.run_boltz2_refold) {
             // Get CIF and NPZ pairs from Boltz-2 for IPSAE
             // Use combine instead of join for more robust matching in k8s/cloud
+            // Extract pLDDT NPZ files from the predictions directory
+            // (plddt files live inside the *_boltz2_output dir alongside CIF/PAE/confidence)
+            ch_boltz2_plddt = BOLTZ2_REFOLD.out.predictions
+                .map { meta, pred_dir ->
+                    def plddt_files = pred_dir.listFiles().findAll { f -> f.name.startsWith('plddt_') && f.name.endsWith('.npz') }
+                    plddt_files ? [meta, plddt_files] : null
+                }
+                .filter { v -> v != null }
+
+            // Join structures, PAE, confidence JSON, and pLDDT NPZ by meta key
+            // iPSAE needs all four: CIF for coordinates, PAE for error matrix,
+            // confidence JSON for iptm values, pLDDT NPZ for per-residue confidence
             ch_ipsae_input = BOLTZ2_REFOLD.out.structures
                 .combine(BOLTZ2_REFOLD.out.pae_npz, by: 0)
-                .flatMap { meta, cif_files, npz_files ->
+                .combine(BOLTZ2_REFOLD.out.confidence, by: 0)
+                .combine(ch_boltz2_plddt, by: 0)
+                .flatMap { meta, cif_files, pae_files, conf_files, plddt_files ->
                     // Convert to lists if single files
                     def cif_list = cif_files instanceof List ? cif_files : [cif_files]
-                    def npz_list = npz_files instanceof List ? npz_files : [npz_files]
+                    def pae_list = pae_files instanceof List ? pae_files : [pae_files]
+                    def conf_list = conf_files instanceof List ? conf_files : [conf_files]
+                    def plddt_list = plddt_files instanceof List ? plddt_files : [plddt_files]
 
                     // Filter to only model_0 (best model) - use flexible matching
-                    def model0_cifs = cif_list.findAll { it.name.contains('model_0') && it.name.endsWith('.cif') }
-                    def model0_npzs = npz_list.findAll { it.name.contains('model_0') }
+                    def model0_cifs = cif_list.findAll { v -> v.name.contains('model_0') && v.name.endsWith('.cif') }
+                    def model0_paes = pae_list.findAll { v -> v.name.contains('model_0') }
+                    def model0_confs = conf_list.findAll { v -> v.name.contains('model_0') }
+                    def model0_plddts = plddt_list.findAll { v -> v.name.contains('model_0') }
 
                     // If no model_0 files found, use all files (fallback for different naming)
                     if (model0_cifs.isEmpty()) {
-                        model0_cifs = cif_list.findAll { it.name.endsWith('.cif') }
+                        model0_cifs = cif_list.findAll { v -> v.name.endsWith('.cif') }
                     }
-                    if (model0_npzs.isEmpty()) {
-                        model0_npzs = npz_list
-                    }
+                    if (model0_paes.isEmpty()) { model0_paes = pae_list }
+                    if (model0_confs.isEmpty()) { model0_confs = conf_list }
+                    if (model0_plddts.isEmpty()) { model0_plddts = plddt_list }
 
-                    // Create a map of NPZ files by normalized base name
-                    def npz_map = [:]
-                    model0_npzs.each { npz_file ->
-                        // Normalize: remove pae_ prefix and _model_X suffix for matching
-                        def base_name = npz_file.baseName
+                    // Create maps by normalized base name for matching
+                    def pae_map = [:]
+                    model0_paes.each { f ->
+                        def base_name = f.baseName
                             .replaceAll(/^pae_/, '')
                             .replaceAll(/_model_\d+$/, '')
-                        npz_map[base_name] = npz_file
+                        pae_map[base_name] = f
+                    }
+                    def conf_map = [:]
+                    model0_confs.each { f ->
+                        def base_name = f.baseName
+                            .replaceAll(/^confidence_/, '')
+                            .replaceAll(/_model_\d+$/, '')
+                        conf_map[base_name] = f
+                    }
+                    def plddt_map = [:]
+                    model0_plddts.each { f ->
+                        def base_name = f.baseName
+                            .replaceAll(/^plddt_/, '')
+                            .replaceAll(/_model_\d+$/, '')
+                        plddt_map[base_name] = f
                     }
 
-                    // Match CIF files with their NPZ files
+                    // Match CIF files with their companion files
                     model0_cifs.collect { cif_file ->
-                        // Normalize CIF name for matching
                         def base_name = cif_file.baseName.replaceAll(/_model_\d+$/, '')
-                        def npz_file = npz_map[base_name]
+                        def pae_file = pae_map[base_name]
+                        def conf_file = conf_map[base_name]
+                        def plddt_file = plddt_map[base_name]
 
-                        // If exact match fails, try first NPZ file as fallback
-                        if (!npz_file && model0_npzs.size() == 1 && model0_cifs.size() == 1) {
-                            npz_file = model0_npzs[0]
+                        // Fallback: if only one file of each type, use it
+                        if (!pae_file && model0_paes.size() == 1 && model0_cifs.size() == 1) {
+                            pae_file = model0_paes[0]
+                        }
+                        if (!conf_file && model0_confs.size() == 1 && model0_cifs.size() == 1) {
+                            conf_file = model0_confs[0]
+                        }
+                        if (!plddt_file && model0_plddts.size() == 1 && model0_cifs.size() == 1) {
+                            plddt_file = model0_plddts[0]
                         }
 
-                        if (npz_file) {
+                        if (pae_file && conf_file && plddt_file) {
                             def ipsae_meta = [
                                 id: meta.id,
                                 parent_id: meta.parent_id,
@@ -305,12 +343,12 @@ workflow PROTEIN_DESIGN {
                                 seq_num: meta.seq_num,
                                 source: "boltz2"
                             ]
-                            [ipsae_meta, npz_file, cif_file]
+                            [ipsae_meta, pae_file, cif_file, conf_file, plddt_file]
                         } else {
-                            log.warn "⚠️  No matching NPZ file found for ${cif_file.name} (available: ${model0_npzs*.name})"
+                            log.warn "⚠️  Missing companion files for ${cif_file.name}: PAE=${pae_file?.name}, confidence=${conf_file?.name}, pLDDT=${plddt_file?.name}"
                             null
                         }
-                    }.findAll { it != null }
+                    }.findAll { v -> v != null }
                 }
 
             // Run IPSAE calculation
