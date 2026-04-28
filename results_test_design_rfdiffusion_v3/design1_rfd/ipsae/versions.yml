@@ -1,4 +1,0 @@
-"NFPROTEINDESIGN:PROTEIN_DESIGN:IPSAE_CALCULATE":
-    python: 3.14.0
-    numpy: 2.3.5
-    ipsae: 3.0
