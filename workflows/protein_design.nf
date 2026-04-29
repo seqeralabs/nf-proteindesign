@@ -169,10 +169,16 @@ workflow PROTEIN_DESIGN {
             // Prepare Target MSA from Samplesheet
             // ================================================================
             // Use actual placeholder files in assets/ for k8s compatibility (avoids staging non-existent files)
+            // Resolve relative paths against projectDir so the pipeline works both locally and on k8s/Platform
             ch_target_msa = ch_input
                 .map { tuple ->
                     def meta = tuple[0]
-                    def msa_file = meta.target_msa ? file(meta.target_msa, checkIfExists: true) : file("${projectDir}/assets/NO_MSA", checkIfExists: true)
+                    def msa_path = meta.target_msa
+                        ? (meta.target_msa.startsWith('/') || meta.target_msa.startsWith('s3://') || meta.target_msa.startsWith('gs://') || meta.target_msa.startsWith('az://')
+                            ? meta.target_msa
+                            : "${projectDir}/${meta.target_msa}")
+                        : "${projectDir}/assets/NO_MSA"
+                    def msa_file = file(msa_path, checkIfExists: true)
                     [meta.id, msa_file]
                 }
 
@@ -182,7 +188,12 @@ workflow PROTEIN_DESIGN {
             ch_target_template = ch_input
                 .map { tuple ->
                     def meta = tuple[0]
-                    def template_file = meta.target_template ? file(meta.target_template, checkIfExists: true) : file("${projectDir}/assets/NO_TEMPLATE", checkIfExists: true)
+                    def template_path = meta.target_template
+                        ? (meta.target_template.startsWith('/') || meta.target_template.startsWith('s3://') || meta.target_template.startsWith('gs://') || meta.target_template.startsWith('az://')
+                            ? meta.target_template
+                            : "${projectDir}/${meta.target_template}")
+                        : "${projectDir}/assets/NO_TEMPLATE"
+                    def template_file = file(template_path, checkIfExists: true)
                     [meta.id, template_file]
                 }
 
