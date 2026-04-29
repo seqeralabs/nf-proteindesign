@@ -127,7 +127,7 @@ process BOLTZ2_REFOLD {
             --out_dir boltz2_results \\
             --accelerator gpu \\
             --devices 1 \\
-            --num_workers 12 \\
+            --num_workers 0 \\
             --recycling_steps ${num_recycling} \\
             --diffusion_samples ${num_diffusion} \\
             ${cache_opt} \\
