@@ -90,7 +90,7 @@ results/
 
 If you use this pipeline, please cite:
 
-- **Boltzgen**: [Add Boltzgen citation]
+- **Boltzgen**: Stark et al. (2025) bioRxiv 2025.11.20.689494
 - **ProteinMPNN**: Dauparas et al. (2022) Science
 - **Nextflow**: Di Tommaso et al. (2017) Nature Biotechnology
 
