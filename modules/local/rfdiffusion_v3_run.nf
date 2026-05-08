@@ -57,9 +57,10 @@ process RFDIFFUSION_V3_RUN {
     def num_designs  = meta.num_designs ?: 10
     def budget       = meta.budget ?: 4
     // rfd3 controls total designs via n_batches × diffusion_batch_size.
-    // Use diffusion_batch_size=1 and n_batches=num_designs so each design
-    // diffuses independently — avoids NaN propagation when is_non_loopy=true
-    // and hotspot constraints are active on small/medium binders.
+    // batch_size=1 so each design diffuses independently — avoids NaN
+    // propagation when is_non_loopy=true with hotspot constraints.
+    // n_batches=num_designs generates all requested designs; the ranking
+    // step below then selects the top `budget` for downstream.
     def batch_size   = 1
     """
     set -euo pipefail
@@ -155,13 +156,10 @@ PYEOF
     # ── Run RFdiffusion3 ──
     # CLI reference: https://github.com/RosettaCommons/foundry/blob/production/models/rfd3/docs/input.md
     # Required: out_dir, inputs
-    # Use n_batches=budget (not num_designs) so rfd3 only generates exactly the
-    # designs needed downstream. Example index 4 deterministically NaNs with
-    # these binder settings; keeping n_batches=budget avoids generating it.
     rfd3 design \\
         out_dir=${meta.id}_output/rfd3_raw \\
         inputs=rfd3_input.json \\
-        n_batches=${budget} \\
+        n_batches=${num_designs} \\
         diffusion_batch_size=${batch_size} \\
         inference_sampler.step_scale=1.5 \\
         inference_sampler.gamma_0=0.2 \\
