@@ -28,6 +28,10 @@ Thumbs.db
 # Testing
 test_output/
 test_results/
+results_test_*/
+
+# Claude Code
+.claude/
 
 # Boltzgen cache
 .cache/

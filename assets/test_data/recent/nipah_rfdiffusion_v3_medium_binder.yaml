@@ -1,0 +1,14 @@
+# RFdiffusion v3 design — Nipah Glycoprotein medium binder
+#
+# Strategy: standard 80-120 residue globular binder with broader
+# hotspot coverage across the receptor-binding epitope of chain A.
+# Balanced between interface area and designability.
+
+contig: "80-120,/0,A180-380"
+is_non_loopy: false
+select_hotspots:
+  A218: ""
+  A260: ""
+  A263: ""
+  A349: ""
+  A352: ""

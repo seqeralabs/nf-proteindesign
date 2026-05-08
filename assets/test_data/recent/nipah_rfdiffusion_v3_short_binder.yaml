@@ -1,0 +1,17 @@
+# RFdiffusion v3 design — Nipah Glycoprotein short binder
+#
+# Strategy: compact 40-60 residue binder with focused hotspot biasing
+# on key receptor-binding residues of chain A. Good for discovering
+# tight, high-affinity peptide-like binders with minimal scaffold.
+#
+# contig syntax:
+#   "40-60"   = design a binder of 40-60 residues
+#   "/0"      = chain break separating binder from target
+#   "A1-100"  = fix target chain A residues 1-100 in place
+
+contig: "40-60,/0,A180-380"
+is_non_loopy: false
+select_hotspots:
+  A260: ""
+  A263: ""
+  A352: ""

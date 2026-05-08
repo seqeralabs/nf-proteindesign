@@ -42,7 +42,7 @@ process BOLTZ2_REFOLD {
 
     script:
     def use_msa = params.boltz2_use_msa ? '--use_msa_server' : ''
-    def cache_opt = cache_dir.name != 'EMPTY_BOLTZ2_CACHE' ? "--cache boltz2_cache" : ''
+    def cache_opt = cache_dir.name != 'EMPTY_BOLTZ2_CACHE' ? "--cache ${cache_dir}" : ''
     def num_recycling = params.boltz2_num_recycling ?: 3
     def num_diffusion = params.boltz2_num_diffusion ?: 5
     def has_target_msa = target_msa.name != 'NO_MSA'
@@ -170,6 +170,13 @@ process BOLTZ2_REFOLD {
                         echo "    Saved PAE: \${filename}"
                     done
 
+                    # Copy pLDDT NPZ files (format: plddt_<name>_model_0.npz)
+                    find "\${pred_dir}" -name "plddt*.npz" -type f | while read file; do
+                        filename=\$(basename "\${file}")
+                        cp "\${file}" "${meta.id}_boltz2_output/\${filename}"
+                        echo "    Saved pLDDT: \${filename}"
+                    done
+
                     # Copy confidence JSON files
                     find "\${pred_dir}" -name "*confidence*.json" -type f | while read file; do
                         filename=\$(basename "\${file}")
@@ -192,6 +199,7 @@ process BOLTZ2_REFOLD {
     CIF_COUNT=\$(find ${meta.id}_boltz2_output -name "*.cif" | wc -l)
     JSON_COUNT=\$(find ${meta.id}_boltz2_output -name "*confidence*.json" | wc -l)
     NPZ_COUNT=\$(find ${meta.id}_boltz2_output -name "*pae*.npz" | wc -l)
+    PLDDT_COUNT=\$(find ${meta.id}_boltz2_output -name "plddt*.npz" | wc -l)
     AFFINITY_COUNT=\$(find ${meta.id}_boltz2_output -name "*affinity*.json" | wc -l)
     
     echo ""
@@ -201,6 +209,7 @@ process BOLTZ2_REFOLD {
     echo "Structures predicted: \${CIF_COUNT}"
     echo "Confidence files: \${JSON_COUNT}"
     echo "PAE NPZ files: \${NPZ_COUNT}"
+    echo "pLDDT NPZ files: \${PLDDT_COUNT}"
     echo "Affinity predictions: \${AFFINITY_COUNT}"
     echo "Output directory: ${meta.id}_boltz2_output"
     echo "============================================"
@@ -236,7 +245,7 @@ Input:
   - Target sequence length: \${#TARGET_SEQ}
 
 Parameters:
-  - Cache directory: ${cache_dir.name != 'EMPTY_BOLTZ2_CACHE' ? 'boltz2_cache (staged)' : 'default (~/.boltz)'}
+  - Cache directory: ${cache_dir.name != 'EMPTY_BOLTZ2_CACHE' ? cache_dir.toString() : 'default (~/.boltz)'}
   - Recycling steps: ${num_recycling}
   - Diffusion samples: ${num_diffusion}
   - Use MSA: ${params.boltz2_use_msa}

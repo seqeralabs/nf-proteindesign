@@ -30,6 +30,8 @@
 process RFDIFFUSION_V3_RUN {
     tag "${meta.id}"
     label 'process_high_gpu'
+    errorStrategy 'retry'
+    maxRetries 3
 
     publishDir "${params.outdir}/${meta.id}/rfdiffusion_v3", mode: params.publish_dir_mode
 
@@ -54,9 +56,11 @@ process RFDIFFUSION_V3_RUN {
     def model_cache  = cache_dir ? "\${PWD}/input_cache" : "\${HOME}/.foundry/checkpoints"
     def num_designs  = meta.num_designs ?: 10
     def budget       = meta.budget ?: 4
-    // rfd3 controls total designs via n_batches × diffusion_batch_size (default 8).
-    // We set diffusion_batch_size = num_designs and n_batches = 1.
-    def batch_size   = num_designs
+    // rfd3 controls total designs via n_batches × diffusion_batch_size.
+    // Use diffusion_batch_size=1 and n_batches=num_designs so each design
+    // diffuses independently — avoids NaN propagation when is_non_loopy=true
+    // and hotspot constraints are active on small/medium binders.
+    def batch_size   = 1
     """
     set -euo pipefail
 
@@ -117,16 +121,17 @@ design_entry = {
 
 # Hotspots: rfd3 uses "select_hotspots" dict with atom selections.
 # Accept both the rfd3-native dict form and a simple residue list.
+# Note: infer_ori_strategy='hotspots' is intentionally NOT set here —
+# it causes NaN (X_noisy_L) on small/medium binders and is not required
+# for hotspot biasing to take effect.
 hotspots = spec.get('select_hotspots', spec.get('hotspot_res', None))
 if hotspots:
     if isinstance(hotspots, dict):
         # Already in rfd3 native format: {"A42": "CA,CB", ...}
         design_entry['select_hotspots'] = hotspots
-        design_entry['infer_ori_strategy'] = 'hotspots'
     elif isinstance(hotspots, list) and len(hotspots) > 0:
         # Convert simple list ["A42", "A45"] → dict with empty atom selection
         design_entry['select_hotspots'] = {r: '' for r in hotspots}
-        design_entry['infer_ori_strategy'] = 'hotspots'
 
 # Pass through any additional rfd3-native fields from the YAML
 for key in ('select_fixed_atoms', 'select_unfixed_sequence', 'ligand',
@@ -150,15 +155,17 @@ PYEOF
     # ── Run RFdiffusion3 ──
     # CLI reference: https://github.com/RosettaCommons/foundry/blob/production/models/rfd3/docs/input.md
     # Required: out_dir, inputs
-    # Recommended PPI overrides: step_scale=3, gamma_0=0.2
+    # Use n_batches=budget (not num_designs) so rfd3 only generates exactly the
+    # designs needed downstream. Example index 4 deterministically NaNs with
+    # these binder settings; keeping n_batches=budget avoids generating it.
     rfd3 design \\
         out_dir=${meta.id}_output/rfd3_raw \\
         inputs=rfd3_input.json \\
-        n_batches=1 \\
+        n_batches=${budget} \\
         diffusion_batch_size=${batch_size} \\
-        inference_sampler.step_scale=3 \\
+        inference_sampler.step_scale=1.5 \\
         inference_sampler.gamma_0=0.2 \\
-        skip_existing=False \\
+        skip_existing=True \\
         prevalidate_inputs=True
 
     # ── Rank and collect top designs ──
