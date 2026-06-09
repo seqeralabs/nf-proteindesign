@@ -33,7 +33,7 @@ docker run hello-world
 ### GPU Requirements
 
 !!! warning "NVIDIA GPU Required"
-    Boltzgen requires an NVIDIA GPU with CUDA support. CPU execution is possible but extremely slow.
+    Both BoltzGen and Complexa require an NVIDIA GPU with CUDA support. CPU execution is possible but extremely slow.
 
 #### Setup NVIDIA Container Toolkit (Docker)
 
@@ -162,17 +162,15 @@ nextflow run seqeralabs/nf-proteindesign \
 
 ## :material-package: Container Images
 
-The pipeline uses pre-built containers from GitHub Container Registry:
-
-- **Boltzgen**: `ghcr.io/flouwuenne/boltzgen:latest`
-- **PRODIGY**: `ghcr.io/flouwuenne/prodigy:latest`
+The pipeline uses pre-built containers for each process. Container URIs are defined in `nextflow.config` and `conf/base.config`. Nextflow automatically pulls the required containers at runtime.
 
 ### Pre-pull Containers
 
+To pre-pull containers for offline or faster startup, check `nextflow.config` for the exact URIs:
+
 ```bash
-# Docker
-docker pull ghcr.io/flouwuenne/boltzgen:latest
-docker pull ghcr.io/flouwuenne/prodigy:latest
+# Example — check nextflow.config for current URIs
+# docker pull <container-uri>
 ```
 
 ## :material-help-circle: Troubleshooting
@@ -224,8 +222,7 @@ git pull origin main
 ### Update Containers
 
 ```bash
-# Docker
-docker pull ghcr.io/flouwuenne/boltzgen:latest
+# Check nextflow.config for current container URIs and pull latest versions
 ```
 
 ## :material-arrow-right: Next Steps

@@ -4,6 +4,117 @@
 
 This document provides technical details about the nf-proteindesign pipeline implementation, including design decisions, container specifications, and development guidelines.
 
+---
+
+## :material-clock-outline: Development Log (Seqera AI-Assisted)
+
+This pipeline was developed iteratively using **Seqera AI** as a proof of principle. Below is a chronological record of major implementation steps, what was done, and approximate time spent.
+
+### Step 1 — Initial Pipeline Scaffolding (~15 min)
+
+Created the foundational Nextflow DSL2 pipeline structure from scratch:
+
+- `main.nf` entry point with parameter validation and input parsing
+- `workflows/protein_design.nf` main workflow orchestrating all modules
+- `nextflow.config` with profiles for Docker, Singularity, test data, and Seqera Platform
+- `conf/base.config` with resource labels (CPU, GPU, memory tiers)
+- `conf/modules.config` with per-process publishDir configuration
+- Input samplesheet validation via nf-schema (`assets/schema_input_design.json`)
+
+### Step 2 — Core Design Module: BoltzGen → Complexa (~20 min)
+
+Implemented the generative protein design module:
+
+- **Originally** created `modules/local/boltzgen_run.nf` wrapping the BoltzGen model
+- Authored `bin/collect_complexa_outputs.py` to gather CIF structures and confidence files from model output
+- Wired samplesheet fields (`design_yaml`, `protocol`, `num_designs`, `budget`) through to the process
+- GPU resource allocation with dynamic retry strategy
+
+### Step 3 — Downstream Analysis Modules (~30 min)
+
+Added the full suite of optional post-design analysis modules:
+
+| Module | File | Purpose |
+|--------|------|---------|
+| ProteinMPNN | `proteinmpnn_optimize.nf` | Sequence optimization for designed binders |
+| Boltz-2 Refold | `boltz2_refold.nf`, `prepare_boltz2_sequences.nf` | Independent structure prediction to validate designs |
+| IPSAE | `ipsae_calculate.nf` | Interface pairwise shape & electrostatic scoring |
+| PRODIGY | `prodigy_predict.nf` | Binding affinity prediction (ΔG) |
+| Foldseek | `foldseek_search.nf` | Structural similarity search against PDB/AlphaFold DB |
+| Consolidation | `consolidate_metrics.nf` | Unified CSV/JSON metrics report across all modules |
+
+Supporting utilities created:
+
+- `convert_cif_to_pdb.nf` — CIF → PDB conversion for tools requiring PDB input
+- `collect_design_files.nf` — File collection and organization per sample
+- `split_proteinmpnn_sequences.nf` — Split multi-sequence FASTA for parallel refolding
+- `extract_target_sequences.nf` — Extract target chain sequences from design YAMLs
+- `create_design_samplesheet.nf` — Dynamic samplesheet generation for batched designs
+
+### Step 4 — Test Data & Profiles (~10 min)
+
+Created three test profiles with real-world design specifications:
+
+- `test_design_protein` — Protein binder against Nipah virus glycoprotein (2VSM)
+- `test_design_nanobody` — Nanobody design using built-in scaffolds
+- `test_design_peptide` — Peptide binder design
+
+Test data in `assets/test_data/`:
+
+- Nipah virus glycoprotein structure (`.cif`), target sequence (`.fasta`), MSA (`.a3m`)
+- Three design YAML specifications
+- Three corresponding samplesheet CSVs
+
+### Step 5 — Documentation Site (~15 min)
+
+Generated a full MkDocs Material documentation site:
+
+- Architecture diagrams (Mermaid flowcharts)
+- Getting started guides (installation, usage, quick reference)
+- Per-module analysis documentation (ProteinMPNN, IPSAE, PRODIGY, Foldseek, consolidation)
+- Auto-generated parameter reference from `nextflow_schema.json`
+- `mkdocs.yml` configuration with navigation, search, and theme
+
+### Step 6 — Schema & Parameter Validation (~5 min)
+
+- `nextflow_schema.json` with grouped parameters, descriptions, defaults, and enums
+- `bin/generate_parameter_docs.py` to auto-generate `docs/reference/parameters.md` from schema
+- MkDocs pre-build hook (`docs/hooks/update_dynamic_content.py`) for automatic doc regeneration
+
+### Step 7 — BoltzGen → Proteina-Complexa Rename (~15 min)
+
+Renamed the generative design engine throughout the entire codebase after the tool was rebranded:
+
+- **New module**: `modules/local/proteina_complexa_design.nf` (rewired process name, container, and commands)
+- **Deleted**: `modules/local/boltzgen_run.nf`
+- **Workflow**: Updated `protein_design.nf` — process call `BOLTZGEN_RUN` → `PROTEINA_COMPLEXA_DESIGN`, all channel names
+- **Config**: All `boltzgen` process labels, params, and container refs → `complexa` / `proteina_complexa` across `nextflow.config`, `conf/base.config`, `conf/modules.config`
+- **Schema**: `nextflow_schema.json` parameter names, descriptions, output directory references
+- **Container images**: `ghcr.io/flouwuenne/boltzgen:latest` → `cr.seqera.io/scidev/complexa:latest`
+- **Docs**: All 15+ markdown files updated — terminology, URLs (`Proteina-AI/complexa`), navigation
+- **Test data YAMLs**: Comment headers updated
+- **Python scripts**: `bin/prepare_boltz2_input.py`, `assets/ipsae.py` — code comments
+- **README.md**: Full rewrite of all references
+- **Verification**: Zero `boltzgen` references remain project-wide
+
+### Summary
+
+| Phase | Description | Approx. Time |
+|-------|-------------|---------------|
+| 1 | Pipeline scaffolding | ~15 min |
+| 2 | Core design module (BoltzGen) | ~20 min |
+| 3 | Downstream analysis modules (6 tools) | ~30 min |
+| 4 | Test data & profiles | ~10 min |
+| 5 | Documentation site (MkDocs) | ~15 min |
+| 6 | Schema & parameter validation | ~5 min |
+| 7 | BoltzGen → Complexa rename | ~15 min |
+| **Total** | **End-to-end pipeline + docs + rename** | **~1 hr 50 min** |
+
+!!! info "All development was performed interactively with Seqera AI"
+    Each step involved conversational iteration — describing intent, reviewing generated code, requesting adjustments, and validating outputs. The times above reflect wall-clock time including review and refinement, not just code generation.
+
+---
+
 ## :material-docker: Container Strategy
 
 ### Base Images
@@ -12,7 +123,7 @@ The pipeline uses specialized containers for each component:
 
 ```yaml
 Containers:
-  boltzgen: "ghcr.io/flouwuenne/boltzgen:latest"
+  complexa: "cr.seqera.io/scidev/complexa:latest"
   proteinmpnn: "ghcr.io/flouwuenne/proteinmpnn:latest"
   ipsae: "ghcr.io/flouwuenne/ipsae:latest"
   prodigy: "ghcr.io/flouwuenne/prodigy:latest"  
@@ -20,7 +131,7 @@ Containers:
 
 ### GPU Support
 
-CUDA 11.8+ required for Boltzgen:
+CUDA 11.8+ required for Complexa:
 
 ```dockerfile
 FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
@@ -33,34 +144,52 @@ RUN pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 ```
 nf-proteindesign/
-├── main.nf                              # Main entry point with mode detection
-├── nextflow.config                      # Pipeline configuration
+├── main.nf                              # Main entry point with parameter validation
+├── nextflow.config                      # Pipeline configuration & profiles
+├── nextflow_schema.json                 # Parameter schema (nf-schema v2)
 ├── conf/
-│   ├── base.config                     # Base resource settings
-│   ├── modules.config                  # Module-specific configuration
-│   ├── test.config                     # Test profile configuration
-│   └── test_full.config                # Full test profile
+│   ├── base.config                     # Base resource settings (CPU/GPU labels)
+│   ├── modules.config                  # Per-process publishDir configuration
+│   ├── test_design_protein.config      # Test profile: protein binder design
+│   ├── test_design_nanobody.config     # Test profile: nanobody design
+│   └── test_design_peptide.config      # Test profile: peptide design
 ├── workflows/
-│   └── protein_design.nf               # Unified workflow handling all modes
+│   └── protein_design.nf               # Unified workflow orchestrating all modules
 ├── modules/local/
-│   ├── boltzgen_run.nf
-│   ├── convert_cif_to_pdb.nf
-│   ├── collect_design_files.nf
-│   ├── proteinmpnn_optimize.nf
-│   ├── ipsae_calculate.nf
-│   ├── prodigy_predict.nf
-│   └── consolidate_metrics.nf
+│   ├── proteina_complexa_design.nf     # Core: Complexa generative design (GPU)
+│   ├── collect_design_files.nf         # Collect & organize design outputs
+│   ├── convert_cif_to_pdb.nf          # CIF → PDB format conversion
+│   ├── proteinmpnn_optimize.nf         # ProteinMPNN sequence optimization
+│   ├── split_proteinmpnn_sequences.nf  # Split multi-seq FASTA for parallel refold
+│   ├── extract_target_sequences.nf     # Extract target sequences from design YAMLs
+│   ├── create_design_samplesheet.nf    # Dynamic samplesheet for batched designs
+│   ├── prepare_boltz2_sequences.nf     # Prepare inputs for Boltz-2 refolding
+│   ├── boltz2_refold.nf               # Boltz-2 structure prediction (GPU)
+│   ├── ipsae_calculate.nf             # IPSAE interface scoring
+│   ├── prodigy_predict.nf             # PRODIGY binding affinity prediction
+│   ├── foldseek_search.nf            # Foldseek structural similarity search
+│   └── consolidate_metrics.nf         # Unified metrics report generation
 ├── bin/
-│   ├── convert_cif_to_pdb.py          # CIF to PDB conversion
-│   ├── collect_boltzgen_outputs.py    # Collect Boltzgen results
-│   ├── consolidate_metrics.py         # Generate unified metrics report
-│   └── create_design_yaml.py          # Generate design YAML files
+│   ├── collect_complexa_outputs.py    # Collect Complexa CIF/confidence outputs
+│   ├── convert_cif_to_pdb.py         # CIF to PDB conversion script
+│   ├── prepare_boltz2_input.py        # Prepare Boltz-2 input sequences
+│   ├── consolidate_metrics.py         # Generate unified CSV/JSON metrics
+│   ├── boltz_predict_wrapper.py       # Boltz-2 prediction wrapper
+│   ├── generate_parameter_docs.py     # Auto-generate parameter docs from schema
+│   └── validate_docs.py              # Documentation validation
 └── assets/
-    ├── schema_input_design.json        # Design mode samplesheet schema
-    └── test_data/                       # Test datasets
-        ├── egfr_*_design.yaml          # Pre-made design YAMLs
-        ├── 2VSM.cif                     # Test structure
-        └── samplesheet_design_*.csv     # Test samplesheets
+    ├── schema_input_design.json       # Samplesheet validation schema
+    ├── ipsae.py                       # IPSAE scoring utilities
+    └── test_data/
+        ├── nipah_protein_design.yaml            # Protein binder design spec
+        ├── nipah_nanobody_design.yaml           # Nanobody design spec
+        ├── nipah_peptide_design.yaml            # Peptide design spec
+        ├── nipah_virus_Glycoprotein_*.cif       # Target structure (2VSM)
+        ├── nipah_virus_target_sequence_*.fasta  # Target sequence
+        ├── nipah_glycoprotein_msa_*.a3m         # MSA for target
+        ├── samplesheet_design_protein.csv       # Test samplesheet: protein
+        ├── samplesheet_design_nanobody.csv      # Test samplesheet: nanobody
+        └── samplesheet_design_peptide.csv       # Test samplesheet: peptide
 ```
 
 ## :material-language-python: Helper Scripts
@@ -307,14 +436,14 @@ cat .command.err
 
 ```groovy
 /**
- * BOLTZGEN_RUN: Execute Boltzgen protein design
+ * PROTEINA_COMPLEXA_DESIGN: Execute Complexa generative protein design
  *
- * @input tuple(sample_id, design_yaml)
- * @output tuple(sample_id, designs_dir)
- * @param params.n_samples Number of designs to generate
- * @param params.timesteps Diffusion timesteps
+ * @input tuple(meta, design_yaml)
+ * @output tuple(meta, cif_files, confidence_files)
+ * @param params.num_designs Number of designs to generate
+ * @param params.budget Diffusion budget (sampling steps)
  */
-process BOLTZGEN_RUN {
+process PROTEINA_COMPLEXA_DESIGN {
     // Process implementation
 }
 ```

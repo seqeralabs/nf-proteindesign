@@ -1,5 +1,5 @@
 site_name: nf-proteindesign
-site_description: Nextflow pipeline for parallel Boltzgen protein design with automated binding site prediction
+site_description: Nextflow pipeline for parallel Complexa protein design with automated binding site prediction
 site_author: nf-proteindesign contributors
 repo_name: seqeralabs/nf-proteindesign
 repo_url: https://github.com/seqeralabs/nf-proteindesign

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_rfdiffusion_v3.json",
+  "title": "seqeralabs/nf-proteindesign - RFdiffusion v3 samplesheet schema",
+  "description": "Schema for validating samplesheets when --protein_design_tool=rfdiffusion_v3. Each row specifies a design YAML (contig + hotspots), structure files, and generation parameters.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample_id": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_-]+$",
+        "errorMessage": "Sample ID must be alphanumeric with underscores or hyphens only"
+      },
+      "design_yaml": {
+        "type": "string",
+        "pattern": "^\\S+\\.ya?ml$",
+        "errorMessage": "Design YAML must be a valid file path ending in .yaml or .yml"
+      },
+      "structure_files": {
+        "type": "string",
+        "errorMessage": "Structure files must be a comma-separated list of PDB/CIF file paths"
+      },
+      "num_designs": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Number of designs must be a positive integer"
+      },
+      "budget": {
+        "type": "integer",
+        "minimum": 1,
+        "errorMessage": "Budget must be a positive integer (top-N designs to keep)"
+      },
+      "target_msa": {
+        "type": "string",
+        "errorMessage": "Target MSA must be a valid file path to a pre-computed MSA file"
+      },
+      "target_sequence": {
+        "type": "string",
+        "errorMessage": "Target sequence must be a valid file path to a FASTA file"
+      },
+      "target_template": {
+        "type": "string",
+        "errorMessage": "Target template must be a valid file path to a PDB or CIF file"
+      }
+    },
+    "required": [
+      "sample_id",
+      "design_yaml",
+      "structure_files",
+      "num_designs",
+      "budget",
+      "target_sequence"
+    ]
+  }
+}

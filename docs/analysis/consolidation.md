@@ -5,7 +5,7 @@
 The metrics consolidation module aggregates results from all analysis tools into a unified CSV report and markdown summary. This provides a comprehensive overview of design quality across all enabled analyses.
 
 !!! tip "Unified Analysis"
-    Consolidation automatically collects metrics from Boltzgen, ProteinMPNN, Protenix, ipSAE, PRODIGY, and Foldseek, making it easy to compare designs and identify top candidates.
+    Consolidation automatically collects metrics from Complexa, ProteinMPNN, Protenix, ipSAE, PRODIGY, and Foldseek, making it easy to compare designs and identify top candidates.
 
 ## When to Use Consolidation
 
@@ -13,7 +13,7 @@ Enable metrics consolidation when you:
 
 - **Compare designs**: Need to evaluate multiple designs across different metrics
 - **Identify top candidates**: Want to quickly find the best designs based on multiple criteria
-- **Track provenance**: Need to know which designs came from Boltzgen vs. Protenix
+- **Track provenance**: Need to know which designs came from Complexa vs. Protenix
 - **Generate reports**: Want publication-ready summary tables
 
 ## Enabling Consolidation
@@ -52,7 +52,7 @@ results/
 └── consolidated_metrics/
     ├── all_designs_metrics.csv           # Complete metrics for all designs
     ├── top_designs_summary.md            # Markdown report of top designs
-    └── metrics_by_source.csv             # Metrics grouped by source (Boltzgen/Protenix)
+    └── metrics_by_source.csv             # Metrics grouped by source (Complexa/Protenix)
 ```
 
 ## Consolidated Metrics CSV
@@ -64,9 +64,9 @@ The `all_designs_metrics.csv` file contains all available metrics in a single ta
 | Column | Description | Source |
 |--------|-------------|--------|
 | `design_id` | Unique design identifier | All |
-| `parent_id` | Parent design ID (links Protenix to Boltzgen) | All |
-| `source` | `boltzgen` or `protenix` | All |
-| `structure_file` | Path to CIF structure | Boltzgen/Protenix |
+| `parent_id` | Parent design ID (links Protenix to Complexa) | All |
+| `source` | `complexa` or `protenix` | All |
+| `structure_file` | Path to CIF structure | Complexa/Protenix |
 
 ### ProteinMPNN Metrics (if enabled)
 
@@ -118,14 +118,14 @@ The `top_designs_summary.md` provides a markdown-formatted report highlighting t
 
 ## Overview
 - Total designs analyzed: 120
-- Boltzgen designs: 60
+- Complexa designs: 60
 - Protenix designs: 60
 
 ## Top 10 Designs by ipSAE Score
 
 | Rank | Design ID | Source | ipSAE | PRODIGY ΔG | Foldseek E-value |
 |------|-----------|--------|-------|------------|------------------|
-| 1 | design1_0001 | boltzgen | 0.92 | -12.5 | 1.2e-8 |
+| 1 | design1_0001 | complexa | 0.92 | -12.5 | 1.2e-8 |
 | 2 | design1_0002 | protenix | 0.89 | -11.8 | 3.4e-7 |
 ...
 ```
@@ -155,7 +155,7 @@ awk -F',' '$6 > 0.8' results/consolidated_metrics/all_designs_metrics.csv
 awk -F',' '$11 < 1e-5' results/consolidated_metrics/all_designs_metrics.csv
 ```
 
-### 3. Compare Boltzgen vs. Protenix
+### 3. Compare Complexa vs. Protenix
 
 ```bash
 # View metrics by source
@@ -209,7 +209,7 @@ Missing metrics will be indicated as `NA` in the CSV.
 
 The report tracks design provenance:
 
-- **Boltzgen designs**: Original structures from Boltzgen design
+- **Complexa designs**: Original structures from Complexa design
 - **Protenix designs**: Structures from ProteinMPNN sequences refolded by Protenix
 
 Parent-child relationships are maintained via `parent_id` column.
@@ -238,7 +238,7 @@ Identify designs with:
 ### 2. Protein Engineering
 
 Compare:
-- Boltzgen designs (original scaffold)
+- Complexa designs (original scaffold)
 - Protenix designs (sequence-optimized)
 - Identify improvements from ProteinMPNN optimization
 

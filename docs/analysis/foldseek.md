@@ -2,7 +2,7 @@
 
 ## Overview
 
-Foldseek is a structural similarity search tool that identifies proteins with similar 3D structures. The pipeline integrates Foldseek to search for structural homologs of both Boltzgen-designed and Protenix-refolded structures against large databases like AlphaFold or Swiss-Model.
+Foldseek is a structural similarity search tool that identifies proteins with similar 3D structures. The pipeline integrates Foldseek to search for structural homologs of both Complexa-designed and Protenix-refolded structures against large databases like AlphaFold or Swiss-Model.
 
 !!! info "What is Foldseek?"
     Foldseek uses a novel 3Di structural alphabet combined with traditional amino acid sequences to enable ultra-fast structural similarity searches. It's significantly faster than traditional structural alignment tools like TM-align while maintaining high sensitivity.
@@ -95,11 +95,11 @@ foldseek createdb /path/to/structures/ mydb
 
 The pipeline runs Foldseek on:
 
-1. **Boltzgen budget designs** - All structures from `intermediate_designs_inverse_folded/`
+1. **Complexa budget designs** - All structures from `intermediate_designs_inverse_folded/`
 2. **Protenix refolded structures** - All structures predicted by Protenix (if enabled)
 
 Each structure is searched independently, allowing comparison of:
-- Original Boltzgen designs
+- Original Complexa designs
 - ProteinMPNN-optimized sequences refolded by Protenix
 
 ## Output Files
@@ -110,7 +110,7 @@ For each design, Foldseek generates:
 results/
 └── sample_id/
     └── foldseek/
-        ├── design_id_boltzgen/
+        ├── design_id_complexa/
         │   ├── aln.m8              # Alignment results in BLAST-like format
         │   ├── summary.tsv         # Summary of top hits
         │   └── alignment.html      # Detailed alignment visualization
@@ -152,13 +152,13 @@ The `summary.tsv` file contains:
 
 ```bash
 # View top hits for a design
-head results/sample1/foldseek/design1_boltzgen/summary.tsv
+head results/sample1/foldseek/design1_complexa/summary.tsv
 
 # Count significant hits (E < 1e-5)
-awk '$3 < 1e-5' results/sample1/foldseek/design1_boltzgen/summary.tsv | wc -l
+awk '$3 < 1e-5' results/sample1/foldseek/design1_complexa/summary.tsv | wc -l
 
 # Extract top hit details
-head -n 2 results/sample1/foldseek/design1_boltzgen/summary.tsv
+head -n 2 results/sample1/foldseek/design1_complexa/summary.tsv
 ```
 
 ## Integration with Other Analyses
@@ -178,7 +178,7 @@ The consolidated report includes:
 - Best E-value for each design
 - Top matching protein name/description
 - Number of significant hits
-- Comparison across Boltzgen and Protenix structures
+- Comparison across Complexa and Protenix structures
 
 ## Performance Notes
 

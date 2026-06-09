@@ -8,7 +8,7 @@
 
 **Pipeline**: nf-proteindesign pipeline parameters
 
-Nextflow pipeline for Boltzgen protein design using pre-made design YAML specifications
+Nextflow pipeline for computational protein design using BoltzGen (default) or Proteina-Complexa as the design backend, with a full analysis suite including ProteinMPNN, Boltz-2, ipSAE, PRODIGY, Foldseek, and consolidated reporting.
 
 ## Input/output options
 
@@ -29,30 +29,65 @@ Define where the pipeline should find input data and save output data.
 - **Type**: `string`
 - **Default**: `"./results"`
 
-## Boltzgen design parameters
+## Design tool selection
 
-Core parameters for Boltzgen protein design execution.
+### `--protein_design_tool`
+
+Which design backend to use: `boltzgen` (default) or `complexa`.
+
+- **Type**: `string`
+- **Default**: `"boltzgen"`
+- **Allowed values**: `boltzgen`, `complexa`
+
+## BoltzGen parameters
+
+Parameters specific to the BoltzGen design backend.
 
 ### `--cache_dir`
 
-Cache directory for model weights (~6GB).
+Cache directory for BoltzGen model weights.
 
 - **Type**: `string`
 - **Default**: `"null"`
 
-### `--boltzgen_config`
+## Complexa parameters
 
-Optional path to custom Boltzgen config YAML to override defaults.
+Parameters specific to the Proteina-Complexa design backend.
 
-- **Type**: `string`
-- **Default**: `"null"`
+### `--complexa_ckpt_dir`
 
-### `--steps`
-
-Optional comma-separated list of steps to run (e.g., 'filtering' to rerun only filtering).
+Directory containing Complexa model checkpoints (required when using Complexa).
 
 - **Type**: `string`
 - **Default**: `"null"`
+
+### `--complexa_search_algorithm`
+
+Search algorithm for Complexa design sampling.
+
+- **Type**: `string`
+- **Default**: `"best-of-n"`
+
+### `--complexa_nsteps`
+
+Number of diffusion sampling steps for Complexa.
+
+- **Type**: `integer`
+- **Default**: `400`
+
+### `--complexa_replicas`
+
+Number of replicas for best-of-n search.
+
+- **Type**: `integer`
+- **Default**: `2`
+
+### `--complexa_batch_size`
+
+Batch size for Complexa inference.
+
+- **Type**: `integer`
+- **Default**: `16`
 
 ## ProteinMPNN sequence optimization
 
@@ -60,7 +95,7 @@ Options for ProteinMPNN sequence optimization of designed structures.
 
 ### `--run_proteinmpnn`
 
-Enable ProteinMPNN sequence optimization of Boltzgen designs.
+Enable ProteinMPNN sequence optimization of Complexa designs.
 
 - **Type**: `boolean`
 - **Default**: `false`
@@ -173,7 +208,7 @@ Options for scoring and evaluating designed structures.
 
 ### `--run_ipsae`
 
-Enable IPSAE scoring of Boltzgen predictions.
+Enable IPSAE scoring of Complexa predictions.
 
 - **Type**: `boolean`
 - **Default**: `false`
@@ -367,7 +402,7 @@ Display version and exit.
 | `--input` | `string` | `"null"` | **Required |
 | `--outdir` | `string` | `"./results"` | **Required |
 | `--cache_dir` | `string` | `"null"` | Cache directory for model weights (~6GB) |
-| `--boltzgen_config` | `string` | `"null"` | Optional path to custom Boltzgen config YAML to... |
+| `--complexa_config` | `string` | `"null"` | Optional path to custom Complexa config YAML to... |
 | `--steps` | `string` | `"null"` | Optional comma-separated list of steps to run (e |
 | `--run_proteinmpnn` | `boolean` | `false` | Enable ProteinMPNN sequence optimization of Bol... |
 | `--mpnn_sampling_temp` | `number` | `0.1` | Sampling temperature (lower = more conservative) |
@@ -384,7 +419,7 @@ Display version and exit.
 | `--boltz2_num_recycling` | `integer` | `3` | Number of recycling iterations for structure re... |
 | `--boltz2_use_msa` | `boolean` | `false` | Use multiple sequence alignments (MSAs) for pre... |
 | `--boltz2_predict_affinity` | `boolean` | `true` | Predict binding affinity for protein complexes |
-| `--run_ipsae` | `boolean` | `false` | Enable IPSAE scoring of Boltzgen predictions |
+| `--run_ipsae` | `boolean` | `false` | Enable IPSAE scoring of Complexa predictions |
 | `--ipsae_pae_cutoff` | `number` | `10` | PAE cutoff for IPSAE calculation (Angstroms) |
 | `--ipsae_dist_cutoff` | `number` | `10` | Distance cutoff for CA-CA contacts (Angstroms) |
 | `--run_prodigy` | `boolean` | `false` | Enable PRODIGY binding affinity prediction on f... |

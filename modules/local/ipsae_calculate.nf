@@ -8,7 +8,7 @@ process IPSAE_CALCULATE {
     container 'community.wave.seqera.io/library/numpy:2.3.5--f8d2712d76b3e3ce'
 
     input:
-    tuple val(meta), path(pae_file), path(structure_file)
+    tuple val(meta), path(pae_file), path(structure_file), path(confidence_json), path(plddt_npz)
     path ipsae_script
 
     output:
@@ -24,6 +24,13 @@ process IPSAE_CALCULATE {
     """
     # Install numpy if not available
     pip install --no-cache-dir numpy 2>&1 | grep -v "Requirement already satisfied" || true
+
+    # Stage confidence and pLDDT files alongside the PAE file so ipsae.py
+    # auto-discovers them by filename convention:
+    #   pae_<name>_model_0.npz  ->  confidence_<name>_model_0.json
+    #   pae_<name>_model_0.npz  ->  plddt_<name>_model_0.npz
+    echo "Staged confidence JSON: ${confidence_json}"
+    echo "Staged pLDDT NPZ: ${plddt_npz}"
     
     # Run IPSAE calculation
     python ${ipsae_script} \\

@@ -80,7 +80,7 @@ def main():
             sequences_to_process = sequences
             print(f"Processing all {len(sequences_to_process)} sequences (treating first as designed)")
         else:
-            # Default behavior: Skip the first sequence (original from Boltzgen)
+            # Default behavior: Skip the first sequence (original from Complexa)
             sequences_to_process = sequences[1:] if len(sequences) > 1 else []
             print(f"Processing {len(sequences_to_process)} new MPNN sequences (skipping original)")
         

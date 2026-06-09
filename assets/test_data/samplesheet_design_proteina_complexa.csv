@@ -1,0 +1,2 @@
+sample_id,target_pdb,pipeline_config,target_sequence,target_msa,target_template
+design1_complexa,assets/test_data/nipah_virus_Glycoprotein_competition_structure.cif,assets/test_data/proteina_complexa_design.yaml,assets/test_data/nipah_virus_target_sequence_glycoproteinG.fasta,assets/test_data/nipah_glycoprotein_msa_Uniref30_2302.a3m,

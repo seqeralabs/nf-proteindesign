@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_design.json",
-  "title": "seqeralabs/nf-proteindesign - Design mode samplesheet schema",
-  "description": "Schema for validating samplesheets in design mode using Proteina-Complexa",
+  "$id": "https://raw.githubusercontent.com/seqeralabs/nf-proteindesign/main/assets/schema_input_complexa.json",
+  "title": "seqeralabs/nf-proteindesign - Proteina-Complexa samplesheet schema",
+  "description": "Schema for validating samplesheets when --protein_design_tool=complexa. Each row specifies a target PDB, pipeline config YAML, and target sequence.",
   "type": "array",
   "items": {
     "type": "object",
@@ -24,16 +24,14 @@
       },
       "target_sequence": {
         "type": "string",
-        "pattern": "^\\S+\\.(fa|fasta|fna)$",
-        "errorMessage": "Target sequence must be a valid FASTA file path"
+        "errorMessage": "Target sequence must be a valid file path to a FASTA file"
       },
       "target_msa": {
         "type": "string",
-        "errorMessage": "Target MSA must be a valid file path to a pre-computed MSA file (e.g., 'target.a3m')"
+        "errorMessage": "Target MSA must be a valid file path to a pre-computed MSA file"
       },
       "target_template": {
         "type": "string",
-        "pattern": "^\\S+\\.(pdb|cif)$",
         "errorMessage": "Target template must be a valid file path to a PDB or CIF file"
       }
     },

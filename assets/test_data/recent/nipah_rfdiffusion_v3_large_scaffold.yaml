@@ -1,0 +1,10 @@
+# RFdiffusion v3 design — Nipah Glycoprotein large scaffold
+#
+# Strategy: larger 120-160 residue binder with no hotspot constraints,
+# allowing the diffusion model to freely explore interface geometry.
+# is_non_loopy set to false permits loop-mediated contacts, which can
+# improve coverage of larger epitope surfaces.
+
+contig: "120-160,/0,A180-380"
+is_non_loopy: false
+select_hotspots: {}

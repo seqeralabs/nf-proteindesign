@@ -5,7 +5,7 @@
     This process takes a multi-sequence FASTA file from ProteinMPNN and splits it
     into individual FASTA files, one per sequence.
     
-    All sequences are included (original Boltzgen sequence + MPNN-designed sequences).
+    All sequences are included (original Complexa sequence + MPNN-designed sequences).
 ----------------------------------------------------------------------------------------
 */
 
