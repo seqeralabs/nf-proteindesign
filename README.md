@@ -175,7 +175,7 @@ results/
 If you use this pipeline, please cite:
 
 - **BoltzGen**: Jing et al. (2024) "Generative Modeling of Molecular Dynamics Trajectories"
-- **Proteina-Complexa**: [Add Complexa citation]
+- **Proteina-Complexa**: Didi et al. (2026) arXiv:2603.27950
 - **ProteinMPNN**: Dauparas et al. (2022) Science
 - **Nextflow**: Di Tommaso et al. (2017) Nature Biotechnology
 

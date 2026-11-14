@@ -21,7 +21,7 @@ process BOLTZ2_REFOLD {
     // meta.parent_id already points to the original sample_id from the samplesheet
     publishDir { "${params.outdir}/${meta.parent_id ?: meta.id}/boltz2" }, mode: params.publish_dir_mode
 
-    container 'us-central1-docker.pkg.dev/nextflow-runs/nf-proteindesign/boltz2:latest'
+    container 'us-central1-docker.pkg.dev/nextflow-runs/nextflow-images/boltz2:latest'
     
     errorStrategy 'ignore'
     

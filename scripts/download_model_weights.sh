@@ -75,7 +75,7 @@ require_docker() {
 }
 
 # =============================================================================
-# 1. BOLTZ-2  (us-central1-docker.pkg.dev/nextflow-runs/nf-proteindesign/boltz2:latest)
+# 1. BOLTZ-2  (us-central1-docker.pkg.dev/nextflow-runs/nextflow-images/boltz2:latest)
 #    Weights: boltz2_conf.ckpt (~2.2 GB), boltz2_aff.ckpt (~2.0 GB)
 #    Ligand DB: mols/ CCD database (~1.8 GB unpacked)
 #    Total: ~6 GB
@@ -88,14 +88,14 @@ download_boltz2() {
     mkdir -p "${BOLTZ2_CACHE_DIR}"
 
     # Pull the container image first (cached on re-runs)
-    log "Pulling container: us-central1-docker.pkg.dev/nextflow-runs/nf-proteindesign/boltz2:latest"
-    docker pull us-central1-docker.pkg.dev/nextflow-runs/nf-proteindesign/boltz2:latest
+    log "Pulling container: us-central1-docker.pkg.dev/nextflow-runs/nextflow-images/boltz2:latest"
+    docker pull us-central1-docker.pkg.dev/nextflow-runs/nextflow-images/boltz2:latest
 
     # Run `boltz download --cache` to fetch all weights into the target directory.
     log "Seeding Boltz-2 cache (this downloads ~6 GB, please wait) ..."
     docker run --rm \
         -v "${BOLTZ2_CACHE_DIR}:/boltz_cache" \
-        us-central1-docker.pkg.dev/nextflow-runs/nf-proteindesign/boltz2:latest \
+        us-central1-docker.pkg.dev/nextflow-runs/nextflow-images/boltz2:latest \
         boltz download --cache /boltz_cache
 
     log "✓ Boltz-2 weights downloaded to: ${BOLTZ2_CACHE_DIR}"
